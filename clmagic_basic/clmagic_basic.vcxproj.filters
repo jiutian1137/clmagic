@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="public">
+      <UniqueIdentifier>{aaa9f76e-d442-48d7-bb24-588b0c00c8e6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="private">
+      <UniqueIdentifier>{3a585d6e-7039-4307-977e-aa8e8b7c474a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\clmagic\basic.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\basic\logcout.h">
+      <Filter>public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\basic\singleton.h">
+      <Filter>public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\basic\sequence.h">
+      <Filter>public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\basic\logstream.h">
+      <Filter>public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\basic\string.h">
+      <Filter>public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\basic\fstream.h">
+      <Filter>public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\basic\functional.h">
+      <Filter>public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\basic\chrono.h">
+      <Filter>public</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\clmagic\basic\logcout.cpp">
+      <Filter>private</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\clmagic\basic\string.cpp">
+      <Filter>private</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\clmagic\basic\fstream.cpp">
+      <Filter>private</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
