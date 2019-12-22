@@ -301,9 +301,7 @@ namespace clmagic
 	template<typename T> inline
 		Vec4_<T> operator- (_in(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs)
 		{
-		Vec4_<T> _Result;
-		_Sub_vector_vector(_Result.ptr(), _Lhs.ptr(), _Rhs.ptr(), _Result.size());
-		return (_Result);
+		return (Vec4_<T>(_Lhs.x - _Rhs.x, _Lhs.y - _Rhs.y, _Lhs.z - _Rhs.z, _Lhs.w - _Rhs.w));
 		}
 
 	template<size_t N, typename T> inline

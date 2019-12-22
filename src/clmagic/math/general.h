@@ -228,6 +228,23 @@ namespace clmagic
 	inline double atan(double y, double x) 
 	{ return ( std::atan2(y, x) ); }
 
+	inline bool is_powof2(unsigned int x) 
+	{
+		/*
+		pow of 2: only one 1 in bits
+		0000100000000 or 000000000010 or 0000000001
+		minus 1
+		0000011111111 or 000000000001 or 0000000000
+		*/
+		return (x & (x - 1));
+	}
+
+	inline bool is_powof2(unsigned long x) 
+	{ return (x & (x - 1)); }
+
+	inline bool is_powof2(unsigned long long x)
+	{ return (x & (x - 1)); }
+
 
 	template<typename _Ty>
 	struct Range_ 
@@ -278,15 +295,15 @@ namespace clmagic
 
 	template<typename _Tydst, typename _Tysrc> inline
 		_Tydst& reference_cast(_Tysrc& _Src) 
-			{
-			return (*reinterpret_cast<_Tydst*>(&_Src));
-			}
+		{
+		return (*reinterpret_cast<_Tydst*>(&_Src));
+		}
 
 	template<typename _Tydst, typename _Tysrc> inline
 		_Tydst& const_reference_cast(const _Tysrc& _Src) 
-			{
-			return (*reinterpret_cast<_Tydst*>(&_Src));
-			}
+		{
+		return (*reinterpret_cast<_Tydst*>(&_Src));
+		}
 
 	template<typename _Ty> inline
 		_Ty abs(_in(_Ty) _Src)
@@ -319,7 +336,7 @@ namespace clmagic
 		}
 
 	template<typename _Ty, typename _Ty2> inline 
-		bool equals(_in(_Ty) _Lhs, _in(_Ty) _Rhs, _in(_Ty2) _Thresould)
+		bool equal(_in(_Ty) _Lhs, _in(_Ty) _Rhs, _in(_Ty2) _Thresould)
 		{	// @_Require: ( @abs ) and ( operator-(rhs) ) and ( operator<=(rhs) )
 		return ( abs(_Lhs - _Rhs) <= _Thresould );
 		}
@@ -675,16 +692,14 @@ namespace clmagic
 	template<typename _Ty, typename _Tyn, typename _Tyc> inline 
 		_Ty Bernstein(/*in*/_Tyn n, /*in*/_Tyn i, _in(_Ty) t, /*in*/_Tyc C)
 		{	// @_Equaltion: C * (t^i) * [(1-t)^(n-i)]
-		static_assert(std::_Is_any_of_v<_Tyn, short, int, long, long long, unsigned short, unsigned int, unsigned long, unsigned long long>,
-			"invalid template argument, Bernstein(_Tyn, _Tyn, _in(_Ty))");
+		static_assert(std::is_integral<_Tyn>, "invalid template argument, Bernstein(_Tyn, _Tyn, _in(_Ty))");
 		return (_Ty(C) * pow(t, i) * pow(Real(1) - t, n - i));
 		}
 
 	template<typename _Ty, typename _Tyn> inline
 		_Ty Bernstein(/*in*/_Tyn n, /*in*/_Tyn i, _in(_Ty) t)
 		{	// @_Equaltion: C * (t^i) * [(1-t)^(n-i)]
-		static_assert(std::_Is_any_of_v<_Tyn, short, int, long, long long, unsigned short, unsigned int, unsigned long, unsigned long long>,
-			"invalid template argument, Bernstein(_Tyn, _Tyn, _in(_Ty))");
+		static_assert(std::is_integral<_Tyn>, "invalid template argument, Bernstein(_Tyn, _Tyn, _in(_Ty))");
 		return ( Bernstein( n, i, t, binomial_coefficient<_Tyn>(n, i) ) );
 		}
 

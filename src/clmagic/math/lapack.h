@@ -466,13 +466,15 @@ namespace clmagic
 			/*in*/const _Ty*  _Src,
 			/*in*/const char* _Selector);
 
+	/*
+	@_Describe:2 element array 
+	*/
 	template<typename T>
-	struct Vec2_
-	{	// 2 size vector
-		constexpr Vec2_() :					    x(T(0)), y(T(0)) { /* empty */ }
-		/* X X */ explicit constexpr Vec2_(_in(T) _Val) : x(_Val), y(_Val) { /* empty */ }
-		/* X Y */ constexpr Vec2_(_in(T) _X, _in(T) _Y) : x(_X),   y(_Y)	 { /* empty */ }
-		/*Mat1x2*/explicit constexpr Vec2_(_in(Mat_<1, 2, T>) _Mat) : x(_Mat[0][0]), y(_Mat[0][1]) { /* empty */ }
+	struct Vec2_ {	
+		constexpr Vec2_() : x(T(0)), y(T(0)) { }
+		/* X X */ explicit constexpr Vec2_(_in(T) _Val) : x(_Val), y(_Val) { }
+		/* X Y */ constexpr Vec2_(_in(T) X, _in(T) Y) : x(X),   y(Y) { }
+		/*Mat1x2*/explicit constexpr Vec2_(_in(Mat_<1, 2, T>) _Mat) : x(_Mat[0][0]), y(_Mat[0][1]) { }
 
 		explicit operator std::string() const { using std::to_string; return ("vec2[" + to_string(x) + "," + to_string(y) + "]"); }
 		explicit operator		   T*()		  { return ( _Mydata ); }
@@ -480,14 +482,48 @@ namespace clmagic
 
 		constexpr	    T& operator[](size_t _Pos)		 { return ( _Mydata[_Pos] ); }
 		constexpr const T& operator[](size_t _Pos) const { return ( _Mydata[_Pos] ); }
-		constexpr	    T* ptr()	   { return (_Mydata); }
-		constexpr const T* ptr() const { return (_Mydata); }
-
-		constexpr size_t size() const { return (2); }
+		constexpr	    T* ptr()	    { return (_Mydata); }
+		constexpr const T* ptr()  const { return (_Mydata); }
+		constexpr size_t   size() const { return (2); }
 		template<size_t N> Vec_<N, T> V(/*in*/const char* _Selector) const { return ( vector_selector(ptr(), _Selector) ); }
 
-		union
-		{
+		/* #define XXX(OP) friend Vec2_ operator##OP##(_in(Vec2_) _A, _in(Vec2_) _B) { return (Vec2_(x ##OP## _B.x, y ##OP## _B.y)); } */
+		friend Vec2_ operator+(_in(Vec2_) _A, _in(Vec2_) _B) { return (Vec2_(x + _B.x, y + _B.y)); }
+		friend Vec2_ operator-(_in(Vec2_) _A, _in(Vec2_) _B) { return (Vec2_(x - _B.x, y - _B.y)); }
+		friend Vec2_ operator*(_in(Vec2_) _A, _in(Vec2_) _B) { return (Vec2_(x * _B.x, y * _B.y)); }
+		friend Vec2_ operator/(_in(Vec2_) _A, _in(Vec2_) _B) { return (Vec2_(x / _B.x, y / _B.y)); }
+
+		/* #define XXX(OP) friend Vec2_ operator##OP##(_in(Vec2_) _A, _in(T) _B) { return (Vec2_(x ##OP## _B, y ##OP## _B)); } */
+		friend Vec2_ operator+(_in(Vec2_) _A, _in(T) _B) { return (Vec2_(x + _B, y + _B)); }
+		friend Vec2_ operator-(_in(Vec2_) _A, _in(T) _B) { return (Vec2_(x - _B, y - _B)); }
+		friend Vec2_ operator*(_in(Vec2_) _A, _in(T) _B) { return (Vec2_(x * _B, y * _B)); }
+		friend Vec2_ operator/(_in(Vec2_) _A, _in(T) _B) { return (Vec2_(x / _B, y / _B)); }
+
+		/* #define XXX(OP) friend Vec2_ operator##OP##(_in(Vec2_) _A, Real _B) { return (Vec2_(x ##OP## _B, y ##OP## _B)); } */
+		friend Vec2_ operator+(_in(Vec2_) _A, Real _B) { return (Vec2_(x + _B, y + _B)); }
+		friend Vec2_ operator-(_in(Vec2_) _A, Real _B) { return (Vec2_(x - _B, y - _B)); }
+		friend Vec2_ operator*(_in(Vec2_) _A, Real _B) { return (Vec2_(x * _B, y * _B)); }
+		friend Vec2_ operator/(_in(Vec2_) _A, Real _B) { return (Vec2_(x / _B, y / _B)); }
+
+		/* #define XXX(OP) Vec2_& operator##OP##(_in(Vec2_) _B) { x ##OP## _B.x; y ##OP## _B.y; return (*this); } */
+		Vec2_& operator+=(_in(Vec2_) _B) { x += _B.x; y += _B.y; return (*this); }
+		Vec2_& operator-=(_in(Vec2_) _B) { x -= _B.x; y -= _B.y; return (*this); }
+		Vec2_& operator*=(_in(Vec2_) _B) { x *= _B.x; y *= _B.y; return (*this); }
+		Vec2_& operator/=(_in(Vec2_) _B) { x /= _B.x; y /= _B.y; return (*this); }
+
+		/* #define XXX(OP) Vec2_& operator##OP##(_in(T) _B) { x ##OP## _B; y ##OP## _B; return (*this); } */
+		Vec2_& operator+=(_in(T) _B) { x += _B; y += _B; return (*this); }
+		Vec2_& operator-=(_in(T) _B) { x -= _B; y -= _B; return (*this); }
+		Vec2_& operator*=(_in(T) _B) { x *= _B; y *= _B; return (*this); }
+		Vec2_& operator/=(_in(T) _B) { x /= _B; y /= _B; return (*this); }
+
+		/* #define XXX(OP) Vec2_& operator##OP##(Real _B) { x ##OP## _B; y ##OP## _B; return (*this); } */
+		Vec2_& operator+=(Real _B) { x += _B; y += _B; return (*this); }
+		Vec2_& operator-=(Real _B) { x -= _B; y -= _B; return (*this); }
+		Vec2_& operator*=(Real _B) { x *= _B; y *= _B; return (*this); }
+		Vec2_& operator/=(Real _B) { x /= _B; y /= _B; return (*this); }
+
+		union {
 			struct { T x, y; };
 			struct { T r, g; };
 			T _Mydata[2];
@@ -602,6 +638,9 @@ namespace clmagic
 	using Vec4d = Vec4_<double>;
 	using Vec4i = Vec4_<int>;
 	using Vec4  = Vec4_<real_t>;
+
+	//- - - - - - - - - - - - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 
 	//- - - - - - - - - - - - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
