@@ -2,7 +2,7 @@
 #ifndef __CLMAGIC_CORE_BASIC___LOGSTREAM___H__
 #define __CLMAGIC_CORE_BASIC___LOGSTREAM___H__
 #include "singleton.h"
-#include "system_clock.h"
+#include "chrono.h"
 #include <iostream>
 #include <sstream>
 #include <fstream>

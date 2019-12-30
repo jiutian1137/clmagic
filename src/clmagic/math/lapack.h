@@ -467,7 +467,18 @@ namespace clmagic
 			/*in*/const char* _Selector);
 
 	/*
-	@_Describe:2 element array 
+	@_Describe: 2 element array 
+	@_Operator: { "+", "-", "*", "/", "+=", "-=", "*=", "/=", "<<" }
+	@_Interface:{ "size", "ptr", "[ N ]", "V" }
+	@_Function: { 
+		"for_each", "to_string"
+		"mod", 
+		"floor", "ceil", 
+		"sqrt", 
+		"exp", "exp2", "expn", 
+		"pow", 
+		"log10", "log2", "ln", 
+		"sin", "cos",  "tan", "cot", "sec", "csc", "asin", "acos", "atan", "acot", "asec", "acsc" }
 	*/
 	template<typename T>
 	struct Vec2_ {	
@@ -476,16 +487,14 @@ namespace clmagic
 		/* X Y */ constexpr Vec2_(_in(T) X, _in(T) Y) : x(X),   y(Y) { }
 		/*Mat1x2*/explicit constexpr Vec2_(_in(Mat_<1, 2, T>) _Mat) : x(_Mat[0][0]), y(_Mat[0][1]) { }
 
-		explicit operator std::string() const { using std::to_string; return ("vec2[" + to_string(x) + "," + to_string(y) + "]"); }
-		explicit operator		   T*()		  { return ( _Mydata ); }
-		explicit operator    const T*() const { return ( _Mydata ); }
-
-		constexpr	    T& operator[](size_t _Pos)		 { return ( _Mydata[_Pos] ); }
-		constexpr const T& operator[](size_t _Pos) const { return ( _Mydata[_Pos] ); }
-		constexpr	    T* ptr()	    { return (_Mydata); }
-		constexpr const T* ptr()  const { return (_Mydata); }
-		constexpr size_t   size() const { return (2); }
-		template<size_t N> Vec_<N, T> V(/*in*/const char* _Selector) const { return ( vector_selector(ptr(), _Selector) ); }
+		constexpr size_t   size() const { return ( 2 ); }
+		constexpr	    T* ptr()	       { return ( _Mydata ); }
+		constexpr const T* ptr()  const       { return ( _Mydata ); }
+		constexpr	    T* ptr(size_t _Pos)      { return ( _Mydata + _Pos ); }
+		constexpr const T* ptr(size_t _Pos)  const  { return ( _Mydata + _Pos ); }
+		constexpr	    T& operator[](size_t _Pos)	   { return ( _Mydata[_Pos] ); }
+		constexpr const T& operator[](size_t _Pos) const  { return ( _Mydata[_Pos] ); }
+		template<size_t N> Vec_<N, T> V(const char* _S) const { return ( vector_selector(ptr(), _S) ); }
 
 		/* #define XXX(OP) friend Vec2_ operator##OP##(_in(Vec2_) _A, _in(Vec2_) _B) { return (Vec2_(x ##OP## _B.x, y ##OP## _B.y)); } */
 		friend Vec2_ operator+(_in(Vec2_) _A, _in(Vec2_) _B) { return (Vec2_(x + _B.x, y + _B.y)); }
@@ -523,6 +532,23 @@ namespace clmagic
 		Vec2_& operator*=(Real _B) { x *= _B; y *= _B; return (*this); }
 		Vec2_& operator/=(Real _B) { x /= _B; y /= _B; return (*this); }
 
+		template<typename _Fn>
+		friend _Fn for_each(_Fn _Func) {
+			_Func(x); _Func(y);
+			return (_Func);
+		}
+
+		friend std::string to_string(_in(Vec2_) _A) {
+			using std::to_string; 
+			return ("vec2[" + to_string(_A.x) + "," + to_string(_A.y) + "]"); 
+		}
+
+		template<typename _Ostream> 
+		friend _Ostream& operator<<(_Ostream& _Ostr, _in(Vec2_) _A) {
+			_Ostr << to_string(_A);
+			return (_Ostr);
+		}
+
 		union {
 			struct { T x, y; };
 			struct { T r, g; };
@@ -542,6 +568,20 @@ namespace clmagic
 
 	//- - - - - - - - - - - - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+	/*
+	@_Describe: 3 element array
+	@_Operator: { "+", "-", "*", "/", "+=", "-=", "*=", "/=", "<<" }
+	@_Interface:{ "size", "ptr", "[ N ]", "V" }
+	@_Function: {
+		"for_each", "to_string"
+		"mod",
+		"floor", "ceil",
+		"sqrt",
+		"exp", "exp2", "expn",
+		"pow",
+		"log10", "log2", "ln",
+		"sin", "cos",  "tan", "cot", "sec", "csc", "asin", "acos", "atan", "acot", "asec", "acsc" }
+	*/
 	template<typename T>
 	struct Vec3_
 	{
@@ -554,17 +594,28 @@ namespace clmagic
 		/* Mat1x3*/explicit constexpr Vec3_(_in(Mat_<1, 3, T>) _Mat) : x(_Mat[0][0]), y(_Mat[0][1]), z(_Mat[0][2]) { }
 
 		explicit operator std::string() const { return ( "vec3[" + std::to_string(x) + "," + std::to_string(y) + "," + std::to_string(z) + "]" ); }
-		explicit operator		   T*()		  { return (_Mydata); }
-		explicit operator    const T*() const { return (_Mydata); }
-				 operator    Vec2_<T>() const { return ( Vec2_<T>(x, y) ); }
 
-		constexpr	    T& operator[](size_t _Pos)	     { return ( _Mydata[_Pos] ); }
-		constexpr const T& operator[](size_t _Pos) const { return ( _Mydata[_Pos] ); }
-		constexpr	    T* ptr()	   { return (_Mydata); }
-		constexpr const T* ptr() const { return (_Mydata); }
+		constexpr size_t   size() const { return (3); }
+		constexpr	    T* ptr()	       { return (_Mydata); }
+		constexpr const T* ptr() const        { return (_Mydata); }
+		constexpr       T* ptr(size_t _Pos)      { return (_Mydata + _Pos); }
+		constexpr const T* ptr(size_t _Pos) const   { return (_Mydata + _Pos); }
+		constexpr	    T& operator[](size_t _Pos)     { return ( _Mydata[_Pos] ); }
+		constexpr const T& operator[](size_t _Pos) const  { return ( _Mydata[_Pos] ); }
+		template<size_t N> Vec_<N, T> V(const char* _S) const{ return ( vector_selector(ptr(), _S) ); }
 
-		constexpr size_t size() const { return (3); }
-		template<size_t N> Vec_<N, T> V(const char* _Selector) const { return ( vector_selector(ptr(), _Selector) ); }
+		/* #define XXX(OP) friend Vec3_ operator##OP##(_in(Vec3_) _A, _in(Vec3_) _B){ return (Vec3_(_A.x ##OP## _B.x, _A.y ##OP## _B.y, _A.z ##OP## _B.z)); } */
+		friend Vec3_ operator+(_in(Vec3_) _A, _in(Vec3_) _B) { return (Vec3_(_A.x + _B.x, _A.y + _B.y, _A.z + _B.z)); }
+		friend Vec3_ operator-(_in(Vec3_) _A, _in(Vec3_) _B) { return (Vec3_(_A.x - _B.x, _A.y - _B.y, _A.z - _B.z)); }
+		friend Vec3_ operator*(_in(Vec3_) _A, _in(Vec3_) _B) { return (Vec3_(_A.x * _B.x, _A.y * _B.y, _A.z * _B.z)); }
+		friend Vec3_ operator/(_in(Vec3_) _A, _in(Vec3_) _B) { return (Vec3_(_A.x / _B.x, _A.y / _B.y, _A.z / _B.z)); }
+
+
+
+		friend std::string to_string(_in(Vec3_) _A) { 
+			using std::to_string;
+			return ( "vec3[" + std::to_string(x) + "," + std::to_string(y) + "," + std::to_string(z) + "]" );
+		}
 
 		union {
 			struct { T x, y, z; };

@@ -2,6 +2,7 @@
 #ifndef __CLMAGIC_CORE_BASIC___FILE___H__
 #define __CLMAGIC_CORE_BASIC___FILE___H__
 #include "logcout.h"
+#include <thread>
 #include <fstream>
 
 namespace clmagic {

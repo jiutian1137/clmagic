@@ -9,6 +9,7 @@
 #include "basic/string.h"
 #include "basic/chrono.h"
 #include "basic/fstream.h"
+#include "basic/algorithm.h"
 #include "basic/functional.h"
 
 #endif
