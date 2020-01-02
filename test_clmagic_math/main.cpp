@@ -1,5 +1,7 @@
-#include "../src/clmagic/math/simd.h"
+ï»¿#include "../src/clmagic/math/simd.h"
 #include "../src/clmagic/basic.h"
+#include <random>
+#include <iomanip>
 #include <iostream>
 #include <opencv.hpp>
 #include "glm/glm.hpp"
@@ -7,20 +9,104 @@
 #include "glm/fwd.hpp"
 
 
-/*
-a * x^2 + b * x + c = 0
 
-x^2 - a(3x-2a+b)-b^2 = 0
-x^2 - 3*x*a + 2*a^2 - a*b - b^2 = 0
-x^2 - x*(3*a) + (2*a^2-a*b-b^2) = 0
-A = 1
-B = -3a
-C = 3*a^2-ab-b^2
 
-3a¡À¡Ì(9a-12*a^2-4ab-4*b^2) 
----------------
-      2
-*/
+
+#include "Common/d3dApp.h"
+#include <DirectXColors.h>
+
+class InitDirect3DApp : public D3DApp {
+	using _Mybase = D3DApp;
+public:
+	InitDirect3DApp(HINSTANCE hInstance) : D3DApp(hInstance) { }
+	~InitDirect3DApp() { }
+
+	virtual bool Initialize() override {
+		return (_Mybase::Initialize());
+	}
+
+private:
+	virtual void OnResize() override {
+		_Mybase::OnResize();
+	}
+
+	virtual void Update(const GameTimer& _Timer) override {
+	
+	}
+
+	virtual void Draw(const GameTimer& _Timer) override {
+		// Reuse the memory associated with command recording.
+   // We can only reset when the associated command lists have finished execution on the GPU.
+		ThrowIfFailed(mDirectCmdListAlloc->Reset());
+
+		// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
+		// Reusing the command list reuses memory.
+		ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
+
+		// Indicate a state transition on the resource usage.
+		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
+			D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+		// Set the viewport and scissor rect.  This needs to be reset whenever the command list is reset.
+		mCommandList->RSSetViewports(1, &mScreenViewport);
+		mCommandList->RSSetScissorRects(1, &mScissorRect);
+
+		// Clear the back buffer and depth buffer.
+		mCommandList->ClearRenderTargetView(CurrentBackBufferView(), DirectX::Colors::LightSteelBlue, 0, nullptr);
+		mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+		// Specify the buffers we are going to render to.
+		mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
+
+		// Indicate a state transition on the resource usage.
+		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+		// Done recording commands.
+		ThrowIfFailed(mCommandList->Close());
+
+		// Add the command list to the queue for execution.
+		ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
+		mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
+		// swap the back and front buffers
+		ThrowIfFailed(mSwapChain->Present(0, 0));
+		mCurrBackBuffer = (mCurrBackBuffer + 1) % SwapChainBufferCount;
+
+		// Wait until frame commands are complete.  This waiting is inefficient and is
+		// done for simplicity.  Later we will show how to organize our rendering code
+		// so we do not have to wait per frame.
+		FlushCommandQueue();
+	}
+};
+
+void test_d3d12(HINSTANCE hInstance) {
+#if defined(_DEBUG)
+	
+#endif
+	
+	try
+	{
+		InitDirect3DApp _App(hInstance);
+		if (_App.Initialize()) {
+			_App.Run();
+		}
+	}
+	catch (const std::exception& e)
+	{
+		MessageBox(nullptr, e.what(), "HR Failed", MB_OK);
+	}
+}
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int showCmd) {
+	test_d3d12(hInstance);
+
+	std::cin.get();
+	return (0);
+}
+
+
+
 
 //void test_foundation() {
 //	using namespace::clmagic;
@@ -131,36 +217,34 @@ C = 3*a^2-ab-b^2
 //	return ( Vec4(0.f) );
 //}
 
-#include <random>
 
-struct Test_Moroc {
-#define Operator_AA(AAA) void output##AAA(){std::cout <<#AAA<<std::endl; }
-	Operator_AA(1111);
-#undef Operator_AA
-};
+
+namespace clmagic {
+
+	
+}
+
 
 void test_simd() {
-	Test_Moroc _test_coroc;
-	_test_coroc.output1111();
 
 
-//#define Ouput_F32vec4(Vec) std::cout << (Vec)[0] << "," << (Vec)[1] << "," << (Vec)[2] << "," << (Vec)[3] << std::endl
-//	F32vec4 _A(1.f, 2.f, 3.f, 4.f);
-//	F32vec4 _B(5.f);
-//	auto _C = _A * _B;
-//	Ouput_F32vec4(_C);
-//	std::cout << simd_dot(_A, _B) << std::endl;
-//	F32mat4 _Mat(1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f, 16.f);
-//	Ouput_F32vec4(_Mat * _A);
-//	char* _Memory = new char[1024 * 16];
-//	
-//	F32mat4* _Mat_arr = cv::alignPtr((F32mat4*)_Memory);
-//	std::cout << _Mat_arr << std::endl;
-//
-//	F64vec4 _Test_shuffle{ 10.f, 11.f, 12.f, 13.f };
-//	Ouput_F32vec4(_Test_shuffle);
-//
-//#undef Ouput_F32vec4
+	//#define Ouput_F32vec4(Vec) std::cout << (Vec)[0] << "," << (Vec)[1] << "," << (Vec)[2] << "," << (Vec)[3] << std::endl
+	//	F32vec4 _A(1.f, 2.f, 3.f, 4.f);
+	//	F32vec4 _B(5.f);
+	//	auto _C = _A * _B;
+	//	Ouput_F32vec4(_C);
+	//	std::cout << simd_dot(_A, _B) << std::endl;
+	//	F32mat4 _Mat(1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f, 16.f);
+	//	Ouput_F32vec4(_Mat * _A);
+	//	char* _Memory = new char[1024 * 16];
+	//	
+	//	F32mat4* _Mat_arr = cv::alignPtr((F32mat4*)_Memory);
+	//	std::cout << _Mat_arr << std::endl;
+	//
+	//	F64vec4 _Test_shuffle{ 10.f, 11.f, 12.f, 13.f };
+	//	Ouput_F32vec4(_Test_shuffle);
+	//
+	//#undef Ouput_F32vec4
 
 	using namespace::clmagic;
 	SIMDVec4f _SIMDFloat{ 9.f, 8.f, 7.f, 6.f };
@@ -169,38 +253,32 @@ void test_simd() {
 	std::cout << _SIMDFloat << std::endl;
 	std::cout << _SIMDDouble << std::endl;
 	std::cout << (_SIMDFloat * 5.f) << std::endl;
-	
+
 	std::cout << &_SIMDFloat << std::endl;
 	std::cout << &_SIMDDouble << std::endl;
 
-	std::cout << cross3(SIMDVec4d(0.0, 5.0, 0, 0), SIMDVec4d(5.0, 0.0, 0.0, 0)) << std::endl;
+	std::cout << "pow(e): " << pow(SIMDVec4(2.71828), SIMDVec4(1.f, 2.f, 3.f, 4.f)) << std::endl;
+	std::cout << "loge(pow(e)): " << loge(pow(SIMDVec4(2.71828), SIMDVec4(1.f, 2.f, 3.f, 4.f))) << std::endl;
+
+	SIMDVec4f _Test_increase = SIMDVec4f(100.f);
+	std::cout << incr(_Test_increase, 20.f) << std::endl;
+	std::cout << _Test_increase.incr(20.f).incr(30.f) << std::endl;
+	std::cout << _Test_increase.decr(20.f).decr(30.f) << std::endl;
+	std::cout << _Test_increase.inv() << std::endl;
 }
 
+int main() {
+	//test_simd();
 
+	clmagic::Vec4 _A( 1.f, 2.f, 3.f, 4.f);
+	clmagic::Vec4 _B(5.f);
+	_A + _B;
+	clmagic::SIMDVec4 _C;
+	_A + _B;
 
-
-
-
-
-
-
-
-
-int main(int argc, char** argv) {
-	/*std::cout << "test_clmagic_math" << std::endl;
-	std::cout << clmagic::cX << std::endl;*/
-
-
-	test_simd();
-	std::string _Template = "friend Vec3_ operator##OP##(_in(Vec3_) _A, _in(Vec3_) _B){ return (Vec3_(_A.x##OP##_B.x, _A.y##OP##_B.y, _A.z##OP##_B.z)); }";
-	std::string _Old = "##OP##";
-	std::string _Result;
-
-	std::vector<std::string> _Operators = { "+", "-", "*", "/" };
-	for (auto _Op : _Operators) {
-		_Result = clmagic::str_replace_copy(_Template, _Template.begin(), _Template.end(), _Old.c_str(), _Op.c_str());
-		std::cout << _Result << std::endl;
-	}
+	_A += _B;
+	std::cout << _A.incr(_B) << std::endl;
+	std::cout << incr(_A, _B) << std::endl;
 
 	std::cin.get();
 	return (0);

@@ -146,7 +146,7 @@ namespace clmagic
 	constexpr Real cZepto = Real(1E-21);
 	constexpr Real cYocto = Real(1E-24);
 
-	constexpr Real ce = Real(2.718281828459);
+	constexpr Real cE = Real(2.718281828459);
 	constexpr Real cPi = Real(3.14159265358979323846);
 	constexpr Real c2Pi = cPi * Real(2);
 	constexpr Real cPi$2 = cPi * Real(0.5);

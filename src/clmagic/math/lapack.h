@@ -306,31 +306,30 @@ namespace clmagic
 		Mat_(std::initializer_list<T> _Ilist);
 		template<size_t _Rm, size_t _Rn> Mat_(_in(Mat_<_Rm, _Rn, T>) _Right);
 		
-
-		explicit operator	     T*()		{ return (_Mydata[0]); }
-		explicit operator  const T*() const { return (_Mydata[0]); }
 		explicit operator std::string() const;
 
+		constexpr size_t rows() const { return (M); }
+		constexpr size_t cols() const { return (N); }
+		constexpr size_t size() const { return (rows() * cols()); }
+		constexpr       T* ptr()	   { return (_Mydata); }
+		constexpr const T* ptr() const { return (_Mydata); }
+		constexpr       T* ptr(size_t _Pos) { return (_Mydata + _Pos); }
+		constexpr const T* ptr(size_t _Pos) const { return (_Mydata + _Pos); }
 		constexpr T*	   operator[] (size_t _Pos)	      { return (_Mydata[_Pos]); }
 		constexpr const T* operator[] (size_t _Pos) const { return (_Mydata[_Pos]); }
 		constexpr T&	   at(size_t _Row, size_t _Col)		  { return (_Mydata[_Row][_Col]); }
 		constexpr const T& at(size_t _Row, size_t _Col) const { return (_Mydata[_Row][_Col]); }
-		constexpr T*	   ptr()	   { return (_Mydata[0]); }
-		constexpr const T* ptr() const { return (_Mydata[0]); }
 			   Vec_<N, T>& row(size_t _Pos);
 		 const Vec_<N, T>& row(size_t _Pos) const;
 
 		void assign(std::initializer_list<T> _Ilist);
-		constexpr size_t rows() const { return (M); }
-		constexpr size_t cols() const { return (N); }
-		constexpr size_t size() const { return (rows() * cols()); }
 
 		
 		Mat_<N, M, T> transpose() const;
 		Mat_<M, N, T> inverse() const;
 		bool is_identity() const;
 
-		T _Mydata[M][N];
+		T _Mydata[M * N];
 	};
 
 
@@ -466,244 +465,9 @@ namespace clmagic
 			/*in*/const _Ty*  _Src,
 			/*in*/const char* _Selector);
 
-	/*
-	@_Describe: 2 element array 
-	@_Operator: { "+", "-", "*", "/", "+=", "-=", "*=", "/=", "<<" }
-	@_Interface:{ "size", "ptr", "[ N ]", "V" }
-	@_Function: { 
-		"for_each", "to_string"
-		"mod", 
-		"floor", "ceil", 
-		"sqrt", 
-		"exp", "exp2", "expn", 
-		"pow", 
-		"log10", "log2", "ln", 
-		"sin", "cos",  "tan", "cot", "sec", "csc", "asin", "acos", "atan", "acot", "asec", "acsc" }
-	*/
-	template<typename T>
-	struct Vec2_ {	
-		constexpr Vec2_() : x(T(0)), y(T(0)) { }
-		/* X X */ explicit constexpr Vec2_(_in(T) _Val) : x(_Val), y(_Val) { }
-		/* X Y */ constexpr Vec2_(_in(T) X, _in(T) Y) : x(X),   y(Y) { }
-		/*Mat1x2*/explicit constexpr Vec2_(_in(Mat_<1, 2, T>) _Mat) : x(_Mat[0][0]), y(_Mat[0][1]) { }
-
-		constexpr size_t   size() const { return ( 2 ); }
-		constexpr	    T* ptr()	       { return ( _Mydata ); }
-		constexpr const T* ptr()  const       { return ( _Mydata ); }
-		constexpr	    T* ptr(size_t _Pos)      { return ( _Mydata + _Pos ); }
-		constexpr const T* ptr(size_t _Pos)  const  { return ( _Mydata + _Pos ); }
-		constexpr	    T& operator[](size_t _Pos)	   { return ( _Mydata[_Pos] ); }
-		constexpr const T& operator[](size_t _Pos) const  { return ( _Mydata[_Pos] ); }
-		template<size_t N> Vec_<N, T> V(const char* _S) const { return ( vector_selector(ptr(), _S) ); }
-
-		/* #define XXX(OP) friend Vec2_ operator##OP##(_in(Vec2_) _A, _in(Vec2_) _B) { return (Vec2_(x ##OP## _B.x, y ##OP## _B.y)); } */
-		friend Vec2_ operator+(_in(Vec2_) _A, _in(Vec2_) _B) { return (Vec2_(x + _B.x, y + _B.y)); }
-		friend Vec2_ operator-(_in(Vec2_) _A, _in(Vec2_) _B) { return (Vec2_(x - _B.x, y - _B.y)); }
-		friend Vec2_ operator*(_in(Vec2_) _A, _in(Vec2_) _B) { return (Vec2_(x * _B.x, y * _B.y)); }
-		friend Vec2_ operator/(_in(Vec2_) _A, _in(Vec2_) _B) { return (Vec2_(x / _B.x, y / _B.y)); }
-
-		/* #define XXX(OP) friend Vec2_ operator##OP##(_in(Vec2_) _A, _in(T) _B) { return (Vec2_(x ##OP## _B, y ##OP## _B)); } */
-		friend Vec2_ operator+(_in(Vec2_) _A, _in(T) _B) { return (Vec2_(x + _B, y + _B)); }
-		friend Vec2_ operator-(_in(Vec2_) _A, _in(T) _B) { return (Vec2_(x - _B, y - _B)); }
-		friend Vec2_ operator*(_in(Vec2_) _A, _in(T) _B) { return (Vec2_(x * _B, y * _B)); }
-		friend Vec2_ operator/(_in(Vec2_) _A, _in(T) _B) { return (Vec2_(x / _B, y / _B)); }
-
-		/* #define XXX(OP) friend Vec2_ operator##OP##(_in(Vec2_) _A, Real _B) { return (Vec2_(x ##OP## _B, y ##OP## _B)); } */
-		friend Vec2_ operator+(_in(Vec2_) _A, Real _B) { return (Vec2_(x + _B, y + _B)); }
-		friend Vec2_ operator-(_in(Vec2_) _A, Real _B) { return (Vec2_(x - _B, y - _B)); }
-		friend Vec2_ operator*(_in(Vec2_) _A, Real _B) { return (Vec2_(x * _B, y * _B)); }
-		friend Vec2_ operator/(_in(Vec2_) _A, Real _B) { return (Vec2_(x / _B, y / _B)); }
-
-		/* #define XXX(OP) Vec2_& operator##OP##(_in(Vec2_) _B) { x ##OP## _B.x; y ##OP## _B.y; return (*this); } */
-		Vec2_& operator+=(_in(Vec2_) _B) { x += _B.x; y += _B.y; return (*this); }
-		Vec2_& operator-=(_in(Vec2_) _B) { x -= _B.x; y -= _B.y; return (*this); }
-		Vec2_& operator*=(_in(Vec2_) _B) { x *= _B.x; y *= _B.y; return (*this); }
-		Vec2_& operator/=(_in(Vec2_) _B) { x /= _B.x; y /= _B.y; return (*this); }
-
-		/* #define XXX(OP) Vec2_& operator##OP##(_in(T) _B) { x ##OP## _B; y ##OP## _B; return (*this); } */
-		Vec2_& operator+=(_in(T) _B) { x += _B; y += _B; return (*this); }
-		Vec2_& operator-=(_in(T) _B) { x -= _B; y -= _B; return (*this); }
-		Vec2_& operator*=(_in(T) _B) { x *= _B; y *= _B; return (*this); }
-		Vec2_& operator/=(_in(T) _B) { x /= _B; y /= _B; return (*this); }
-
-		/* #define XXX(OP) Vec2_& operator##OP##(Real _B) { x ##OP## _B; y ##OP## _B; return (*this); } */
-		Vec2_& operator+=(Real _B) { x += _B; y += _B; return (*this); }
-		Vec2_& operator-=(Real _B) { x -= _B; y -= _B; return (*this); }
-		Vec2_& operator*=(Real _B) { x *= _B; y *= _B; return (*this); }
-		Vec2_& operator/=(Real _B) { x /= _B; y /= _B; return (*this); }
-
-		template<typename _Fn>
-		friend _Fn for_each(_Fn _Func) {
-			_Func(x); _Func(y);
-			return (_Func);
-		}
-
-		friend std::string to_string(_in(Vec2_) _A) {
-			using std::to_string; 
-			return ("vec2[" + to_string(_A.x) + "," + to_string(_A.y) + "]"); 
-		}
-
-		template<typename _Ostream> 
-		friend _Ostream& operator<<(_Ostream& _Ostr, _in(Vec2_) _A) {
-			_Ostr << to_string(_A);
-			return (_Ostr);
-		}
-
-		union {
-			struct { T x, y; };
-			struct { T r, g; };
-			T _Mydata[2];
-		};
-	};
-
-	template<typename T> inline 
-	std::string to_string( _in(Vec2_<T>) _Src ) {
-		return ( static_cast<std::string>(_Src) );
-	}
-
-	using Vec2f = Vec2_<float>;
-	using Vec2d = Vec2_<double>;
-	using Vec2i = Vec2_<int>;
-	using Vec2  = Vec2_<real_t>;
-
-	//- - - - - - - - - - - - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-	/*
-	@_Describe: 3 element array
-	@_Operator: { "+", "-", "*", "/", "+=", "-=", "*=", "/=", "<<" }
-	@_Interface:{ "size", "ptr", "[ N ]", "V" }
-	@_Function: {
-		"for_each", "to_string"
-		"mod",
-		"floor", "ceil",
-		"sqrt",
-		"exp", "exp2", "expn",
-		"pow",
-		"log10", "log2", "ln",
-		"sin", "cos",  "tan", "cot", "sec", "csc", "asin", "acos", "atan", "acot", "asec", "acsc" }
-	*/
-	template<typename T>
-	struct Vec3_
-	{
-		constexpr Vec3_() : x(T(0)), y(T(0)), z(T(0)) { }
-		/* X Y Z */constexpr Vec3_(_in(T) X, _in(T) Y, _in(T) Z) : x(X), y(Y), z(Z) { }
-		/* X X X */explicit constexpr Vec3_(_in(T) _Val) : x(_Val),  y(_Val),  z(_Val)  { }
-		/* X-Y Z */constexpr Vec3_(_in(Vec2_<T>) XY,
-								   _in(T) Z = T(0)) : x(XY[0]), y(XY[1]), z(Z) { }
-		/* X Y-Z */constexpr Vec3_(_in(T) X, _in(Vec2_<T>) YZ) : x(X), y(YZ[0]), z(YZ[1]) { }
-		/* Mat1x3*/explicit constexpr Vec3_(_in(Mat_<1, 3, T>) _Mat) : x(_Mat[0][0]), y(_Mat[0][1]), z(_Mat[0][2]) { }
-
-		explicit operator std::string() const { return ( "vec3[" + std::to_string(x) + "," + std::to_string(y) + "," + std::to_string(z) + "]" ); }
-
-		constexpr size_t   size() const { return (3); }
-		constexpr	    T* ptr()	       { return (_Mydata); }
-		constexpr const T* ptr() const        { return (_Mydata); }
-		constexpr       T* ptr(size_t _Pos)      { return (_Mydata + _Pos); }
-		constexpr const T* ptr(size_t _Pos) const   { return (_Mydata + _Pos); }
-		constexpr	    T& operator[](size_t _Pos)     { return ( _Mydata[_Pos] ); }
-		constexpr const T& operator[](size_t _Pos) const  { return ( _Mydata[_Pos] ); }
-		template<size_t N> Vec_<N, T> V(const char* _S) const{ return ( vector_selector(ptr(), _S) ); }
-
-		/* #define XXX(OP) friend Vec3_ operator##OP##(_in(Vec3_) _A, _in(Vec3_) _B){ return (Vec3_(_A.x ##OP## _B.x, _A.y ##OP## _B.y, _A.z ##OP## _B.z)); } */
-		friend Vec3_ operator+(_in(Vec3_) _A, _in(Vec3_) _B) { return (Vec3_(_A.x + _B.x, _A.y + _B.y, _A.z + _B.z)); }
-		friend Vec3_ operator-(_in(Vec3_) _A, _in(Vec3_) _B) { return (Vec3_(_A.x - _B.x, _A.y - _B.y, _A.z - _B.z)); }
-		friend Vec3_ operator*(_in(Vec3_) _A, _in(Vec3_) _B) { return (Vec3_(_A.x * _B.x, _A.y * _B.y, _A.z * _B.z)); }
-		friend Vec3_ operator/(_in(Vec3_) _A, _in(Vec3_) _B) { return (Vec3_(_A.x / _B.x, _A.y / _B.y, _A.z / _B.z)); }
-
-
-
-		friend std::string to_string(_in(Vec3_) _A) { 
-			using std::to_string;
-			return ( "vec3[" + std::to_string(x) + "," + std::to_string(y) + "," + std::to_string(z) + "]" );
-		}
-
-		union {
-			struct { T x, y, z; };
-			struct { T r, g, b; };
-			T _Mydata[3];
-		};
-	};
-
-	template<typename T> inline
-	std::string to_string( _in(Vec3_<T>) _Src ) {
-		return ( static_cast<std::string>(_Src) );
-	}
-
-	using Vec3f = Vec3_<float>;
-	using Vec3d = Vec3_<double>;
-	using Vec3i = Vec3_<int>;
-	using Vec3  = Vec3_<real_t>;
-
-	//- - - - - - - - - - - - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-	template< typename T >
-	struct Vec4_
-	{
-		constexpr Vec4_( ) : x(T(0)), y(T(0)), z(T(0)), w(T(0)) { }
-		/* X Y Z W */constexpr Vec4_(_in(T) X, _in(T) Y, _in(T) Z, _in(T) W) : x(X), y(Y), z(Z), w(W) { }
-		/* X X X X */explicit constexpr Vec4_(_in(T) _Val) : x(_Val), y(_Val), z(_Val), w(_Val) { }
-
-		/* X-Y Z W */constexpr Vec4_(_in(Vec2_<T>) XY,
-									_in(T) Z = T(0),
-									_in(T) W = T(0)) : x(XY[0]), y(XY[1]), z(Z), w(W) { }
-
-		/* X Y-Z W */constexpr Vec4_(_in(T) X, _in(Vec2_<T>) YZ,
-									_in(T) W = T(0)) : x(X), y(YZ[0]), z(YZ[1]), w(W) { }
-
-		/* X Y Z-W */constexpr Vec4_(_in(T) X, _in(T) Y, _in(Vec2_<T>) ZW) : x(X), y(Y), z(ZW[0]), w(ZW[1]) { }
-
-		/* X-Y-Z W */constexpr Vec4_(_in(Vec3_<T>) XYZ,
-							        _in(T) W = T(0)) : x(XYZ[0]), y(XYZ[1]), z(XYZ[2]), w(W) { }
-
-		/* X Y-Z-W */constexpr Vec4_(_in(T) X, _in(Vec3_<T>) YZW) : x(X), y(YZW[0]), z(YZW[1]), w(YZW[2]) { }
-		
-		/*  Mat1x4 */explicit constexpr Vec4_(_in(Mat_<1,4,T>) _Mat) : x(_Mat[0][0]), y(_Mat[0][1]), z(_Mat[0][2]), w(_Mat[0][3]) { }
-
-		explicit operator std::string() const { using std::to_string; return ("Vec4[" + to_string(x) + "," + to_string(y) + "," + to_string(z) + "," + to_string(w) + "]"); }
-		explicit operator		   T*()		  { return ( _Mydata ); }
-		explicit operator	 const T*() const { return ( _Mydata ); }
-		         operator    Vec2_<T>() const { return ( Vec2_<T>(x, y) ); }
-		         operator    Vec3_<T>() const { return ( Vec3_<T>(x, y, z) ); }
-
-		constexpr	    T& operator[](size_t _Pos)       { return (_Mydata[_Pos]); }
-		constexpr const T& operator[](size_t _Pos) const { return (_Mydata[_Pos]); }
-		constexpr	    T* ptr()	   { return (_Mydata); }
-		constexpr const T* ptr() const { return (_Mydata); }
-
-		constexpr size_t size() const { return (4); }
-		template<size_t N> Vec_<N, T> V(const char* _Selector) const { return ( vector_selector<N>(_Mydata, _Selector) ); }
-
-		union {
-			struct { T x, y, z, w; };
-			struct { T r, g, b, a; };
-			T _Mydata[4];
-		};
-	};
-
-	template<typename T> inline
-	std::string to_string( _in(Vec4_<T>) _Src ) {
-		return ( static_cast<std::string>(_Src) );
-	}
-
-	using Vec4f = Vec4_<float>;
-	using Vec4d = Vec4_<double>;
-	using Vec4i = Vec4_<int>;
-	using Vec4  = Vec4_<real_t>;
-
 	//- - - - - - - - - - - - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-	//- - - - - - - - - - - - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-#ifndef  cX
-	constexpr Vec3 cX = Vec3(1.f, 0.f, 0.f);
-#endif
-#ifndef  cY
-	constexpr Vec3 cY = Vec3(0.f, 1.f, 0.f);
-#endif
-#ifndef  cZ
-	constexpr Vec3 cZ = Vec3(0.f, 0.f, 1.f);
-#endif
 
 	
 
@@ -717,415 +481,463 @@ namespace clmagic
 				vec_<5, joint> _Actorjoint{ };
 				...
 	*/
-	template<size_t N, typename T>
-	struct Vec_
-	{
-		using myself_type = Vec_<N, T>;
-		using value_type = T;
-		using reference = T & ;
-		using const_reference = const T&;
-		using pointer = T * ;
-		using const_pointer = const T*;
-		using iterator = typename std::_Array_iterator<T, N>;
-		using const_iterator = typename std::_Array_const_iterator<T, N>;
+		template<size_t N, typename T = real_t>
+		struct Vec_ {
+			static_assert(N > 1, "Vec_<> size error");
 
-		static_assert(N > 1, "Vec_<> size error");
+			using value_type = T;
+			using vector_type = Vec_<N, T>;
+			using iterator = typename std::_Array_iterator<T, N>;
+			using const_iterator = typename std::_Array_const_iterator<T, N>;
 
-		// < static >
-		static Vec_<N, T> all( _in(T) _Val );
-		static Vec_<N, T> zero( );
-		// </ static >
-
-		// < construct >
-		constexpr Vec_() : _Mydata{ T(0) } { /* empty */ }
-		explicit  Vec_(_in(T) _All);
-		constexpr Vec_(_in(T) _Val0, _in(T) _Val1) : _Mydata{ _Val0,_Val1 } { static_assert(N >= 2, "size < 2"); }
-		constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2) : _Mydata{ _Val0,_Val1,_Val2 } { static_assert(N >= 3, "size < 3"); }
-		constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3) : _Mydata{ _Val0,_Val1,_Val2,_Val3 } { static_assert(N >= 4, "size < 4"); }
-		constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4 } { static_assert(N >= 5, "size < 5"); }
-		constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5 } { static_assert(N >= 6, "size < 6"); }
-		constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6 } { static_assert(N >= 7, "size < 7"); }
-		constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6, _in(T) _Val7) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6,_Val7 } { static_assert(N >= 8, "size < 8"); }
-		constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6, _in(T) _Val7, _in(T) _Val8) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6,_Val7,_Val8 } { static_assert(N >= 9, "size < 9"); }
-		constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6, _in(T) _Val7, _in(T) _Val8, _in(T) _Val9) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6,_Val7,_Val8,_Val9 } { static_assert(N >= 10, "size < 10"); }
-		constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6, _in(T) _Val7, _in(T) _Val8, _in(T) _Val9, _in(T) _Val10) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6,_Val7,_Val8,_Val9,_Val10 } { static_assert(N >= 11, "size < 11"); }
-		constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6, _in(T) _Val7, _in(T) _Val8, _in(T) _Val9, _in(T) _Val10, _in(T) _Val11) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6,_Val7,_Val8,_Val9,_Val10,_Val11 } { static_assert(N >= 12, "size < 12"); }
-		constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6, _in(T) _Val7, _in(T) _Val8, _in(T) _Val9, _in(T) _Val10, _in(T) _Val11, _in(T) _Val12) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6,_Val7,_Val8,_Val9,_Val10,_Val11,_Val12 } { static_assert(N >= 13, "size < 13"); }
-		constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6, _in(T) _Val7, _in(T) _Val8, _in(T) _Val9, _in(T) _Val10, _in(T) _Val11, _in(T) _Val12, _in(T) _Val13) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6,_Val7,_Val8,_Val9,_Val10,_Val11,_Val12,_Val13 } { static_assert(N >= 14, "size < 14"); }
-		constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6, _in(T) _Val7, _in(T) _Val8, _in(T) _Val9, _in(T) _Val10, _in(T) _Val11, _in(T) _Val12, _in(T) _Val13, _in(T) _Val14) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6,_Val7,_Val8,_Val9,_Val10,_Val11,_Val12,_Val13,_Val14 } { static_assert(N >= 15, "size < 15"); }
-		constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6, _in(T) _Val7, _in(T) _Val8, _in(T) _Val9, _in(T) _Val10, _in(T) _Val11, _in(T) _Val12, _in(T) _Val13, _in(T) _Val14, _in(T) _Val15) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6,_Val7,_Val8,_Val9,_Val10,_Val11,_Val12,_Val13,_Val14,_Val15 } { static_assert(N >= 16, "size < 16"); }
-		/*
-		std::vector<std::string> _Vecstr;
-		for (size_t i = 1; i != 16; ++i)
-			{
-			std::string _Str = "constexpr vec_(";
-			for (size_t j = 0; j <= i; ++j)
-				{
-				_Str += " _in(T)";
-				_Str += " _Val" + std::to_string(j);
-				_Str += ",";
+			/* < construct > */
+			constexpr Vec_() : _Mydata{ T(0) } { }
+			explicit  Vec_(_in(T) _All) { for (size_t i = 0; i != N; ++i) { _Mydata[i] = _All; } }
+			constexpr Vec_(_in(T) _Val0, _in(T) _Val1) : _Mydata{ _Val0,_Val1 } { static_assert(N >= 2, "size < 2"); }
+			constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2) : _Mydata{ _Val0,_Val1,_Val2 } { static_assert(N >= 3, "size < 3"); }
+			constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3) : _Mydata{ _Val0,_Val1,_Val2,_Val3 } { static_assert(N >= 4, "size < 4"); }
+			constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4 } { static_assert(N >= 5, "size < 5"); }
+			constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5 } { static_assert(N >= 6, "size < 6"); }
+			constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6 } { static_assert(N >= 7, "size < 7"); }
+			constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6, _in(T) _Val7) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6,_Val7 } { static_assert(N >= 8, "size < 8"); }
+			constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6, _in(T) _Val7, _in(T) _Val8) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6,_Val7,_Val8 } { static_assert(N >= 9, "size < 9"); }
+			constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6, _in(T) _Val7, _in(T) _Val8, _in(T) _Val9) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6,_Val7,_Val8,_Val9 } { static_assert(N >= 10, "size < 10"); }
+			constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6, _in(T) _Val7, _in(T) _Val8, _in(T) _Val9, _in(T) _Val10) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6,_Val7,_Val8,_Val9,_Val10 } { static_assert(N >= 11, "size < 11"); }
+			constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6, _in(T) _Val7, _in(T) _Val8, _in(T) _Val9, _in(T) _Val10, _in(T) _Val11) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6,_Val7,_Val8,_Val9,_Val10,_Val11 } { static_assert(N >= 12, "size < 12"); }
+			constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6, _in(T) _Val7, _in(T) _Val8, _in(T) _Val9, _in(T) _Val10, _in(T) _Val11, _in(T) _Val12) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6,_Val7,_Val8,_Val9,_Val10,_Val11,_Val12 } { static_assert(N >= 13, "size < 13"); }
+			constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6, _in(T) _Val7, _in(T) _Val8, _in(T) _Val9, _in(T) _Val10, _in(T) _Val11, _in(T) _Val12, _in(T) _Val13) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6,_Val7,_Val8,_Val9,_Val10,_Val11,_Val12,_Val13 } { static_assert(N >= 14, "size < 14"); }
+			constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6, _in(T) _Val7, _in(T) _Val8, _in(T) _Val9, _in(T) _Val10, _in(T) _Val11, _in(T) _Val12, _in(T) _Val13, _in(T) _Val14) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6,_Val7,_Val8,_Val9,_Val10,_Val11,_Val12,_Val13,_Val14 } { static_assert(N >= 15, "size < 15"); }
+			constexpr Vec_(_in(T) _Val0, _in(T) _Val1, _in(T) _Val2, _in(T) _Val3, _in(T) _Val4, _in(T) _Val5, _in(T) _Val6, _in(T) _Val7, _in(T) _Val8, _in(T) _Val9, _in(T) _Val10, _in(T) _Val11, _in(T) _Val12, _in(T) _Val13, _in(T) _Val14, _in(T) _Val15) : _Mydata{ _Val0,_Val1,_Val2,_Val3,_Val4,_Val5,_Val6,_Val7,_Val8,_Val9,_Val10,_Val11,_Val12,_Val13,_Val14,_Val15 } { static_assert(N >= 16, "size < 16"); }
+			/*
+			std::vector<std::string> _Vecstr;
+			for (size_t i = 1; i != 16; ++i) {
+				std::string _Str = "constexpr vec_(";
+				for (size_t j = 0; j <= i; ++j) {
+					_Str += " _in(T)";
+					_Str += " _Val" + std::to_string(j);
+					_Str += ",";
 				}
-			_Str.pop_back();
-			_Str += ")";
+				_Str.back() = ')';
 
-			_Str += " : data{";
-			for (size_t j = 0; j <= i; ++j)
-				{
-				_Str += "_Val" + std::to_string(j);
-				_Str += ",";
-				}
-			_Str.pop_back();
-			_Str += "}";
+				_Str += " : data{";
+				for (size_t j = 0; j <= i; ++j)
+					{
+					_Str += "_Val" + std::to_string(j);
+					_Str += ",";
+					}
+					_Str.back() = '}';
 
-			_Str += "{ ";
-			_Str += "static_assert(N >=" + std::to_string(i + 1) + ", \"size < " + std::to_string(i + 1) + "\");";
-			_Str += "}";
-			_Vecstr.push_back(_Str);
+				_Str += "{ ";
+				_Str += "static_assert(N >=" + std::to_string(i + 1) + ", \"size < " + std::to_string(i + 1) + "\");";
+				_Str += "}";
+				_Vecstr.push_back(_Str);
 			}
+			*/
+			template<typename _Fn>
+				Vec_(_in(Vec_) _A, _Fn _Func) : _Mydata() {
+					for (size_t i = 0; i != N; ++i) { _Mydata[i] = _Func(_A[i]); }
+				}
+
+			template<typename _Fn>
+				Vec_(_in(Vec_) _A, _in(Vec_) _B, _Fn _Func) : _Mydata() {
+					for (size_t i = 0; i != N; ++i) { _Mydata[i] = _Func(_A[i], _B[i]); }
+				}
+
+			template<typename _Fn>
+				Vec_(_in(Vec_) _A, _in(T) _B, _Fn _Func) : _Mydata() {
+					for (size_t i = 0; i != N; ++i) { _Mydata[i] = _Func(_A[i], _B); }
+				}
+
+			template<typename _Fn>
+				Vec_(_in(T) _A, _in(Vec_) _B, _Fn _Func) : _Mydata() {
+					for (size_t i = 0; i != N; ++i) { _Mydata[i] = _Func(_A, _B[i]); }
+				}
+
+			operator SIMDVec4_<T>() const {
+				if (N >= 4) {
+					return (SIMDVec4_<T>(_Mydata[0], _Mydata[1], _Mydata[2], _Mydata[3]));
+				} else if (N == 3) {
+					return (SIMDVec4_<T>(_Mydata[0], _Mydata[1], _Mydata[2], T(0)));
+				} else {
+					return (SIMDVec4_<T>(_Mydata[0], _Mydata[1], T(0), T(0)));
+				}
+			}
+			/* </ construct > */
+
+			constexpr       T* begin() { return (_Mydata); }
+			constexpr       T* end()   { return (_Mydata + N); }
+			constexpr const T* begin() const { return (_Mydata); }
+			constexpr const T* end()   const { return (_Mydata + N); }
+
+			constexpr   size_t size() const { return (N); }
+			constexpr       T* ptr()           { return (_Mydata); }
+			constexpr const T* ptr() const        { return (_Mydata); }
+			constexpr       T* ptr(size_t _Pos)      { return (_Mydata + _Pos); }
+			constexpr const T* ptr(size_t _Pos) const   { return (_Mydata + _Pos); }
+			constexpr       T& operator[](size_t _Pos)     { return (_Mydata[_Pos]); }
+			constexpr const T& operator[](size_t _Pos) const  { return (_Mydata[_Pos]); }
+
+			template<typename _Fn>
+				void assign(_in(Vec_) _A, _Fn _Func) {
+					for (size_t i = 0; i != N; ++i) { _Mydata[i] = _Func(_A[i]); }
+				}
+
+			template<typename _Fn>
+				void assign(_in(Vec_) _A, _in(Vec_) _B, _Fn _Func) {
+					for (size_t i = 0; i != N; ++i) { _Mydata[i] = _Func(_A[i], _B[i]); }
+				}
+
+			template<typename _Fn>
+				void assign(_in(Vec_) _A, _in(T) _B, _Fn _Func) {
+					for (size_t i = 0; i != N; ++i) { _Mydata[i] = _Func(_A[i], _B); }
+				}
+
+			template<typename _Fn>
+				void assign(_in(T) _A, _in(Vec_) _B, _Fn _Func) {
+					for (size_t i = 0; i != N; ++i) { _Mydata[i] = _Func(_A, _B[i]); }
+				}
+
+			template<typename ..._Tys>
+				auto shuffle(_Tys... _Selector) const ->decltype( Vec_<std::tuple_size<std::tuple<_Tys...>>::value, T>(/* empty */) ) {
+					return ( clmagic::shuffle< Vec_</*bg*/std::tuple_size<std::tuple<_Tys...>>::value/*ed*/, T> >(*this, _Selector...) );
+				}
+
+			Vec_& operator+=(_in(Vec_) _B) { this->assign(*this, _B, [](T a, T b) { return (a + b); }); return (*this); }
+			Vec_& operator-=(_in(Vec_) _B) { this->assign(*this, _B, [](T a, T b) { return (a - b); }); return (*this); }
+			Vec_& operator*=(_in(Vec_) _B) { this->assign(*this, _B, [](T a, T b) { return (a * b); }); return (*this); }
+			Vec_& operator*=(_in(T)    _B) { this->assign(*this, _B, [](T a, T b) { return (a * b); }); return (*this); }
+			Vec_& operator/=(_in(Vec_) _B) { this->assign(*this, _B, [](T a, T b) { return (a / b); }); return (*this); }
+			Vec_& operator/=(_in(T)    _B) { this->assign(*this, _B, [](T a, T b) { return (a / b); }); return (*this); }
+			Vec_& incr      (_in(Vec_) _B) { this->assign(*this, _B, [](T a, T b) { return (a + b); }); return (*this); }
+			Vec_& incr      (_in(T)    _B) { this->assign(*this, _B, [](T a, T b) { return (a + b); }); return (*this); }
+			Vec_& decr      (_in(Vec_) _B) { this->assign(*this, _B, [](T a, T b) { return (a - b); }); return (*this); }
+			Vec_& decr      (_in(T)    _B) { this->assign(*this, _B, [](T a, T b) { return (a - b); }); return (*this); }
+
+			friend Vec_ operator+(_in(Vec_) _A, _in(Vec_) _B) { return (Vec_(_A, _B, [](T a, T b) { return (a + b); })); }
+			friend Vec_ operator-(_in(Vec_) _A, _in(Vec_) _B) { return (Vec_(_A, _B, [](T a, T b) { return (a - b); })); }
+			friend Vec_ operator*(_in(Vec_) _A, _in(Vec_) _B) { return (Vec_(_A, _B, [](T a, T b) { return (a * b); })); }
+			friend Vec_ operator*(_in(Vec_) _A, _in(T)    _B) { return (Vec_(_A, _B, [](T a, T b) { return (a * b); })); }
+			friend Vec_ operator*(_in(T)    _A, _in(Vec_) _B) { return (Vec_(_A, _B, [](T a, T b) { return (a * b); })); }
+			friend Vec_ operator/(_in(Vec_) _A, _in(Vec_) _B) { return (Vec_(_A, _B, [](T a, T b) { return (a / b); })); }
+			friend Vec_ operator/(_in(Vec_) _A, _in(T)    _B) { return (Vec_(_A, _B, [](T a, T b) { return (a / b); })); }
+			friend Vec_ operator/(_in(T)    _A, _in(Vec_) _B) { return (Vec_(_A, _B, [](T a, T b) { return (a / b); })); }
+			friend Vec_ incr     (_in(Vec_) _A, _in(Vec_) _B) { return (Vec_(_A, _B, [](T a, T b) { return (a + b); })); }
+			friend Vec_ incr     (_in(Vec_) _A, _in(T)    _B) { return (Vec_(_A, _B, [](T a, T b) { return (a + b); })); }
+			friend Vec_ decr     (_in(Vec_) _A, _in(Vec_) _B) { return (Vec_(_A, _B, [](T a, T b) { return (a - b); })); }
+			friend Vec_ decr     (_in(Vec_) _A, _in(T)    _B) { return (Vec_(_A, _B, [](T a, T b) { return (a - b); })); }
+
+			friend Vec_ mod      (_in(Vec_) _A, _in(Vec_) _B) { return (Vec_(_A, _B, [](T a, T b) { return mod(a, b); })); }
+			friend Vec_ mod      (_in(Vec_) _A, _in(T)    _B) { return (Vec_(_A, _B, [](T a, T b) { return mod(a, b); })); }
+			friend Vec_ floor    (_in(Vec_) _A    /* void */) { return (Vec_(_A,     [](T x     ) { return floor(x);  })); }
+			friend Vec_ ceil     (_in(Vec_) _A    /* void */) { return (Vec_(_A,     [](T x     ) { return ceil(x);   })); }
+			friend Vec_ trunc    (_in(Vec_) _A    /* void */) { return (Vec_(_A,     [](T x     ) { return trunc(x);  })); }
+
+			friend Vec_ sqrt     (_in(Vec_) _A    /* void */) { return (Vec_(_A,     [](T x     ) { return sqrt(x);   })); }
+			friend Vec_ exp      (_in(Vec_) _A    /* void */) { return (Vec_(_A,     [](T x     ) { return exp(x);    })); }
+			friend Vec_ exp2     (_in(Vec_) _A    /* void */) { return (Vec_(_A,     [](T x     ) { return exp2(x);   })); }
+
+			friend Vec_ pow      (_in(Vec_) _A, _in(Vec_) _B) { return (Vec_(_A, _B, [](T a, T b) { return pow(a, b); })); }
+			friend Vec_ pow      (_in(Vec_) _A, _in(T)    _B) { return (Vec_(_A, _B, [](T a, T b) { return pow(a, b); })); }
+
+			friend Vec_ log10    (_in(Vec_) _A    /* void */) { return (Vec_(_A,     [](T x     ) { return log10(x);  })); }
+			friend Vec_ log2     (_in(Vec_) _A    /* void */) { return (Vec_(_A,     [](T x     ) { return log2(x);   })); }
+			friend Vec_ loge     (_in(Vec_) _A    /* void */) { return (Vec_(_A,     [](T x     ) { return loge(x);   })); }
+
+			friend Vec_ sin      (_in(Vec_) _A    /* void */) { return (Vec_(_A,     [](T x     ) { return sin(x);    })); }
+			friend Vec_ cos      (_in(Vec_) _A    /* void */) { return (Vec_(_A,     [](T x     ) { return cos(x);    })); }
+			friend Vec_ tan      (_in(Vec_) _A    /* void */) { return (Vec_(_A,     [](T x     ) { return tan(x);    })); }
+
+			friend Vec_ asin     (_in(Vec_) _A    /* void */) { return (Vec_(_A,     [](T x     ) { return asin(x);   })); }
+			friend Vec_ acos     (_in(Vec_) _A    /* void */) { return (Vec_(_A,     [](T x     ) { return acos(x);   })); }
+			friend Vec_ atan     (_in(Vec_) _A    /* void */) { return (Vec_(_A,     [](T x     ) { return atan(x);   })); }
+			friend Vec_ atan     (_in(Vec_) _Y, _in(Vec_) _X) { return (Vec_(_A, _B, [](T y, T x) { return atan(y, x); })); }
+
+			friend T    dot2     (_in(Vec_) _A, _in(Vec_) _B) { auto _Tmp = _A * _B; return (_Tmp[0] + _Tmp[1]); }
+			friend T    dot3     (_in(Vec_) _A, _in(Vec_) _B) { auto _Tmp = _A * _B; return (_Tmp[0] + _Tmp[1] + _Tmp[2]); }
+			friend T    dot4     (_in(Vec_) _A, _in(Vec_) _B) { auto _Tmp = _A * _B; return (_Tmp[0] + _Tmp[1] + _Tmp[2] + _Tmp[3]); }
+			friend Vec_ cross3   (_in(Vec_) _A, _in(Vec_) _B) { return (_A.shuffle(1, 2, 0) * _B.shuffle(2, 0, 1) - _A.shuffle(2, 0, 1) * _B.shuffle(1, 2, 0)); }
+
+			friend std::string to_string(_in(Vec_<N, T>) _A) {
+				using std::to_string;
+				std::string _Str = "Vec" + to_string(_A.size()) + "[";
+				for (size_t i = 0; i != _A.size(); ++i) {
+					_Str += to_string(_A[i]) + ",";
+				}
+				_Str.back() = ']';
+				return (_Str);
+			}
+
+			friend std::ostream& operator<<(_inout(std::ostream) _Ostr, _in(Vec_<N, T>) _A) {
+				return (_Ostr << to_string(_A));
+			}
+
+			T _Mydata[N];
+		};// struct Vec_<>
+
+
+		template<> template<typename _Fn> inline
+			Vec_<2, float>::Vec_(_in(Vec_) _A, _Fn _Func)
+			: _Mydata{ _Func(_A[0]), _Func(_A[1]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<2, float>::Vec_(_in(Vec_) _A, _in(Vec_) _B, _Fn _Func)
+			: _Mydata{ _Func(_A[0], _B[0]), _Func(_A[1], _B[1]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<2, float>::Vec_(_in(Vec_) _A, _in(float) _B, _Fn _Func)
+			: _Mydata{ _Func(_A[0], _B), _Func(_A[1], _B) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<2, float>::Vec_(_in(float) _A, _in(Vec_) _B, _Fn _Func)
+			: _Mydata{ _Func(_A, _B[0]), _Func(_A, _B[1]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<2, double>::Vec_(_in(Vec_) _A, _Fn _Func)
+			: _Mydata{ _Func(_A[0]), _Func(_A[1]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<2, double>::Vec_(_in(Vec_) _A, _in(Vec_) _B, _Fn _Func)
+			: _Mydata{ _Func(_A[0], _B[0]), _Func(_A[1], _B[1]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<2, double>::Vec_(_in(Vec_) _A, _in(double) _B, _Fn _Func)
+			: _Mydata{ _Func(_A[0], _B), _Func(_A[1], _B) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<2, double>::Vec_(_in(double) _A, _in(Vec_) _B, _Fn _Func)
+			: _Mydata{ _Func(_A, _B[0]), _Func(_A, _B[1]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<2, int>::Vec_(_in(Vec_) _A, _Fn _Func)
+			: _Mydata{ _Func(_A[0]), _Func(_A[1]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<2, int>::Vec_(_in(Vec_) _A, _in(Vec_) _B, _Fn _Func)
+			: _Mydata{ _Func(_A[0], _B[0]), _Func(_A[1], _B[1]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<2, int>::Vec_(_in(Vec_) _A, _in(int) _B, _Fn _Func)
+			: _Mydata{ _Func(_A[0], _B), _Func(_A[1], _B) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<2, int>::Vec_(_in(int) _A, _in(Vec_) _B, _Fn _Func)
+			: _Mydata{ _Func(_A, _B[0]), _Func(_A, _B[1]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<3, float>::Vec_(_in(Vec_) _A, _Fn _Func)
+			: _Mydata{ _Func(_A[0]), _Func(_A[1]), _Func(_A[2]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<3, float>::Vec_(_in(Vec_) _A, _in(Vec_) _B, _Fn _Func)
+			: _Mydata{ _Func(_A[0], _B[0]), _Func(_A[1], _B[1]), _Func(_A[2], _B[2]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<3, float>::Vec_(_in(Vec_) _A, _in(float) _B, _Fn _Func)
+			: _Mydata{ _Func(_A[0], _B), _Func(_A[1], _B), _Func(_A[2], _B) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<3, float>::Vec_(_in(float) _A, _in(Vec_) _B, _Fn _Func)
+			: _Mydata{ _Func(_A, _B[0]), _Func(_A, _B[1]), _Func(_A, _B[2]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<3, double>::Vec_(_in(Vec_) _A, _Fn _Func)
+			: _Mydata{ _Func(_A[0]), _Func(_A[1]), _Func(_A[2]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<3, double>::Vec_(_in(Vec_) _A, _in(Vec_) _B, _Fn _Func)
+			: _Mydata{ _Func(_A[0], _B[0]), _Func(_A[1], _B[1]), _Func(_A[2], _B[2]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<3, double>::Vec_(_in(Vec_) _A, _in(double) _B, _Fn _Func)
+			: _Mydata{ _Func(_A[0], _B), _Func(_A[1], _B), _Func(_A[2], _B) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<3, double>::Vec_(_in(double) _A, _in(Vec_) _B, _Fn _Func)
+			: _Mydata{ _Func(_A, _B[0]), _Func(_A, _B[1]), _Func(_A, _B[2]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<3, int>::Vec_(_in(Vec_) _A, _Fn _Func)
+			: _Mydata{ _Func(_A[0]), _Func(_A[1]), _Func(_A[2]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<3, int>::Vec_(_in(Vec_) _A, _in(Vec_) _B, _Fn _Func)
+			: _Mydata{ _Func(_A[0], _B[0]), _Func(_A[1], _B[1]), _Func(_A[2], _B[2]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<3, int>::Vec_(_in(Vec_) _A, _in(int) _B, _Fn _Func)
+			: _Mydata{ _Func(_A[0], _B), _Func(_A[1], _B), _Func(_A[2], _B) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<3, int>::Vec_(_in(int) _A, _in(Vec_) _B, _Fn _Func)
+			: _Mydata{ _Func(_A, _B[0]), _Func(_A, _B[1]), _Func(_A, _B[2]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<4, float>::Vec_(_in(Vec_) _A, _Fn _Func)
+			: _Mydata{ _Func(_A[0]), _Func(_A[1]), _Func(_A[2]), _Func(_A[3]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<4, float>::Vec_(_in(Vec_) _A, _in(Vec_) _B, _Fn _Func)
+			: _Mydata{ _Func(_A[0], _B[0]), _Func(_A[1], _B[1]), _Func(_A[2], _B[2]), _Func(_A[3], _B[3]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<4, float>::Vec_(_in(Vec_) _A, _in(float) _B, _Fn _Func)
+			: _Mydata{ _Func(_A[0], _B), _Func(_A[1], _B), _Func(_A[2], _B), _Func(_A[3], _B) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<4, float>::Vec_(_in(float) _A, _in(Vec_) _B, _Fn _Func)
+			: _Mydata{ _Func(_A, _B[0]), _Func(_A, _B[1]), _Func(_A, _B[2]), _Func(_A, _B[3]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<4, double>::Vec_(_in(Vec_) _A, _Fn _Func)
+			: _Mydata{ _Func(_A[0]), _Func(_A[1]), _Func(_A[2]), _Func(_A[3]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<4, double>::Vec_(_in(Vec_) _A, _in(Vec_) _B, _Fn _Func)
+			: _Mydata{ _Func(_A[0], _B[0]), _Func(_A[1], _B[1]), _Func(_A[2], _B[2]), _Func(_A[3], _B[3]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<4, double>::Vec_(_in(Vec_) _A, _in(double) _B, _Fn _Func)
+			: _Mydata{ _Func(_A[0], _B), _Func(_A[1], _B), _Func(_A[2], _B), _Func(_A[3], _B) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<4, double>::Vec_(_in(double) _A, _in(Vec_) _B, _Fn _Func)
+			: _Mydata{ _Func(_A, _B[0]), _Func(_A, _B[1]), _Func(_A, _B[2]), _Func(_A, _B[3]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<4, int>::Vec_(_in(Vec_) _A, _Fn _Func)
+			: _Mydata{ _Func(_A[0]), _Func(_A[1]), _Func(_A[2]), _Func(_A[3]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<4, int>::Vec_(_in(Vec_) _A, _in(Vec_) _B, _Fn _Func)
+			: _Mydata{ _Func(_A[0], _B[0]), _Func(_A[1], _B[1]), _Func(_A[2], _B[2]), _Func(_A[3], _B[3]) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<4, int>::Vec_(_in(Vec_) _A, _in(int) _B, _Fn _Func)
+			: _Mydata{ _Func(_A[0], _B), _Func(_A[1], _B), _Func(_A[2], _B), _Func(_A[3], _B) } { }
+
+		template<> template<typename _Fn> inline
+			Vec_<4, int>::Vec_(_in(int) _A, _in(Vec_) _B, _Fn _Func)
+			: _Mydata{ _Func(_A, _B[0]), _Func(_A, _B[1]), _Func(_A, _B[2]), _Func(_A, _B[3]) } { }
+		/*
+		constexpr static size_t eNone = 0;
+		constexpr static size_t eVector = 1;
+		constexpr static size_t eScalar = 2;
+
+		auto _Cast_arg = [](size_t _Tyleft, size_t _Tyright, std::string _Ty) -> std::string {
+			char   _Str[1024];
+			size_t _Endpos = 0;
+			if (_Tyleft == eVector && _Tyright == eVector) {
+				_Endpos = snprintf(_Str, 1023, "_in(Vec_) _A, _in(Vec_) _B");
+			} else if (_Tyleft == eScalar && _Tyright == eVector) {
+				_Endpos = snprintf(_Str, 1023, "_in(%s) _A, _in(Vec_) _B", _Ty.c_str());
+			} else if (_Tyleft == eVector && _Tyright == eScalar) {
+				_Endpos = snprintf(_Str, 1023, "_in(Vec_) _A, _in(%s) _B", _Ty.c_str());
+			} else if (_Tyleft == eNone || _Tyright == eNone) {
+				return ("_in(Vec_) _A");
+			}
+			return (std::string(_Str, _Str + _Endpos));
+		};
+
+		auto _Cast_call = [](size_t i, size_t _Tyleft, size_t _Tyright) -> std::string {
+			char _Str[1024];
+			size_t _Endpos = 0;
+			using std::to_string;
+			if (_Tyleft == eVector && _Tyright == eVector) {
+				_Endpos = snprintf(_Str, 1023, "_A[%i], _B[%i]", i, i);
+			} else if (_Tyleft == eScalar && _Tyright == eVector) {
+				_Endpos = snprintf(_Str, 1023, "_A, _B[%i]", i);
+			} else if (_Tyleft == eVector && _Tyright == eScalar) {
+				_Endpos = snprintf(_Str, 1023, "_A[%i], _B", i);
+			} else if (_Tyleft == eNone || _Tyright == eNone) {
+				_Endpos = snprintf(_Str, 1023, "_A[%i]", i);
+			}
+			return (std::string(_Str, _Str + _Endpos));
+		};
+
+		auto _Func_decl = [_Cast_arg, _Cast_call](std::string _Funcname, size_t N, std::string _Ty, size_t _Tyleft, size_t _Tyright) -> std::string {
+			char _Str[4096];
+			size_t _Endpos = 0;
+			if (_Funcname == "Vec_") {
+				std::string _Str_call;
+				for (size_t i = 0; i != N; ++i) {
+					_Str_call += "_Func(" + _Cast_call(i, _Tyleft, _Tyright) + ")";
+					if (i != N - 1) _Str_call += ", ";
+				}
+
+				_Endpos = snprintf(_Str, 4095,
+					"template<> template<typename _Fn> inline\n"
+					"   Vec_<%i, %s>::%s(%s, _Fn _Func)\n"
+					"      : _Mydata{%s} { }", N, _Ty.c_str(), _Funcname.c_str(), _Cast_arg(_Tyleft, _Tyright, _Ty).c_str(), _Str_call.c_str());
+			} else {
+				std::string _Str_call;
+				for (size_t i = 0; i != N; ++i) {
+					_Str_call += "_Mydata[" + std::to_string(i) + "] = _Func(" + _Cast_call(i, _Tyleft, _Tyright) + "); ";
+				}
+
+				_Endpos = snprintf(_Str, 4095,
+					"template<> template<typename _Fn> inline\n"
+					"   void Vec_<%i, %s>::%s(%s, _Fn _Func)\n"
+					"   { %s }", N, _Ty.c_str(), _Funcname.c_str(), _Cast_arg(_Tyleft, _Tyright, _Ty).c_str(), _Str_call.c_str());
+			}
+
+			return (std::string(_Str, _Str + _Endpos));
+		};
+
+		for (size_t N = 2; N <= 4; ++N) {
+			std::cout << _Func_decl("Vec_", N, "float", eVector, eNone) << std::endl << std::endl;
+			std::cout << _Func_decl("Vec_", N, "float", eVector, eVector) << std::endl << std::endl;
+			std::cout << _Func_decl("Vec_", N, "float", eVector, eScalar) << std::endl << std::endl;
+			std::cout << _Func_decl("Vec_", N, "float", eScalar, eVector) << std::endl << std::endl;
+			std::cout << _Func_decl("Vec_", N, "double", eVector, eNone) << std::endl << std::endl;
+			std::cout << _Func_decl("Vec_", N, "double", eVector, eVector) << std::endl << std::endl;
+			std::cout << _Func_decl("Vec_", N, "double", eVector, eScalar) << std::endl << std::endl;
+			std::cout << _Func_decl("Vec_", N, "double", eScalar, eVector) << std::endl << std::endl;
+			std::cout << _Func_decl("Vec_", N, "int", eVector, eNone) << std::endl << std::endl;
+			std::cout << _Func_decl("Vec_", N, "int", eVector, eVector) << std::endl << std::endl;
+			std::cout << _Func_decl("Vec_", N, "int", eVector, eScalar) << std::endl << std::endl;
+			std::cout << _Func_decl("Vec_", N, "int", eScalar, eVector) << std::endl << std::endl;
+		}
 		*/
-		explicit Vec_(_in(Vec2_<T>) _Right);
-		explicit Vec_(_in(Vec3_<T>) _Right);
-		explicit Vec_(_in(Vec4_<T>) _Right);
-		explicit Vec_(_in(Mat_<1, N, T>) _Right);
-		template<typename _Iter> Vec_(_Iter _First, _Iter _Last);
-		// </ construct >
 
-		// < convert >
-		explicit operator std::string() const;
-		template<size_t N2> 
-				 operator Vec_<N2, T>() const;
-		explicit operator	    T*()	   { return(_Mydata); }
-		explicit operator const T*() const { return(_Mydata); }
-		         operator Vec2_<T>() const { return (Vec2_<T>(at(0), at(1))); }
-		         operator Vec3_<T>() const { return (Vec3_<T>(at(0), at(1), at(2))); }
-		         operator Vec4_<T>() const { return (Vec4_<T>(at(0), at(1), at(2), at(3))); }
-		// </ convert >
 
-		// < behavior >
-		template<typename _Iter> void assign(_Iter _First, _Iter _Last);
-		void assign(std::initializer_list<T> _Ilist);
+		using Vec2b = Vec_<2, char>;
+		using Vec2i = Vec_<2, int>;
+		using Vec2ui = Vec_<2, unsigned int>;
+		using Vec2f = Vec_<2, float>;
+		using Vec2d = Vec_<2, double>;
+		using Vec2 = Vec2f;
 
-		constexpr       T& operator[](size_t _Pos)       { return ( _Mydata[_Pos] ); }
-		constexpr const T& operator[](size_t _Pos) const { return ( _Mydata[_Pos] ); }
-		constexpr	    T& at(size_t _Pos)       { return ( _Mydata[_Pos] ); }
-		constexpr const T& at(size_t _Pos) const { return ( _Mydata[_Pos] ); }
-		constexpr	    T* ptr()       { return ( _Mydata ); }
-		constexpr const T* ptr() const { return ( _Mydata ); }
+		using Vec3b = Vec_<3, char>;
+		using Vec3i = Vec_<3, int>;
+		using Vec3ui = Vec_<3, unsigned int>;
+		using Vec3f = Vec_<3, float>;
+		using Vec3d = Vec_<3, double>;
+		using Vec3 = Vec3f;
 
-		constexpr size_t size() const { return ( N ); }
+		using Vec4b = Vec_<4, char>;
+		using Vec4i = Vec_<4, int>;
+		using Vec4ui = Vec_<4, unsigned int>;
+		using Vec4f = Vec_<4, float>;
+		using Vec4d = Vec_<4, double>;
+		using Vec4 = Vec4f;
 
-		constexpr       iterator begin()	   { return (iterator(this->ptr(), 0) ); }
-		constexpr const_iterator begin() const { return (const_iterator(this->ptr(), 0)); }
-
-		constexpr       iterator end()	     { return ( iterator(this->ptr(), this->size()) ); }
-		constexpr const_iterator end() const { return ( const_iterator(this->ptr(), this->size()) ); }
-
-		template<size_t _N2>
-			Vec_<_N2, T> V(const char* _Selector) const { return ( vector_selector<_N2, T>(_Mydata, _Selector) ); }
-		// </ behavior >
-
-		T _Mydata[N];
-	};// end vec_N
 
 	// vec_<size_t, _Ty>::operator std::string() dependent on the this function
-	template<size_t N, typename T> inline
-		std::string to_string(_in(Vec_<N, T>) _Src)
-		{
-		return ( static_cast<std::string>(_Src) );
+	template<size_t N, typename T>
+		std::string to_string(_in(Vec_<N, T>) _Src) {
+			return ( static_cast<std::string>(_Src) );
 		}
 
+#ifndef  cX
+	constexpr Vec3 cX = Vec3(1.f, 0.f, 0.f);
+#endif
+#ifndef  cY
+	constexpr Vec3 cY = Vec3(0.f, 1.f, 0.f);
+#endif
+#ifndef  cZ
+	constexpr Vec3 cZ = Vec3(0.f, 0.f, 1.f);
+#endif
 
-
-	template<typename T> bool operator< (_in(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> bool operator< (_in(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> bool operator< (_in(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs);
-
-	template<typename T> bool operator> (_in(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> bool operator> (_in(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> bool operator> (_in(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs);
-
-	template<typename T> bool operator== (_in(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> bool operator== (_in(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> bool operator== (_in(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs);
-
-	template<typename T> bool operator<= (_in(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> bool operator<= (_in(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> bool operator<= (_in(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs);
-
-	template<typename T> bool operator>= (_in(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> bool operator>= (_in(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> bool operator>= (_in(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs);
-
-	template<typename T> Vec2_<T> operator- (_in(Vec2_<T>) _Lhs);
-	template<typename T> Vec3_<T> operator- (_in(Vec3_<T>) _Lhs);
-	template<typename T> Vec4_<T> operator- (_in(Vec4_<T>) _Lhs);
-	template<size_t N, typename T> Vec_<N, T> operator- (_in(Vec_<N, T>) _Lhs);
-
-	/* < ? vector vector > */
-	template<typename T> Vec2_<T> operator+ (_in(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> Vec3_<T> operator+ (_in(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> Vec4_<T> operator+ (_in(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator+ (_in(Vec_<N, T>) _Lhs, _in(Vec_<N, T>) _Rhs);
-
-	template<typename T> Vec2_<T> operator- (_in(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> Vec3_<T> operator- (_in(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> Vec4_<T> operator- (_in(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator- (_in(Vec_<N, T>) _Lhs, _in(Vec_<N, T>) _Rhs);
-	
-	template<typename T> Vec2_<T> operator* (_in(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> Vec3_<T> operator* (_in(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> Vec4_<T> operator* (_in(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator* (_in(Vec_<N, T>) _Lhs, _in(Vec_<N, T>) _Rhs);
-	template<> Vec3_<float> operator* (_in(Vec3_<float>) _Lhs, _in(Vec3_<float>) _Rhs);
-	template<> Vec4_<float> operator* (_in(Vec4_<float>) _Lhs, _in(Vec4_<float>) _Rhs);
-
-	template<typename T> Vec2_<T> operator/ (_in(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> Vec3_<T> operator/ (_in(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> Vec4_<T> operator/ (_in(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator/ (_in(Vec_<N, T>) _Lhs, _in(Vec_<N, T>) _Rhs);
-
-	template<typename T> Vec2_<T> operator% (_in(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> Vec3_<T> operator% (_in(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> Vec4_<T> operator% (_in(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator% (_in(Vec_<N, T>) _Lhs, _in(Vec_<N, T>) _Rhs);
-	/* </ ? vector vector > */
-
-	/* < ? vector scalar > */
-	/* this function is bad, but perfermance */
-	template<typename T> Vec2_<T> operator+ (_in(Vec2_<T>) _Lhs, _in(T) _Rhs);
-	template<typename T> Vec3_<T> operator+ (_in(Vec3_<T>) _Lhs, _in(T) _Rhs);
-	template<typename T> Vec4_<T> operator+ (_in(Vec4_<T>) _Lhs, _in(T) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator+ (_in(Vec_<N, T>) _Lhs, _in(T) _Rhs);
-
-	template<typename T> Vec2_<T> operator- (_in(Vec2_<T>) _Lhs, _in(T) _Rhs);
-	template<typename T> Vec3_<T> operator- (_in(Vec3_<T>) _Lhs, _in(T) _Rhs);
-	template<typename T> Vec4_<T> operator- (_in(Vec4_<T>) _Lhs, _in(T) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator- (_in(Vec_<N, T>) _Lhs, _in(T) _Rhs);
-
-	template<typename T> Vec2_<T> operator* (_in(Vec2_<T>) _Lhs, _in(T) _Rhs);
-	template<typename T> Vec3_<T> operator* (_in(Vec3_<T>) _Lhs, _in(T) _Rhs);
-	template<typename T> Vec4_<T> operator* (_in(Vec4_<T>) _Lhs, _in(T) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator* (_in(Vec_<N, T>) _Lhs, _in(T) _Rhs);
-
-	template<typename T> Vec2_<T> operator/ (_in(Vec2_<T>) _Lhs, _in(T) _Rhs);
-	template<typename T> Vec3_<T> operator/ (_in(Vec3_<T>) _Lhs, _in(T) _Rhs);
-	template<typename T> Vec4_<T> operator/ (_in(Vec4_<T>) _Lhs, _in(T) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator/ (_in(Vec_<N, T>) _Lhs, _in(T) _Rhs);
-
-	template<typename T> Vec2_<T> operator% (_in(Vec2_<T>) _Lhs, _in(T) _Rhs);
-	template<typename T> Vec3_<T> operator% (_in(Vec3_<T>) _Lhs, _in(T) _Rhs);
-	template<typename T> Vec4_<T> operator% (_in(Vec4_<T>) _Lhs, _in(T) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator% (_in(Vec_<N, T>) _Lhs, _in(T) _Rhs);
-
-	template<typename T> Vec2_<T> operator+ (_in(Vec2_<T>) _Lhs, _in(Real) _Rhs);
-	template<typename T> Vec3_<T> operator+ (_in(Vec3_<T>) _Lhs, _in(Real) _Rhs);
-	template<typename T> Vec4_<T> operator+ (_in(Vec4_<T>) _Lhs, _in(Real) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator+ (_in(Vec_<N, T>) _Lhs, _in(Real) _Rhs);
-
-	template<typename T> Vec2_<T> operator- (_in(Vec2_<T>) _Lhs, _in(Real) _Rhs);
-	template<typename T> Vec3_<T> operator- (_in(Vec3_<T>) _Lhs, _in(Real) _Rhs);
-	template<typename T> Vec4_<T> operator- (_in(Vec4_<T>) _Lhs, _in(Real) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator- (_in(Vec_<N, T>) _Lhs, _in(Real) _Rhs);
-
-	template<typename T> Vec2_<T> operator* (_in(Vec2_<T>) _Lhs, _in(Real) _Rhs);
-	template<typename T> Vec3_<T> operator* (_in(Vec3_<T>) _Lhs, _in(Real) _Rhs);
-	template<typename T> Vec4_<T> operator* (_in(Vec4_<T>) _Lhs, _in(Real) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator* (_in(Vec_<N, T>) _Lhs, _in(Real) _Rhs);
-
-	template<typename T> Vec2_<T> operator/ (_in(Vec2_<T>) _Lhs, _in(Real) _Rhs);
-	template<typename T> Vec3_<T> operator/ (_in(Vec3_<T>) _Lhs, _in(Real) _Rhs);
-	template<typename T> Vec4_<T> operator/ (_in(Vec4_<T>) _Lhs, _in(Real) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator/ (_in(Vec_<N, T>) _Lhs, _in(Real) _Rhs);
-
-	template<typename T> Vec2_<T> operator% (_in(Vec2_<T>) _Lhs, _in(Real) _Rhs);
-	template<typename T> Vec3_<T> operator% (_in(Vec3_<T>) _Lhs, _in(Real) _Rhs);
-	template<typename T> Vec4_<T> operator% (_in(Vec4_<T>) _Lhs, _in(Real) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator% (_in(Vec_<N, T>) _Lhs, _in(Real) _Rhs);
-	/* </ ? vector scalar > */
-
-	/* < ? scalar vector > */
-	template<typename T> Vec2_<T> operator* (_in(T) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> Vec3_<T> operator* (_in(T) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> Vec4_<T> operator* (_in(T) _Lhs, _in(Vec4_<T>) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator* (_in(T) _Lhs, _in(Vec_<N, T>) _Rhs);
-
-	template<typename T> Vec2_<T> operator/ (_in(T) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> Vec3_<T> operator/ (_in(T) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> Vec4_<T> operator/ (_in(T) _Lhs, _in(Vec4_<T>) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator/ (_in(T) _Lhs, _in(Vec_<N, T>) _Rhs);
-
-	template<typename T> Vec2_<T> operator* (_in(Real) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> Vec3_<T> operator* (_in(Real) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> Vec4_<T> operator* (_in(Real) _Lhs, _in(Vec4_<T>) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator* (_in(Real) _Lhs, _in(Vec_<N, T>) _Rhs);
-
-	template<typename T> Vec2_<T> operator/ (_in(Real) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> Vec3_<T> operator/ (_in(Real) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> Vec4_<T> operator/ (_in(Real) _Lhs, _in(Vec4_<T>) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> operator/ (_in(Real) _Lhs, _in(Vec_<N, T>) _Rhs);
-	/* </ ? scalar vector > */
-
-	/* < ? vector matrix > */
-	template<typename T> Vec2_<T> operator* (_in(Vec2_<T>) _Lhs, _in(Mat_<2, 2, T>) _Rhs);
-	template<typename T> Vec3_<T> operator* (_in(Vec2_<T>) _Lhs, _in(Mat_<2, 3, T>) _Rhs);
-	template<typename T> Vec4_<T> operator* (_in(Vec2_<T>) _Lhs, _in(Mat_<2, 4, T>) _Rhs);
-	template<typename T> Vec2_<T> operator* (_in(Vec3_<T>) _Lhs, _in(Mat_<3, 2, T>) _Rhs);
-	template<typename T> Vec3_<T> operator* (_in(Vec3_<T>) _Lhs, _in(Mat_<3, 3, T>) _Rhs);
-	template<typename T> Vec4_<T> operator* (_in(Vec3_<T>) _Lhs, _in(Mat_<3, 4, T>) _Rhs);
-	template<typename T> Vec2_<T> operator* (_in(Vec4_<T>) _Lhs, _in(Mat_<4, 2, T>) _Rhs);
-	template<typename T> Vec3_<T> operator* (_in(Vec4_<T>) _Lhs, _in(Mat_<4, 3, T>) _Rhs);
-	template<typename T> Vec4_<T> operator* (_in(Vec4_<T>) _Lhs, _in(Mat_<4, 4, T>) _Rhs);
-	template<size_t N, typename T, size_t P> Vec_<P, T> operator* (_in(Vec_<N, T>) _Lhs, _in(Mat_<N, P, T>) _Rhs);
-	/* </ ? vector matrix > */
-
-	/* < ?= vector vector > */
-	template<typename T> Vec2_<T>& operator+= (_inout(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> Vec3_<T>& operator+= (_inout(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> Vec4_<T>& operator+= (_inout(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs);
-	template<size_t N, typename T> Vec_<N, T>& operator+= (_inout(Vec_<N, T>) _Lhs, _in(Vec_<N, T>) _Rhs);
-
-	template<typename T> Vec2_<T>& operator-= (_inout(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> Vec3_<T>& operator-= (_inout(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> Vec4_<T>& operator-= (_inout(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs);
-	template<size_t N, typename T> Vec_<N, T>& operator-= (_inout(Vec_<N, T>) _Lhs, _in(Vec_<N, T>) _Rhs);
-
-	template<typename T> Vec2_<T>& operator*= (_inout(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> Vec3_<T>& operator*= (_inout(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> Vec4_<T>& operator*= (_inout(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs);
-	template<size_t N, typename T> Vec_<N, T>& operator*= (_inout(Vec_<N, T>) _Lhs, _in(Vec_<N, T>) _Rhs);
-
-	template<typename T> Vec2_<T>& operator/= (_inout(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> Vec3_<T>& operator/= (_inout(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> Vec4_<T>& operator/= (_inout(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs);
-	template<size_t N, typename T> Vec_<N, T>& operator/= (_inout(Vec_<N, T>) _Lhs, _in(Vec_<N, T>) _Rhs);
-
-	template<typename T> Vec2_<T>& operator%= (_inout(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> Vec3_<T>& operator%= (_inout(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> Vec4_<T>& operator%= (_inout(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs);
-	template<size_t N, typename T> Vec_<N, T>& operator%= (_inout(Vec_<N, T>) _Lhs, _in(Vec_<N, T>) _Rhs);
-	/* </ ?= vector vector > */
-
-	/* < ?= vector scalar > */
-	template<typename T> Vec2_<T>& operator*= (_inout(Vec2_<T>) _Lhs, _in(T) _Rhs);
-	template<typename T> Vec3_<T>& operator*= (_inout(Vec3_<T>) _Lhs, _in(T) _Rhs);
-	template<typename T> Vec4_<T>& operator*= (_inout(Vec4_<T>) _Lhs, _in(T) _Rhs);
-	template<size_t N, typename T> Vec_<N, T>& operator*= (_inout(Vec_<N, T>) _Lhs, _in(T) _Rhs);
-
-	template<typename T> Vec2_<T>& operator/= (_inout(Vec2_<T>) _Lhs, _in(T) _Rhs);
-	template<typename T> Vec3_<T>& operator/= (_inout(Vec3_<T>) _Lhs, _in(T) _Rhs);
-	template<typename T> Vec4_<T>& operator/= (_inout(Vec4_<T>) _Lhs, _in(T) _Rhs);
-	template<size_t N, typename T> Vec_<N, T>& operator/= (_inout(Vec_<N, T>) _Lhs, _in(T) _Rhs);
-
-	template<typename T> Vec2_<T>& operator%= (_inout(Vec2_<T>) _Lhs, _in(T) _Rhs);
-	template<typename T> Vec3_<T>& operator%= (_inout(Vec3_<T>) _Lhs, _in(T) _Rhs);
-	template<typename T> Vec4_<T>& operator%= (_inout(Vec4_<T>) _Lhs, _in(T) _Rhs);
-	template<size_t N, typename T> Vec_<N, T>& operator%= (_inout(Vec_<N, T>) _Lhs, _in(T) _Rhs);
-
-	template<typename T> Vec2_<T>& operator*= (_inout(Vec2_<T>) _Lhs, _in(Real) _Rhs);
-	template<typename T> Vec3_<T>& operator*= (_inout(Vec3_<T>) _Lhs, _in(Real) _Rhs);
-	template<typename T> Vec4_<T>& operator*= (_inout(Vec4_<T>) _Lhs, _in(Real) _Rhs);
-	template<size_t N, typename T> Vec_<N, T>& operator*= (_inout(Vec_<N, T>) _Lhs, _in(Real) _Rhs);
-
-	template<typename T> Vec2_<T>& operator/= (_inout(Vec2_<T>) _Lhs, _in(Real) _Rhs);
-	template<typename T> Vec3_<T>& operator/= (_inout(Vec3_<T>) _Lhs, _in(Real) _Rhs);
-	template<typename T> Vec4_<T>& operator/= (_inout(Vec4_<T>) _Lhs, _in(Real) _Rhs);
-	template<size_t N, typename T> Vec_<N, T>& operator/= (_inout(Vec_<N, T>) _Lhs, _in(Real) _Rhs);
-
-	template<typename T> Vec2_<T>& operator%= (_inout(Vec2_<T>) _Lhs, _in(Real) _Rhs);
-	template<typename T> Vec3_<T>& operator%= (_inout(Vec3_<T>) _Lhs, _in(Real) _Rhs);
-	template<typename T> Vec4_<T>& operator%= (_inout(Vec4_<T>) _Lhs, _in(Real) _Rhs);
-	template<size_t N, typename T> Vec_<N, T>& operator%= (_inout(Vec_<N, T>) _Lhs, _in(Real) _Rhs);
-	/* </ ?= vector scalar > */
-
-	/* < cout vector > */
-	template<typename T> std::ostream& operator<< (_inout(std::ostream) _Ostr, _in(Vec2_<T>) _Lhs);
-	template<typename T> std::ostream& operator<< (_inout(std::ostream) _Ostr, _in(Vec3_<T>) _Lhs);
-	template<typename T> std::ostream& operator<< (_inout(std::ostream) _Ostr, _in(Vec4_<T>) _Lhs);
-	template<size_t N, typename T> std::ostream& operator<< (_inout(std::ostream) _Ostr, _in(Vec_<N, T>) _Lhs);
-	/* </ cout vector > */
-
-	// elementary function
-	/* < pow > */
-	template<typename T> Vec2_<T> pow(_in(Vec2_<T>) _Lhs, int _Power);
-	template<typename T> Vec3_<T> pow(_in(Vec3_<T>) _Lhs, int _Power);
-	template<typename T> Vec4_<T> pow(_in(Vec4_<T>) _Lhs, int _Power);
-	template<typename T> Vec2_<T> pow(_in(Vec2_<T>) _Lhs, double _Power);
-	template<typename T> Vec3_<T> pow(_in(Vec3_<T>) _Lhs, double _Power);
-	template<typename T> Vec4_<T> pow(_in(Vec4_<T>) _Lhs, double _Power);
-	template<typename T> Vec2_<T> pow(_in(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> Vec3_<T> pow(_in(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> Vec4_<T> pow(_in(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> pow(_in(Vec_<N, T>) _Lhs, int _Power);
-	template<size_t N, typename T> Vec_<N, T> pow(_in(Vec_<N, T>) _Lhs, double _Power);
-	template<size_t N, typename T> Vec_<N, T> pow(_in(Vec_<N, T>) _Lhs, _in(Vec_<N, T>) _Rhs);
-	/* </ pow > */
-
-	template<typename T> Vec2_<T> sqrt(_in(Vec2_<T>) _Lhs);
-	template<typename T> Vec3_<T> sqrt(_in(Vec3_<T>) _Lhs);
-	template<typename T> Vec4_<T> sqrt(_in(Vec4_<T>) _Lhs);
-	template<size_t N, typename T> Vec_<N, T> sqrt(_in(Vec_<N, T>) _Lhs);
-
-	template<typename T> Vec2_<T> floor(_in(Vec2_<T>) _Lhs);
-	template<typename T> Vec3_<T> floor(_in(Vec3_<T>) _Lhs);
-	template<typename T> Vec4_<T> floor(_in(Vec4_<T>) _Lhs);
-	template<size_t N, typename T> Vec_<N, T> floor(_in(Vec_<N, T>) _Lhs);
-
-	template<typename T> Vec2_<T> ceil(_in(Vec2_<T>) _Lhs);
-	template<typename T> Vec3_<T> ceil(_in(Vec3_<T>) _Lhs);
-	template<typename T> Vec4_<T> ceil(_in(Vec4_<T>) _Lhs);
-	template<size_t N, typename T> Vec_<N, T> ceil(_in(Vec_<N, T>) _Lhs);
-
-	template<typename T> Vec2_<T> mod(_in(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> Vec3_<T> mod(_in(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> Vec4_<T> mod(_in(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> mod(_in(Vec_<N, T>) _Lhs, _in(Vec_<N, T>) _Rhs);
-	template<typename T> Vec2_<T> mod(_in(Vec2_<T>) _Lhs, _in(T) _Rhs);
-	template<typename T> Vec3_<T> mod(_in(Vec3_<T>) _Lhs, _in(T) _Rhs);
-	template<typename T> Vec4_<T> mod(_in(Vec4_<T>) _Lhs, _in(T) _Rhs);
-	template<size_t N, typename T> Vec_<N, T> mod(_in(Vec_<N, T>) _Lhs, _in(T) _Rhs);
-
-	/* < trianglar function > */
-	template<typename T> Vec2_<T> sin(_in(Vec2_<T>) _Lhs);
-	template<typename T> Vec3_<T> sin(_in(Vec3_<T>) _Lhs);
-	template<typename T> Vec4_<T> sin(_in(Vec4_<T>) _Lhs);
-
-	template<typename T> Vec2_<T> cos(_in(Vec2_<T>) _Lhs);
-	template<typename T> Vec3_<T> cos(_in(Vec3_<T>) _Lhs);
-	template<typename T> Vec4_<T> cos(_in(Vec4_<T>) _Lhs);
-
-	template<typename T> Vec2_<T> tan(_in(Vec2_<T>) _Lhs);
-	template<typename T> Vec3_<T> tan(_in(Vec3_<T>) _Lhs);
-	template<typename T> Vec4_<T> tan(_in(Vec4_<T>) _Lhs);
-
-	template<typename T> Vec2_<T> asin(_in(Vec2_<T>) _Lhs);
-	template<typename T> Vec3_<T> asin(_in(Vec3_<T>) _Lhs);
-	template<typename T> Vec4_<T> asin(_in(Vec4_<T>) _Lhs);
-
-	template<typename T> Vec2_<T> acos(_in(Vec2_<T>) _Lhs);
-	template<typename T> Vec3_<T> acos(_in(Vec3_<T>) _Lhs);
-	template<typename T> Vec4_<T> acos(_in(Vec4_<T>) _Lhs);
-
-	template<typename T> Vec2_<T> atan(_in(Vec2_<T>) _Lhs);
-	template<typename T> Vec3_<T> atan(_in(Vec3_<T>) _Lhs);
-	template<typename T> Vec4_<T> atan(_in(Vec4_<T>) _Lhs);
-
-	template<size_t N, typename T> Vec_<N, T> sin(_in(Vec_<N, T>) _Lhs);
-	template<size_t N, typename T> Vec_<N, T> cos(_in(Vec_<N, T>) _Lhs);
-	template<size_t N, typename T> Vec_<N, T> tan(_in(Vec_<N, T>) _Lhs);
-	template<size_t N, typename T> Vec_<N, T> asin(_in(Vec_<N, T>) _Lhs);
-	template<size_t N, typename T> Vec_<N, T> acos(_in(Vec_<N, T>) _Lhs);
-	template<size_t N, typename T> Vec_<N, T> atan(_in(Vec_<N, T>) _Lhs);
-	/* </ trianglar function > */
-
-	template<typename T> T dot(_in(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> T dot(_in(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> T dot(_in(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs);
-	template<size_t N, typename T> T dot(_in(Vec_<N, T>) _Lhs, _in(Vec_<N, T>) _Rhs);
-
-	template<typename T> Vec2_<T> cross(_in(Vec2_<T>) _Lhs, _in(Vec2_<T>) _Rhs);
-	template<typename T> Vec3_<T> cross(_in(Vec3_<T>) _Lhs, _in(Vec3_<T>) _Rhs);
-	template<typename T> Vec4_<T> cross(_in(Vec4_<T>) _Lhs, _in(Vec4_<T>) _Rhs, _in(Vec4_<T>) _Rhs2);
-	template<typename T> Vec_<3, T> cross(const Vec_<3, T>& _Lhs, const Vec_<3, T>& _Rhs);
 
 	template<typename T> T length(_in(Vec2_<T>) _Lhs);
 	template<typename T> T length(_in(Vec3_<T>) _Lhs);
@@ -1180,50 +992,6 @@ namespace clmagic
 	using Vec_2d = Vec_<2, double>;
 	using Vec_3d = Vec_<3, double>;
 	using Vec_4d = Vec_<4, double>;
-
-#define CLMAGIC_OPERATOR_COMM_VECTOR(COMMRETURN, CASTRETURN, LTYPE, RTYPE, LCAST, RCAST) \
-	inline COMMRETURN operator+ (LTYPE _Lhs, RTYPE _Rhs) \
-		{ return ( CASTRETURN( LCAST(_Lhs) + RCAST(_Rhs) ) ); } \
-	\
-	inline COMMRETURN operator+ (RTYPE _Rhs, LTYPE _Lhs) \
-		{ return ( CASTRETURN( RCAST(_Rhs) + LCAST(_Lhs) ) ); } \
-	\
-	inline COMMRETURN operator- (LTYPE _Lhs, RTYPE _Rhs) \
-		{ return ( CASTRETURN( LCAST(_Lhs) - RCAST(_Rhs) ) ); } \
-	\
-	inline COMMRETURN operator- (RTYPE _Rhs, LTYPE _Lhs) \
-		{ return ( CASTRETURN( RCAST(_Rhs) - LCAST(_Lhs) ) ); } \
-	\
-	inline COMMRETURN operator* (LTYPE _Lhs, RTYPE _Rhs) \
-		{ return ( CASTRETURN( LCAST(_Lhs) * RCAST(_Rhs) ) ); } \
-	\
-	inline COMMRETURN operator* (RTYPE _Rhs, LTYPE _Lhs) \
-		{ return ( CASTRETURN( RCAST(_Rhs) * LCAST(_Lhs) ) ); } \
-	\
-	inline COMMRETURN operator/ (LTYPE _Lhs, RTYPE _Rhs) \
-		{ return ( CASTRETURN( LCAST(_Lhs) / RCAST(_Rhs) ) ); } \
-	\
-	inline COMMRETURN operator/ (RTYPE _Rhs, LTYPE _Lhs) \
-		{ return ( CASTRETURN( RCAST(_Rhs) / LCAST(_Lhs) ) ); } \
-	\
-	inline COMMRETURN operator% (LTYPE _Lhs, RTYPE _Rhs) \
-		{ return ( CASTRETURN( LCAST(_Lhs) % RCAST(_Rhs) ) ); } \
-	\
-	inline COMMRETURN operator% (RTYPE _Rhs, LTYPE _Lhs) \
-		{ return ( CASTRETURN( RCAST(_Rhs) % LCAST(_Lhs) ) ); } \
-
-	
-	CLMAGIC_OPERATOR_COMM_VECTOR(Vec2, , Vec2 const&, Vec_2f const&, , reference_cast<Vec2 const>)
-	CLMAGIC_OPERATOR_COMM_VECTOR(Vec3, , Vec3 const&, Vec_3f const&, , reference_cast<Vec3 const>)
-	CLMAGIC_OPERATOR_COMM_VECTOR(Vec4, , Vec4 const&, Vec_4f const&, , reference_cast<Vec4 const>)
-
-	CLMAGIC_OPERATOR_COMM_VECTOR(Vec2i, , Vec2i const&, Vec_2i const&, , reference_cast<Vec2i const>)
-	CLMAGIC_OPERATOR_COMM_VECTOR(Vec3i, , Vec3i const&, Vec_3i const&, , reference_cast<Vec3i const>)
-	CLMAGIC_OPERATOR_COMM_VECTOR(Vec4i, , Vec4i const&, Vec_4i const&, , reference_cast<Vec4i const>)
-
-	CLMAGIC_OPERATOR_COMM_VECTOR(Vec2d, , Vec2d const&, Vec_2d const&, , reference_cast<Vec2d const>)
-	CLMAGIC_OPERATOR_COMM_VECTOR(Vec3d, , Vec3d const&, Vec_3d const&, , reference_cast<Vec3d const>)
-	CLMAGIC_OPERATOR_COMM_VECTOR(Vec4d, , Vec4d const&, Vec_4d const&, , reference_cast<Vec4d const>)
 
 	
 	/* this tag is normal */

@@ -1,6 +1,6 @@
 #pragma once
-#ifndef __CLMAGIC_CORE_GEOMETRY___NAMESPACE___H__
-#define __CLMAGIC_CORE_GEOMETRY___NAMESPACE___H__
+#ifndef clmagic_math_CLMAGIC_h_
+#define clmagic_math_CLMAGIC_h_
 
 namespace clmagic
 {
@@ -42,5 +42,42 @@ namespace clmagic
 #ifndef _out
 #define _out(...) __VA_ARGS__&
 #endif
+
+namespace clmagic {
+	template<typename _Tydst, typename _Tysrc>
+		_Tydst& reference_cast(_Tysrc& _Src) {
+			return (*reinterpret_cast<_Tydst*>(&_Src));
+		}
+
+	template<typename _Tydst, typename _Tysrc> inline
+		_Tydst& const_reference_cast(const _Tysrc& _Src) {
+			return (*reinterpret_cast<_Tydst*>(&_Src));
+		}
+
+	/* 'shuffle' is often used in vector mathematics  */
+	template<typename _OutTy, typename _InTy, typename ..._Tys>
+		void _Shuffle_fill(_out(_OutTy) _Dest, _in(_InTy) _Source, size_t i, size_t s, _Tys... _Args) {
+			_Dest[i] = _Source[s];
+			_Shuffle_fill(_Dest, _Source, i + 1, _Args...);
+		}
+
+	template<typename _OutTy, typename _InTy>
+		void _Shuffle_fill(_out(_OutTy) _Dest, _in(_InTy) _Source, size_t i, size_t s) {
+			_Dest[i] = _Source[s];
+		}
+
+	template<typename _OutTy, typename _InTy, typename ..._Tys>
+		_OutTy shuffle(_in(_InTy) _Source, _Tys... _Selector) {
+			_OutTy _Dest;
+			_Shuffle_fill(_Dest, _Source, 0, _Selector...);
+			return (_Dest);
+		}
+
+	template<typename _OutTy, typename _InTy, typename ..._Tys>
+		void shuffle(_out(_OutTy) _Dest, _in(_InTy) _Source, _Tys... _Selector) {
+			_Shuffle_fill(_Dest, _Source, 0, _Selector...);
+		}
+
+}// namespace clmagic
 
 #endif

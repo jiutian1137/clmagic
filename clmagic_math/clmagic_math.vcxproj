@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\clmagic\math.h" />
+    <ClInclude Include="..\src\clmagic\math\calculus.h" />
     <ClInclude Include="..\src\clmagic\math\clmagic.h" />
     <ClInclude Include="..\src\clmagic\math\complex.h" />
     <ClInclude Include="..\src\clmagic\math\complex\quaternion.inl.h" />

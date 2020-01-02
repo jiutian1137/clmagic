@@ -115,5 +115,8 @@
     <ClInclude Include="..\src\clmagic\math.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\clmagic\math\calculus.h">
+      <Filter>public</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

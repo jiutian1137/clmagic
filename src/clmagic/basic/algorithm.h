@@ -31,7 +31,7 @@ namespace clmagic {
 	}
 
 	template<typename _Container, typename _InIt, typename _InIt2, typename _InIt3>
-	_Container& _Replace(_inout(_Container) _Cont, _InIt _First, size_t _Count, _InIt2 _Old_first, _InIt2 _Old_last, _InIt3 _New_first, _InIt3 _New_last) {
+	_Container& _Replace(_Container& _Cont, _InIt _First, size_t _Count, _InIt2 _Old_first, _InIt2 _Old_last, _InIt3 _New_first, _InIt3 _New_last) {
 		// replace _Cont [_Old_first, _Old_last) to [_New_first, _New_last) in [_First, _First + _Count)
 		const auto _M = static_cast<size_t>(std::distance(_Old_first, _Old_last));
 		const auto _P = static_cast<size_t>(std::distance(_New_first, _New_last));
@@ -72,14 +72,14 @@ namespace clmagic {
 		Output(_Data);
 	*/
 	template<typename _Container, typename _Iter, typename _InIt2, typename _InIt3>
-	_Container& replace(_inout(_Container) _Cont, _Iter _First, _Iter _Last, _InIt2 _Old_first, _InIt2 _Old_last, _InIt3 _New_first, _InIt3 _New_last) {
+	_Container& replace(_Container& _Cont, _Iter _First, _Iter _Last, _InIt2 _Old_first, _InIt2 _Old_last, _InIt3 _New_first, _InIt3 _New_last) {
 		// replace _Cont [_Old_first, _Old_last) to [_New_first, _New_last) in [_First, _Last)
 		_Replace(_Cont, _First, std::distance(_First, _Last), _Old_first, _Old_last, _New_first, _New_last);
 		return (_Cont);
 	}
 
 	template<typename _Container, typename _InIt, typename _InIt2, typename _InIt3>
-	_Container replace_copy(_in(_Container) _Cont, _InIt _First, _InIt _Last, _InIt2 _Old_first, _InIt2 _Old_last, _InIt3 _New_first, _InIt3 _New_last) {
+	_Container replace_copy(const _Container& _Cont, _InIt _First, _InIt _Last, _InIt2 _Old_first, _InIt2 _Old_last, _InIt3 _New_first, _InIt3 _New_last) {
 		auto _Clone = _Cont;
 		auto _Off_first = static_cast<size_t>(std::distance(_Cont.begin(), decltype(_Cont.begin())(_First)));
 		auto _Off_last = static_cast<size_t>(std::distance(decltype(_Cont.begin())(_Last), _Cont.end()));
@@ -87,14 +87,14 @@ namespace clmagic {
 		return (_Clone);
 	}
 
-	template<typename _Str, typename _Iter>
-	_Str& str_replace(_inout(_Str) _Cont, _Iter _First, _Iter _Last, const char* _Old, const char* _New) {
+	template<typename _Elem, typename _InIt>
+	std::basic_string<_Elem>& str_replace(std::basic_string<_Elem>& _Cont, _InIt _First, _InIt _Last, const _Elem* _Old, const _Elem* _New) {
 		// replace _Cont _Old to _New in [_First, _Last)
 		return (replace(_Cont, _First, _Last, /*first*/_Old, /*last*/_Old + strlen(_Old), /*first*/_New, /*last*/_New + strlen(_New)));
 	}
 
 	template<typename _Elem, typename _InIt>
-	std::basic_string<_Elem> str_replace_copy(_in(std::basic_string<_Elem>) _Cont, _InIt _First, _InIt _Last, const char* _Old, const char* _New) {
+	std::basic_string<_Elem> str_replace_copy(const std::basic_string<_Elem>& _Cont, _InIt _First, _InIt _Last, const _Elem* _Old, const _Elem* _New) {
 		// replace _Cont _Old to _New in [_First, _Last)
 		return (replace_copy(_Cont, _First, _Last, /*first*/_Old, /*last*/_Old + strlen(_Old), /*first*/_New, /*last*/_New + strlen(_New)));
 	}

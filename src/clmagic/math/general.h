@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #ifndef __CLMAGIC_CORE_GEOMETRY_MATH___GENERAL___H__
 #define __CLMAGIC_CORE_GEOMETRY_MATH___GENERAL___H__
 #include "simd.h"
@@ -245,44 +245,133 @@ namespace clmagic
 	inline bool is_powof2(unsigned long long x)
 	{ return (x & (x - 1)); }
 
+	template<typename _Integ>
+		_Integ _Factorial(_Integ n, _Integ _Limit) {
+			return (n <= _Limit ? 1 : (n * _Factorial(n - 1, _Limit)));
+		}
+
+	template<typename _Integ = unsigned long long, typename _Ty = _Integ>
+		_Ty factorial(_Ty n, _Integ _Limit = 1) {
+			return ((_Ty)_Factorial((_Integ)n, _Limit));
+		}
 
 	template<typename _Ty>
-	struct Range_ 
-	{
-		_Ty _Min, _Max;
-
-		Range_() { /* empty */ }
-		Range_(_in(_Ty) _Minval, _in(_Ty) _Maxval) : _Min(_Minval), _Max(_Maxval) { }
-
-		bool exclude(_in(_Ty) _Val) const {
-			return ( _Val < _Min || _Val > _Max );
+		_Ty Stirling(_Ty n) {
+			/*
+			√(2πn) * (n/e)^n
+			*/
+			return (static_cast<_Ty>(sqrt(6.283 * n) * pow(n / 2.718, n)));
 		}
 
-		bool include(_in(_Ty) _Val) const {
-			return ( !this->exclude(_Val) );
+	template<typename _Ty = size_t>
+		_Ty binomial_coefficient(size_t n, size_t i) {
+			static auto _Lookup_table = std::vector<unsigned long long>{
+				1,
+				1, 1,
+				1, 2, 1,
+				1, 3, 3, 1,
+				1, 4, 6, 4, 1,
+				1, 5, 10, 10, 5, 1
+			};
+
+			static auto _Lookup_index = std::vector<size_t>{
+				0,  /* 1 elements */
+				1,  /* 2 elements */
+				3,  /* 3 elements */
+				6,  /* 4 elements */
+				10, /* 5 elements */
+				15  /* n + 1 elements */
+			};
+
+			if (n < _Lookup_index.size()) {
+				return (static_cast<_Ty>(_Lookup_table[_Lookup_index[n] + i]));
+			} else {
+				for (size_t k = _Lookup_index.size(); k <= n; ++k) {
+					_Lookup_index.push_back(_Lookup_table.size());      /* insert index */
+					_Lookup_table.insert(_Lookup_table.end(), k + 1, 1);/* insert n+1 elemtns into end */
+
+					unsigned long long* _Prev_ptr = &_Lookup_table[_Lookup_index[k - 1]];
+					unsigned long long* _Curt_ptr = &_Lookup_table[_Lookup_index[k]];
+					_Curt_ptr += 1; /* first element is 1 */
+					do {
+						*_Curt_ptr = *_Prev_ptr + *(_Prev_ptr + 1);
+						++_Prev_ptr; ++_Curt_ptr;
+					} while (*_Prev_ptr != 1);
+				}
+				return (static_cast<_Ty>(_Lookup_table[_Lookup_index[n] + i]));
+			}
 		}
 
-		template<typename _Fn1, typename _Fn2>
-		bool exclude(_in(_Ty) _Val, _Fn1 _Func1, _Fn2 _Func2) const {
-			return ( _Val < _Func1(_Min) || _Val > _Func2(_Max) );
+	template<typename _Ty = size_t>
+		_Ty C(size_t n, size_t i) {
+			/*
+					   n-i+1   n-(i-1)+1		  n-1+1
+			C(n, i) = ------ * --------- *.... * -------
+						 i		  i-1				1
+		
+			C(n, 0) = C(n, n) = 1
+		
+			i<n
+			ΣC(n, i) = pow(2, n)
+			i=0
+			*/
+			return (binomial_coefficient<_Ty>(n, i));
 		}
 
-		template<typename _Fn1, typename _Fn2>
-		bool include(_in(_Ty) _Val, _Fn1 _Func1, _Fn2 _Func2) const {
-			return ( !this->exclude(_Val, _Func1, _Func2) );
+	template<typename _Ty>
+		_Ty binomial(_in(_Ty) _A, _in(_Ty) _B, size_t n, size_t i) {
+			/*	(A + B)^n
+				n=2: A² + 2AB + B²
+				n=3: A³ + 3A²B + 3AB² + B³
+				n=4: A⁴ + 4A³B + 6A²B² + 4AB³ + B⁴         (A⁴ + 3A³B + 3A²B² + AB³ + A³B + 3A²B² + 3AB³ + B⁴)
+				n=5: A⁵ + 5A⁴B + 10A³B + 10AB³ + 5AB⁴ + B⁵  (A⁵ + 4A⁴B + 6A³B² + 4A²B³ + AB⁴ + A⁴B + 4A³B² + 6A²B³ + 4AB⁴ + B⁵)
+			*/
+			if (i == 0) {
+				return ((_Ty)pow(_A, n));
+			} else if (i != n) {
+				return (C<_Ty>(n, i) * (_Ty)pow(_A, n - i) * (_Ty)pow(_B, i));
+			} else {
+				return ((_Ty)pow(_B, n));
+			}
 		}
 
-		_Ty range() const {
-			return (_Max - _Min);
-		}
 
-		_Ty remap(_in(_Ty) _Val) const {
-			return ( (_Val - _Min) / range() );
-		}
-	};
+	template<typename _Ty>
+		struct Range_ {
+			_Ty _Min, _Max;
+
+			Range_() { /* empty */ }
+			Range_(_in(_Ty) _Minval, _in(_Ty) _Maxval) : _Min(_Minval), _Max(_Maxval) { }
+
+			bool exclude(_in(_Ty) _Val) const {
+				return ( _Val < _Min || _Val > _Max );
+			}
+
+			bool include(_in(_Ty) _Val) const {
+				return ( !this->exclude(_Val) );
+			}
+
+			template<typename _Fn1, typename _Fn2>
+			bool exclude(_in(_Ty) _Val, _Fn1 _Func1, _Fn2 _Func2) const {
+				return ( _Val < _Func1(_Min) || _Val > _Func2(_Max) );
+			}
+
+			template<typename _Fn1, typename _Fn2>
+			bool include(_in(_Ty) _Val, _Fn1 _Func1, _Fn2 _Func2) const {
+				return ( !this->exclude(_Val, _Func1, _Func2) );
+			}
+
+			_Ty range() const {
+				return (_Max - _Min);
+			}
+
+			_Ty remap(_in(_Ty) _Val) const {
+				return ( (_Val - _Min) / range() );
+			}
+		};
 
 
-	template<typename _Ty, typename _Xy> inline
+	template<typename _Ty, typename _Xy>
 		void test_function(_Ty _Initial, _Ty _End, _Ty _Increment, _Xy _Func, const std::string& _Funcname) {
 			_Ty _Var = _Initial;
 
@@ -293,95 +382,83 @@ namespace clmagic
 			std::cout << _Funcname << " test end" << std::endl;
 		}
 
-	template<typename _Tydst, typename _Tysrc> inline
-		_Tydst& reference_cast(_Tysrc& _Src) 
-		{
-		return (*reinterpret_cast<_Tydst*>(&_Src));
-		}
-
-	template<typename _Tydst, typename _Tysrc> inline
-		_Tydst& const_reference_cast(const _Tysrc& _Src) 
-		{
-		return (*reinterpret_cast<_Tydst*>(&_Src));
-		}
-
-	template<typename _Ty> inline
+	template<typename _Ty>
 		_Ty abs(_in(_Ty) _Src)
-		{	// @_Require: ( constructor(base type) ) and ( operator<(rhs) ) and ( operator-() )
-		return (_Src < _Ty(0) ? -_Src : _Src); 
-		}
+			{	// @_Require: ( constructor(base type) ) and ( operator<(rhs) ) and ( operator-() )
+			return (_Src < _Ty(0) ? -_Src : _Src); 
+			}
 
-	template<typename _Ty> inline
+	template<typename _Ty>
 		const _Ty& maxval(const _Ty& _Lhs, const _Ty& _Rhs)
-		{	// @_Require: ( operator<(rhs) )
-		return (constexpr_maxval(_Lhs, _Rhs));
-		}
+			{	// @_Require: ( operator<(rhs) )
+			return (constexpr_maxval(_Lhs, _Rhs));
+			}
 
-	template<typename _Ty> inline
+	template<typename _Ty>
 		const _Ty& maxval(const _Ty& _V0, const _Ty& _V1, const _Ty& _V2)
-		{	// @_Require: ( operator<(rhs) )
-		return (constexpr_maxval(_V0, _V1, _V2));
-		}
+			{	// @_Require: ( operator<(rhs) )
+			return (constexpr_maxval(_V0, _V1, _V2));
+			}
 
-	template<typename _Ty> inline
+	template<typename _Ty>
 		const _Ty& minval(const _Ty& _Lhs, const _Ty& _Rhs)
-		{	// @_Require: ( operator<(rhs) )
-		return ( constexpr_minval(_Lhs, _Rhs) );
-		}
+			{	// @_Require: ( operator<(rhs) )
+			return ( constexpr_minval(_Lhs, _Rhs) );
+			}
 
-	template<typename _Ty> inline
+	template<typename _Ty>
 		const _Ty& minval(const _Ty& _V0, const _Ty& _V1, const _Ty& _V2)
-		{	// @_Require: ( operator<(rhs) )
-		return ( constexpr_minval(_V0, _V1, _V2) );
-		}
+			{	// @_Require: ( operator<(rhs) )
+			return ( constexpr_minval(_V0, _V1, _V2) );
+			}
 
-	template<typename _Ty, typename _Ty2> inline 
+	template<typename _Ty, typename _Ty2> 
 		bool equal(_in(_Ty) _Lhs, _in(_Ty) _Rhs, _in(_Ty2) _Thresould)
-		{	// @_Require: ( @abs ) and ( operator-(rhs) ) and ( operator<=(rhs) )
-		return ( abs(_Lhs - _Rhs) <= _Thresould );
-		}
+			{	// @_Require: ( @abs ) and ( operator-(rhs) ) and ( operator<=(rhs) )
+			return ( abs(_Lhs - _Rhs) <= _Thresould );
+			}
 
-	template<typename _Ty> inline
+	template<typename _Ty>
 		const _Ty& clamp(_in(_Ty) _Lhs, _in(_Ty) _Lowval, _in(_Ty) _Upval)
-		{	// return _Lhs clamp to [_Lowval, _Upval]
-		return ( minval( maxval(_Lhs, _Lowval), _Upval ) );
-		}
+			{	// return _Lhs clamp to [_Lowval, _Upval]
+			return ( minval( maxval(_Lhs, _Lowval), _Upval ) );
+			}
 
-	template<typename _Ty> inline
+	template<typename _Ty>
 		_Ty saturation(_in(_Ty) _Val) 
-		{	// return clamp(_Val, 0, 1)
-		return ( clamp( _Val, static_cast<_Ty>(0), static_cast<_Ty>(1) ) );
-		}
+			{	// return clamp(_Val, 0, 1)
+			return ( clamp( _Val, static_cast<_Ty>(0), static_cast<_Ty>(1) ) );
+			}
 
-	template<typename _Ty> inline
+	template<typename _Ty>
 		_Ty fract(_in(_Ty) _Val) 
-		{	// @_Require: ( @floor ) and ( operator-(rhs) )
-		return ( _Val - floor(_Val) );
-		}
+			{	// @_Require: ( @floor ) and ( operator-(rhs) )
+			return ( _Val - floor(_Val) );
+			}
 
-	template<typename _Ty, typename _Tyfactor> inline
+	template<typename _Ty, typename _Tyfactor>
 		_Ty lerp(_in(_Ty) _A, _in(_Ty) _B, _in(_Tyfactor) t)
-		{	// @_Equaltion: (1-t) * A + t * B
-		return ( _A + (_B - _A) * t );
-		}
+			{	// @_Equaltion: (1-t) * A + t * B
+			return ( _A + (_B - _A) * t );
+			}
 
-	template<typename _Ty> inline
+	template<typename _Ty>
 		const _Ty& lerp(_in(_Ty) _Lhs, _in(_Ty) _Rhs, /*in*/bool _Isright)
-		{
-		return (_Isright ? _Rhs : _Lhs);
-		}
+			{
+			return (_Isright ? _Rhs : _Lhs);
+			}
 
-	template<typename _Ty, typename _Tyfactor> inline
+	template<typename _Ty, typename _Tyfactor>
 		_Ty mix(_in(_Ty) _Lhs, _in(_Ty) _Rhs, _in(_Tyfactor) _Factor)
-		{
-		return ( lerp(_Lhs, _Rhs, _Factor) );
-		}
+			{
+			return ( lerp(_Lhs, _Rhs, _Factor) );
+			}
 
 
-	/* t0 = [-B-��(B^2-4AC)]/2A, 
-	   t1 = [-B+��(B^2-4AC)]/2A 
+	/* t0 = [-B-√(B^2-4AC)]/2A, 
+	   t1 = [-B+√(B^2-4AC)]/2A 
 	*/
-	template<typename _Ty> inline 
+	template<typename _Ty> 
 		bool quadratic(_in(_Ty) A, _in(_Ty) B, _in(_Ty) C, _out(_Ty) t0, _out(_Ty) t1) {// return false if(B^2-4AC < 0)
 			/*  A*t^2 + B*t + C = 0
 
@@ -406,13 +483,13 @@ namespace clmagic
 					  2A		  4A^2
             
 					 B		     B^2 - 4AC
-				t + ---- = ����(-----------)
+				t + ---- = ±√(-----------)
 					 2A	  	       2A*2A
 
-					 B		  ��(B^2 - 4AC)
-				t + ---- = ��---------------
+					 B		  √(B^2 - 4AC)
+				t + ---- = ±---------------
 					 2A	  	        2A
-					 -B ����(B^2 - 4AC)
+					 -B ±√(B^2 - 4AC)
 				t = --------------------
 							2A
 			*/
@@ -432,17 +509,16 @@ namespace clmagic
 	/* t0 = 0
 	   t1 = -B/A
 	*/
-	template<typename _Ty> inline
-		bool quadratic(_in(_Ty) A, _in(_Ty) B, _out(_Ty) t0, _out(_Ty) t1) 
-		{
-		/* A*x^2 + B*x = 0
-		   x*(A*x + B) = 0
-		   t0 = 0
-		   t1 = (A*x+B=0) = -B/A
-		*/
-		t0 = _Ty(0);
-		t1 = -B / A;
-		return ( true );
+	template<typename _Ty>
+		bool quadratic(_in(_Ty) A, _in(_Ty) B, _out(_Ty) t0, _out(_Ty) t1) {
+			/* A*x^2 + B*x = 0
+			   x*(A*x + B) = 0
+			   t0 = 0
+			   t1 = (A*x+B=0) = -B/A
+			*/
+			t0 = _Ty(0);
+			t1 = -B / A;
+			return ( true );
 		}
 
 	/* 
@@ -473,39 +549,39 @@ namespace clmagic
 			  /
 	direction: o->!	
 	*/
-	template<typename _Ty> inline
+	template<typename _Ty>
 		bool sphere_equation(
 			_in(_Ty) ox, _in(_Ty) oy, _in(_Ty) oz, 
 			_in(_Ty) dx, _in(_Ty) dy, _in(_Ty) dz, 
 			_in(_Ty) r, 
 			_out(_Ty) t0, _out(_Ty) t1) 
-		{
-		//_Ty A = dx*dx + dy*dy + dz*dz;
-		_Ty A = _Ty(1);
-		_Ty B = _Ty(2) * (dx*ox + dy*oy + dz*oz);
-		_Ty C = ox*ox + oy*oy + oz*oz - r*r;
-		return ( quadratic(A, B, C, t0, t1) );
-		}
+			{	
+			//_Ty A = dx*dx + dy*dy + dz*dz;
+			_Ty A = _Ty(1);
+			_Ty B = _Ty(2) * (dx*ox + dy*oy + dz*oz);
+			_Ty C = ox*ox + oy*oy + oz*oz - r*r;
+			return ( quadratic(A, B, C, t0, t1) );
+			}
 
-	template<typename _Ty> inline
+	template<typename _Ty>
 		bool disk_equation(
 			_in(_Ty) ox, _in(_Ty) oy, _in(_Ty) oz,
 			_in(_Ty) dx, _in(_Ty) dy, _in(_Ty) dz, 
 			_in(_Ty) inr, _in(_Ty) outr, 
 			_out(_Ty) t) 
-		{	// o + td = 0
-		t = -oz / dz;
-		_Ty mu2 = pow(ox + t * dx, 2) + pow(oy + t * dy, 2);
-		if (mu2 < pow(inr, 2) || mu2 > pow(outr, 2)) 
-			return (false);
+			{	// o + td = 0
+			t = -oz / dz;
+			_Ty mu2 = pow(ox + t * dx, 2) + pow(oy + t * dy, 2);
+			if (mu2 < pow(inr, 2) || mu2 > pow(outr, 2)) 
+				return (false);
 
-		return ( true );
-		}
+			return ( true );
+			}
 
 
 	/* @_Equaltion: 3*t^2 - 2*t^3 */
 	template<typename _Ty> inline
-	_Ty s_curve(_in(_Ty) t) {	
+	_Ty s_curve(_in(_Ty) t) {
 		return ( t * t * (t * Real(-2) + Real(3)) );
 	}
 
@@ -572,122 +648,7 @@ namespace clmagic
 		return (_Val);
 		}
 
-	template<typename _Ty> inline
-		_Ty binomial_coefficient(int n, int i)
-		{
-		// if (n >= 0)
-		//	  {
-		//			      n-i+1   n-(i-1)+1			n-1+1
-		//	   C(n, i) = ------ * -------- *.... * -------
-		//			        i		i-1				  1
-		//
-		//     C(n, 0) = C(n, n) = 1
-		//
-		//     i<n
-		//      ��C(n, i) = pow(2, n)
-		//     i=0
-		//	   }
-		//
-		// 1             n=0
-		// 1 1			 n=1
-		// 1 2 1         n=2
-		// 1 3 3 1       n=3
-		// 1 4 6 4 1     n=4
-		// 1 5 10 10 5 1 n=5
-		static_assert(std::_Is_any_of_v<_Ty, short, int, long, long long, unsigned short, unsigned int, unsigned long, unsigned long long>,
-			"invalid template argument, Bernstein(_Tyn, _Tyn, _in(_Ty))");
-
-		if (i == 0 || i == n)
-			{	// rule: C(n, 0) = C(n, n) = 1
-			return (1);
-			}
-
-		if (n <= 29)
-			{	// quick, but (_Numerator <= INT_MAX || _Denominator <= INT_MAX)
-			if (n & 1)
-				{
-				i = symmetry(i, n / 2, n / 2 + 1);
-				}
-			else
-				{
-				i = symmetry(i, n / 2, n / 2);
-				}
-
-			unsigned long long _Numerator = 1;
-			unsigned long long _Denominator = 1;
-			for (int x = 0; (i - x) >= 1; ++x)
-				{
-				_Numerator *= (n - (i - x) + 1);
-				_Denominator *= (i - x);
-				}
-			return (static_cast<_Ty>(_Numerator / _Denominator));
-			}
-		else
-			{	// perfemance is ....
-			if (n > 1)
-				{
-				return (binomial_coefficient<_Ty>(n - 1, i - 1) + binomial_coefficient<_Ty>(n - 1, i));
-				}
-			else
-				{
-				return (1);
-				}
-			}
-		}
-
-	template<typename _Ty> inline
-		std::vector<_Ty> binomial_coefficient(int n)
-		{
-		static_assert(std::_Is_any_of_v<_Ty, short, int, long, long long, unsigned short, unsigned int, unsigned long, unsigned long long>,
-			"invalid template argument, Bernstein(_Tyn, _Tyn, _in(_Ty))");
-		assert(n <= 30);// max value > INT_MAX
-
-		switch (n)
-			{
-			case 0: return (std::vector<_Ty>{1 });
-			case 1: return (std::vector<_Ty>{1, 1});
-			case 2: return (std::vector<_Ty>{1, 2, 1});
-			case 3: return (std::vector<_Ty>{1, 3, 3, 1});
-			case 4: return (std::vector<_Ty>{1, 4, 6, 4, 1});
-			case 5: return (std::vector<_Ty>{1, 5, 10, 10, 5, 1});
-			default: break;
-			}
-
-		unsigned long long _Numerator = 1;
-		unsigned long long _Denominator = 1;
-		std::vector<_Ty> _Result(n + 1, 1);
-
-		// ____i_ _ j___
-		// 0 1 2| | 3 4     size: 5, n: 4
-		// ------ ------
-		// __________i_ _ j____________
-		// 0 1 2 3 4 5| | 6 7 8 9 10 11    size: 12, n: 11
-		// ------------ ---------------
-		// ________i____  _ j_________
-		// 0 1 2 3 4 5 |  | 6 7 8 9 10    size: 11, n: 10
-		// -------------  ------------
-		int i = 1;
-		for (; i <= n / 2; ++i)
-			{
-			_Numerator *= (n - i + 1);
-			_Denominator *= i;
-			_Result[i] = static_cast<_Ty>(_Numerator / _Denominator);
-			}
-		--i;
-
-		int j = i + 1;
-		if (_Result.size() & 1)
-			{	// back 1 step
-			--i;
-			}
-
-		for (; j < n; ++j, --i)
-			{
-			_Result[j] = _Result[i];
-			}
-
-		return (_Result);
-		}
+		
 
 	template<typename _Ty, typename _Tyn, typename _Tyc> inline 
 		_Ty Bernstein(/*in*/_Tyn n, /*in*/_Tyn i, _in(_Ty) t, /*in*/_Tyc C)
