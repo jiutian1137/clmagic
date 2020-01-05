@@ -6,17 +6,17 @@
 namespace clmagic 
 {
 	template<typename _Ty> inline
-		bool intersect(_in(Vec2_<_Ty>) _Pos, _Ty _Left, _Ty _Right, _Ty _Bottom, _Ty _Top)
+		bool intersect(_in(Vector2_<_Ty>) _Pos, _Ty _Left, _Ty _Right, _Ty _Bottom, _Ty _Top)
 		{	// _Pos in [_Left,_Right,_Bottom,_Top]
 		return (_Pos.x < _Left || _Pos.x > _Right || _Pos.y < _Bottom || _Pos.y > _Top);
 		}
 
 	template<typename T> inline
-		int intersect(_in(Vec3_<T>) _Pos, _in(Vec3_<T>) _V0, _in(Vec3_<T>) _V1, _in(Vec3_<T>) _V2)
+		int intersect(_in(Vector3_<T>) _Pos, _in(Vector3_<T>) _V0, _in(Vector3_<T>) _V1, _in(Vector3_<T>) _V2)
 		{	// _Pos in triangle face
-		Vec3 v0 = _V1 - _V0;
-		Vec3 v1 = _V2 - _V0;
-		Vec3 v2 = _Pos - _V0;
+		Vector3_<T> v0 = _V1 - _V0;
+		Vector3_<T> v1 = _V2 - _V0;
+		Vector3_<T> v2 = _Pos - _V0;
 
 		T dot00, dot01, dot02, dot11, dot12;
 		dot00 = dot(v0, v0);
@@ -43,16 +43,16 @@ namespace clmagic
 		}
 
 	template<typename T> inline 
-		bool intersect(_in(Vec3_<T>) _Origin, _in(Vec3_<T>) _Dir, _in(Vec3_<T>) _V0, _in(Vec3_<T>) _V1, _in(Vec3_<T>) _V2, _out(Vec3_<T>) _Point)
+		bool intersect(_in(Vector3_<T>) _Origin, _in(Vector3_<T>) _Dir, _in(Vector3_<T>) _V0, _in(Vector3_<T>) _V1, _in(Vector3_<T>) _V2, _out(Vector3_<T>) _Point)
 		{
-		Vec3_<T> _U, _V, _N;
-		Vec3_<T> _W0, _W;
+		Vector3_<T> _U, _V, _N;
+		Vector3_<T> _W0, _W;
 		T _R, _A, _B;
 
 		_U = _V1 - _V0;
 		_V = _V2 - _V0;
-		_N = cross(_U, _V);
-		if ( length(_N) < 0.1 )
+		_N = cross3(_U, _V);
+		if ( _N.length() < 0.1 )
 			return (false);
 
 		_W0 = _Origin - _V0;

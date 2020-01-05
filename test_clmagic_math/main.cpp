@@ -1,4 +1,5 @@
 ﻿#include "../src/clmagic/math/simd.h"
+#include "../src/clmagic/math.h"
 #include "../src/clmagic/basic.h"
 #include <random>
 #include <iomanip>
@@ -219,14 +220,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
 
 
 
-namespace clmagic {
-
-	
-}
-
-
 void test_simd() {
-
 
 	//#define Ouput_F32vec4(Vec) std::cout << (Vec)[0] << "," << (Vec)[1] << "," << (Vec)[2] << "," << (Vec)[3] << std::endl
 	//	F32vec4 _A(1.f, 2.f, 3.f, 4.f);
@@ -247,38 +241,37 @@ void test_simd() {
 	//#undef Ouput_F32vec4
 
 	using namespace::clmagic;
-	SIMDVec4f _SIMDFloat{ 9.f, 8.f, 7.f, 6.f };
-	SIMDVec4d _SIMDDouble{ 1.0, 2.0, 3.0, 4.0 };
-	//std::cout << _SIMDInteger << std::endl;
-	std::cout << _SIMDFloat << std::endl;
-	std::cout << _SIMDDouble << std::endl;
-	std::cout << (_SIMDFloat * 5.f) << std::endl;
 
-	std::cout << &_SIMDFloat << std::endl;
-	std::cout << &_SIMDDouble << std::endl;
+	SIMDVec_<4, float> _A = SIMDVec_<4, float>( 5.f, 0.f, 0.f, 0.f );
+	SIMDVec_<4, float> _B = SIMDVec_<4, float>(5.f, 5.f, 5.f, 1.f);
+	SIMDVec_<4, float> _X = { 1.f, 0.f, 0.f, 1.f };
+	SIMDVec_<4, float> _Y = { 0.f, 1.f, 0.f, 0.f };
+	SIMDVec_<4, float> _Z = { 0.f, 0.f, 1.f, 0.f };
 
-	std::cout << "pow(e): " << pow(SIMDVec4(2.71828), SIMDVec4(1.f, 2.f, 3.f, 4.f)) << std::endl;
-	std::cout << "loge(pow(e)): " << loge(pow(SIMDVec4(2.71828), SIMDVec4(1.f, 2.f, 3.f, 4.f))) << std::endl;
+	auto _Test_ = _mm_set_ps(5.f, 7.f, 10.f, 15.f);
+	SIMDVec_<12, float> _Test_2 = SIMDVec_<12, float>(_Test_);
+	std::cout << _Test_2 << std::endl;
+	std::cout << _Test_2.posfix<9>() << std::endl;
+	std::cout << _Test_2.prefix<12>() << std::endl;
 
-	SIMDVec4f _Test_increase = SIMDVec4f(100.f);
-	std::cout << incr(_Test_increase, 20.f) << std::endl;
-	std::cout << _Test_increase.incr(20.f).incr(30.f) << std::endl;
-	std::cout << _Test_increase.decr(20.f).decr(30.f) << std::endl;
-	std::cout << _Test_increase.inv() << std::endl;
+	Mat_<4, 4, float> _Mat;
+	for (size_t i = 0; i < 4; i++)
+	{
+		for (size_t j = 0; j < 4; j++)
+		{
+			_Mat[i][j] = float(i) * 4.f + float(j);
+		}
+	}
+	std::cout << _Mat << std::endl;
+	std::cout << translation_matrix(10.f, 20.f, 0.f) * _X << std::endl;
+	std::cout << _X * translation_matrix(10.f, 20.f, 0.f)<< std::endl;
+
+	Mat_<5, 4> _Test_opeartor_plus;
+	std::cout << (_Test_opeartor_plus += Mat_<5, 6>()) << std::endl;
 }
 
 int main() {
-	//test_simd();
-
-	clmagic::Vec4 _A( 1.f, 2.f, 3.f, 4.f);
-	clmagic::Vec4 _B(5.f);
-	_A + _B;
-	clmagic::SIMDVec4 _C;
-	_A + _B;
-
-	_A += _B;
-	std::cout << _A.incr(_B) << std::endl;
-	std::cout << incr(_A, _B) << std::endl;
+	test_simd();
 
 	std::cin.get();
 	return (0);

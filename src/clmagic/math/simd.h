@@ -1,6 +1,6 @@
 #pragma once
-#ifndef __CLMAGIC_CORE_GEOMETRY_MATH___SIMD___H__
-#define __CLMAGIC_CORE_GEOMETRY_MATH___SIMD___H__
+#ifndef clmagic_math_SIMD_h_
+#define clmagic_math_SIMD_h_
 #include "clmagic.h"
 #include <string>
 #include <iostream>
@@ -83,6 +83,14 @@
 //};// class F32mat4
 
 
+inline float _mm_sum_ps(__m128 _A) {
+	return (_A.m128_f32[0] + _A.m128_f32[1] + _A.m128_f32[2] + _A.m128_f32[3]);
+}
+
+inline double _mm256_sum_pd(__m256d _A) {
+	return (_A.m256d_f64[0] + _A.m256d_f64[1] + _A.m256d_f64[2] + _A.m256d_f64[3]);
+}
+
 inline __m128 _mm_cross3_ps(__m128 _A, __m128 _B)
 	{
 	/*
@@ -118,6 +126,20 @@ inline __m256d _mm256_cross3_pd(__m256d _A, __m256d _B)
 	return (_Result);
 	}
 
+inline std::string _mm_to_string_ps(__m128 _A) {
+	return ("__m128[" + std::to_string(_A.m128_f32[0]) + "," 
+				      + std::to_string(_A.m128_f32[1]) + ","
+				  	  + std::to_string(_A.m128_f32[2]) + "," 
+				  	  + std::to_string(_A.m128_f32[3]) + "]");
+}
+
+inline std::string _mm256_to_string_pd(__m256d _A) {
+	return ("__m256d[" + std::to_string(_A.m256d_f64[0]) + ","
+			           + std::to_string(_A.m256d_f64[1]) + ","
+			           + std::to_string(_A.m256d_f64[2]) + ","
+			           + std::to_string(_A.m256d_f64[3]) + "]");
+}
+
 
 namespace clmagic {
 
@@ -128,314 +150,407 @@ namespace clmagic {
 			double, 
 			int>;
 
+	template<typename _Ty = float>
+		struct _SIMD_traits {
+			using value_type    = _Ty;
+			using vector_type   = __m128;
+			using pointer       = _Ty*;
+			using const_pointer = _Ty*;
+
+			static vector_type _Load(const_pointer _Ptr) { _mm_load_ps(_Ptr); }
+			static vector_type _Loadu(const_pointer _Ptr) { _mm_loadu_ps(_Ptr); }
+			static vector_type _All(value_type _Val) { return _mm_set1_ps(_Val); }
+			static vector_type _Set(value_type _Val0, value_type _Val1, value_type _Val2, value_type _Val3) { return _mm_set_ps(_Val3, _Val2, _Val1, _Val0); }
+			static value_type  _Sum(_in(vector_type) _A) { return _mm_sum_ps(_A); }
+
+			static vector_type _And(_in(vector_type) _A, _in(vector_type) _B) { return _mm_and_ps(_A, _B); }
+			static vector_type _Or (_in(vector_type) _A, _in(vector_type) _B) { return _mm_or_ps(_A, _B); }
+			static vector_type _Xor(_in(vector_type) _A, _in(vector_type) _B) { return _mm_xor_ps(_A, _B); }
+			static vector_type _Add(_in(vector_type) _A, _in(vector_type) _B) { return _mm_add_ps(_A, _B); }
+			static vector_type _Sub(_in(vector_type) _A, _in(vector_type) _B) { return _mm_sub_ps(_A, _B); }
+			static vector_type _Mul(_in(vector_type) _A, _in(vector_type) _B) { return _mm_mul_ps(_A, _B); }
+			static vector_type _Div(_in(vector_type) _A, _in(vector_type) _B) { return _mm_div_ps(_A, _B); }
+			static vector_type _Mod(_in(vector_type) _A, _in(vector_type) _B) { return _mm_fmod_ps(_A, _B); }
+			static vector_type _Pow(_in(vector_type) _A, _in(vector_type) _B) { return _mm_pow_ps(_A, _B); }
+			static vector_type _Dot(_in(vector_type) _A, _in(vector_type) _B) { return _All(_Sum(_Mul(_A, _B))); }
+			static value_type  _Dot2(_in(vector_type) _A, _in(vector_type) _B) { auto _Tmp = _Mul(_A, _B); return (_Tmp.m128_f32[0] + _Tmp.m128_f32[1]); }
+			static value_type  _Dot3(_in(vector_type) _A, _in(vector_type) _B) { auto _Tmp = _Mul(_A, _B); return (_Tmp.m128_f32[0] + _Tmp.m128_f32[1] + _Tmp.m128_f32[2]); }
+			static value_type  _Dot4(_in(vector_type) _A, _in(vector_type) _B) { return _Sum(_Mul(_A, _B)); }
+			static vector_type _Cross3(_in(vector_type) _A, _in(vector_type) _B) { return _mm_cross3_ps(_A, _B); }
+
+			static vector_type _Floor(_in(vector_type) _A) { return _mm_floor_ps(_A); }
+			static vector_type _Ceil(_in(vector_type) _A) { return _mm_ceil_ps(_A); }
+			static vector_type _Trunc(_in(vector_type) _A) { return _mm_trunc_ps(_A); }
+
+			static vector_type _Invsqrt(_in(vector_type) _A) { return (_mm_invsqrt_ps(_A));/* 1.f/sqrt(_A) */ }
+			static vector_type _Sqrt(_in(vector_type) _A) { return _mm_sqrt_ps(_A); }
+			static vector_type _Exp(_in(vector_type) _A) { return _mm_exp_ps(_A); }
+			static vector_type _Exp2(_in(vector_type) _A) { return _mm_exp2_ps(_A); }
+
+			static vector_type _Log10(_in(vector_type) _A) { return _mm_log10_ps(_A); }
+			static vector_type _Log2(_in(vector_type) _A) { return _mm_log2_ps(_A); }
+			static vector_type _LogE(_in(vector_type) _A) { return _mm_log_ps(_A); }
+
+			static vector_type _Sin(_in(vector_type) _A) { return _mm_sin_ps(_A); }
+			static vector_type _Cos(_in(vector_type) _A) { return _mm_cos_ps(_A); }
+			static vector_type _Tan(_in(vector_type) _A) { return _mm_tan_ps(_A); }
+
+			static vector_type _Asin(_in(vector_type) _A) { return _mm_asin_ps(_A); }
+			static vector_type _Acos(_in(vector_type) _A) { return _mm_acos_ps(_A); }
+			static vector_type _Atan(_in(vector_type) _A) { return _mm_atan_ps(_A); }
+			static vector_type _Atan2(_in(vector_type) _Y, _in(vector_type) _X) { return _mm_atan2_ps(_Y, _X); }
+
+			static vector_type _Length(_in(vector_type) _A) { return _Sqrt(_Dot(_A, _A)); }
+			static vector_type _Normalize(_in(vector_type) _A) { return _Mul(_A, _Invsqrt(_Dot(_A, _A))); }
+
+			static std::string _Tostring(_in(vector_type) _A) { return _mm_to_string_ps(_A); }
+	};
+
+	template<>
+		struct _SIMD_traits<double> {
+			using value_type    = double;
+			using vector_type   = __m256d;
+			using pointer       = double*;
+			using const_pointer = const double*;
+
+			static vector_type _Load(const_pointer _Ptr) { _mm256_load_pd(_Ptr); }
+			static vector_type _Loadu(const_pointer _Ptr) { _mm256_loadu_pd(_Ptr); }
+			static vector_type _All(value_type _Val) { return _mm256_set1_pd(_Val); }
+			static vector_type _Set(value_type _Val0, value_type _Val1, value_type _Val2, value_type _Val3) { return _mm256_set_pd(_Val3, _Val2, _Val1, _Val0); }
+			static value_type  _Sum(_in(vector_type) _A) { return _mm256_sum_pd(_A); }
+
+			static vector_type _And(_in(vector_type) _A, _in(vector_type) _B) { return _mm256_and_pd(_A, _B); }
+			static vector_type _Or (_in(vector_type) _A, _in(vector_type) _B) { return _mm256_or_pd(_A, _B); }
+			static vector_type _Xor(_in(vector_type) _A, _in(vector_type) _B) { return _mm256_xor_pd(_A, _B); }
+			static vector_type _Add(_in(vector_type) _A, _in(vector_type) _B) { return _mm256_add_pd(_A, _B); }
+			static vector_type _Sub(_in(vector_type) _A, _in(vector_type) _B) { return _mm256_sub_pd(_A, _B); }
+			static vector_type _Mul(_in(vector_type) _A, _in(vector_type) _B) { return _mm256_mul_pd(_A, _B); }
+			static vector_type _Div(_in(vector_type) _A, _in(vector_type) _B) { return _mm256_div_pd(_A, _B); }
+			static vector_type _Mod(_in(vector_type) _A, _in(vector_type) _B) { return _mm256_fmod_pd(_A, _B); }
+			static vector_type _Pow(_in(vector_type) _A, _in(vector_type) _B) { return _mm256_pow_pd(_A, _B); }
+			static vector_type _Dot(_in(vector_type) _A, _in(vector_type) _B) { return _All( _Sum( _Mul(_A, _B) ) ); }
+			static value_type  _Dot2(_in(vector_type) _A, _in(vector_type) _B) { auto _Tmp = _Mul(_A, _B); return (_Tmp.m256d_f64[0] + _Tmp.m256d_f64[1]); }
+			static value_type  _Dot3(_in(vector_type) _A, _in(vector_type) _B) { auto _Tmp = _Mul(_A, _B); return (_Tmp.m256d_f64[0] + _Tmp.m256d_f64[1] + _Tmp.m256d_f64[2]); }
+			static value_type  _Dot4(_in(vector_type) _A, _in(vector_type) _B) { return _Sum( _Mul(_A, _B) ); }
+			static vector_type _Cross3(_in(vector_type) _A, _in(vector_type) _B) { return _mm256_cross3_pd(_A, _B); }
+
+			static vector_type _Floor(_in(vector_type) _A) { return _mm256_floor_pd(_A); }
+			static vector_type _Ceil(_in(vector_type) _A) { return _mm256_ceil_pd(_A); }
+			static vector_type _Trunc(_in(vector_type) _A) { return _mm256_trunc_pd(_A); }
+
+			static vector_type _Invsqrt(_in(vector_type) _A) { return _mm256_invsqrt_pd(_A); }
+			static vector_type _Sqrt(_in(vector_type) _A) { return _mm256_sqrt_pd(_A); }
+			static vector_type _Exp(_in(vector_type) _A) { return _mm256_exp_pd(_A); }
+			static vector_type _Exp2(_in(vector_type) _A) { return _mm256_exp2_pd(_A); }
+
+			static vector_type _Log10(_in(vector_type) _A) { return _mm256_log10_pd(_A); }
+			static vector_type _Log2(_in(vector_type) _A) { return _mm256_log2_pd(_A); }
+			static vector_type _LogE(_in(vector_type) _A) { return _mm256_log_pd(_A); }
+
+			static vector_type _Sin(_in(vector_type) _A) { return _mm256_sin_pd(_A); }
+			static vector_type _Cos(_in(vector_type) _A) { return _mm256_cos_pd(_A); }
+			static vector_type _Tan(_in(vector_type) _A) { return _mm256_tan_pd(_A); }
+
+			static vector_type _Asin(_in(vector_type) _A) { return _mm256_asin_pd(_A); }
+			static vector_type _Acos(_in(vector_type) _A) { return _mm256_acos_pd(_A); }
+			static vector_type _Atan(_in(vector_type) _A) { return _mm256_atan_pd(_A); }
+			static vector_type _Atan2(_in(vector_type) _Y, _in(vector_type) _X) { return _mm256_atan2_pd(_Y, _X); }
+
+			static vector_type _Length(_in(vector_type) _A) { return _Sqrt(_Dot(_A, _A)); }
+			static vector_type _Normalize(_in(vector_type) _A) { return _Mul(_A, _Invsqrt(_Dot(_A, _A))); }
+
+			static std::string _Tostring(_in(vector_type) _A) { return _mm256_to_string_pd(_A); }
+	};
+
+	
+
 
 	/*
 	@_Note: only contains stl-simd operation
 	*/
-	template<typename _Ty>
-	struct SIMDVec4_ {
-		static_assert( is_simd_v<_Ty>, "[Unsupported SIMD type, Please implement by yourself, @SIMDVec4_<>]" );
-
-		using value_type  = _Ty;
-		using vector_type = __m128;
-
-		SIMDVec4_()  { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-
-		explicit SIMDVec4_(value_type _All) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
+	template<size_t N, typename T>
+	struct SIMDVec_ {
+		static_assert( is_simd_v<T>, "[Unsupported SIMD type, Please implement by yourself, @SIMDVec_<>]" );
 		
-		SIMDVec4_(value_type _Val0, value_type _Val1, value_type _Val2, value_type _Val3) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		
-		SIMDVec4_(_in(vector_type) _Vec) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		
-		operator vector_type() const { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
+		constexpr static size_t vector_size = constexpr_align(N, 4) / 4;
+		using _Mytraits     = _SIMD_traits<T>;
+		using value_type    = typename _Mytraits::value_type;
+		using vector_type   = typename _Mytraits::vector_type;
+		using pointer       = typename _Mytraits::pointer;
+		using const_pointer = typename _Mytraits::const_pointer;
 
-		    size_t  size() const { return (4); }
-		      _Ty*  ptr()           { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		const _Ty*  ptr() const        { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-			  _Ty*  ptr(size_t _Pos)      { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		const _Ty*  ptr(size_t _Pos) const   { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		vector_type simd_vector() const         { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		      _Ty&  operator[](size_t _Pos)        { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		const _Ty&  operator[](size_t _Pos) const     { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
+		/* <construct> */
+		SIMDVec_(/* void */) : SIMDVec_(T(0)) { }
 
-		SIMDVec4_& operator&=(_in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		SIMDVec4_& operator|=(_in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		SIMDVec4_& operator^=(_in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		SIMDVec4_& operator+=(_in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		SIMDVec4_& operator-=(_in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		SIMDVec4_& operator*=(_in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		SIMDVec4_& operator*=(   value_type  _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		SIMDVec4_& operator/=(_in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		SIMDVec4_& operator/=(   value_type  _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		SIMDVec4_& incr      (_in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		SIMDVec4_& incr      (    value_type _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		SIMDVec4_& decr      (_in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		SIMDVec4_& decr      (    value_type _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-
-		friend SIMDVec4_ operator&(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ operator|(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ operator^(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ operator+(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ operator-(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ operator*(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ operator*(_in(SIMDVec4_) _A,    value_type  _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ operator*(    value_type _A, _in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ operator/(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ operator/(_in(SIMDVec4_) _A,    value_type  _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ operator/(    value_type _A, _in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ incr     (_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ incr     (_in(SIMDVec4_) _A,     value_type _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ decr     (_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ decr     (_in(SIMDVec4_) _A,     value_type _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-
-		friend SIMDVec4_ mod  (_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ mod  (_in(SIMDVec4_) _A, value_type _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ floor(_in(SIMDVec4_) _A) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ ceil (_in(SIMDVec4_) _A) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ trunc(_in(SIMDVec4_) _A) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		
-		friend SIMDVec4_ sqrt (_in(SIMDVec4_) _A) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ exp  (_in(SIMDVec4_) _A) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ exp2 (_in(SIMDVec4_) _A) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-
-		friend SIMDVec4_ pow  (_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ pow  (_in(SIMDVec4_) _A, value_type _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-
-		friend SIMDVec4_ log10(_in(SIMDVec4_) _A) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ log2 (_in(SIMDVec4_) _A) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ loge (_in(SIMDVec4_) _A) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-
-		friend SIMDVec4_ sin  (_in(SIMDVec4_) _A) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ cos  (_in(SIMDVec4_) _A) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ tan  (_in(SIMDVec4_) _A) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-
-		friend SIMDVec4_ asin (_in(SIMDVec4_) _A) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ acos (_in(SIMDVec4_) _A) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ atan (_in(SIMDVec4_) _A) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ atan (_in(SIMDVec4_) _Y, _in(SIMDVec4_) _X) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-
-		friend value_type dot2(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend value_type dot3(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend value_type dot4(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend SIMDVec4_ cross3(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-
-		friend std::string to_string(_in(SIMDVec4_) _Vec) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-		friend std::ostream& operator<<(_inout(std::ostream) _Ostr, _in(SIMDVec4_) _Vec) { throw std::exception("[Please implement by yourself, @SIMDVec4_<>]"); }
-	};// struct SIMDVec4_<>
-
-	using SIMDVec4i = SIMDVec4_<int>;
-	using SIMDVec4f = SIMDVec4_<float>;
-	using SIMDVec4d = SIMDVec4_<double>;
-	using SIMDVec4  = SIMDVec4f;
-
-
-	/* @_Describe: __m128 wrapper */
-	template<>
-	struct SIMDVec4_<float> {
-		using value_type = float;
-		using vector_type = __m128;
-
-		SIMDVec4_( ) { _Myvec = _mm_set_ps1(0.f); }
-
-		explicit SIMDVec4_( float _All ) { _Myvec = _mm_set_ps1(_All); }
-		
-		SIMDVec4_( float _F0, float _F1, float _F2, float _F3 ) { _Myvec = _mm_set_ps(_F3, _F2, _F1, _F0); }
-		
-		SIMDVec4_( _in(vector_type) _Vec ) { _Myvec = _Vec; }
-
-		operator vector_type( ) const { return (_Myvec); }
-
-		      size_t size() const { return ( 4 ); }
-		      float* ptr()           { return (_Myvec.m128_f32); }
-		const float* ptr() const        { return (_Myvec.m128_f32); }
-		      float* ptr(size_t _Pos)      { return (_Myvec.m128_f32 + _Pos); }
-		const float* ptr(size_t _Pos) const   { return (_Myvec.m128_f32 + _Pos); }
-		vector_type  simd_vector()    const      { return (_Myvec); }
-		      float& operator[](size_t _Pos)        { return (_Myvec.m128_f32[_Pos]); }
-		const float& operator[](size_t _Pos) const     { return (_Myvec.m128_f32[_Pos]); }
-
-		SIMDVec4_& operator&=(_in(SIMDVec4_) _B) { _Myvec = _mm_and_ps(_Myvec, _B); return (*this); }
-		SIMDVec4_& operator|=(_in(SIMDVec4_) _B) { _Myvec =  _mm_or_ps(_Myvec, _B); return (*this); }
-		SIMDVec4_& operator^=(_in(SIMDVec4_) _B) { _Myvec = _mm_xor_ps(_Myvec, _B); return (*this); }
-		SIMDVec4_& operator+=(_in(SIMDVec4_) _B) { _Myvec = _mm_add_ps(_Myvec, _B); return (*this); }
-		SIMDVec4_& operator-=(_in(SIMDVec4_) _B) { _Myvec = _mm_sub_ps(_Myvec, _B); return (*this); }
-		SIMDVec4_& operator*=(_in(SIMDVec4_) _B) { _Myvec = _mm_mul_ps(_Myvec, _B); return (*this); }
-		SIMDVec4_& operator*=(    value_type _B) { _Myvec = _mm_mul_ps(_Myvec, _mm_set_ps1(_B)); return (*this); }
-		SIMDVec4_& operator/=(_in(SIMDVec4_) _B) { _Myvec = _mm_div_ps(_Myvec, _B); return (*this); }
-		SIMDVec4_& operator/=(    value_type _B) { _Myvec = _mm_div_ps(_Myvec, _mm_set_ps1(_B)); return (*this); }
-		SIMDVec4_& incr      (_in(SIMDVec4_) _B) { _Myvec = _mm_add_ps(_Myvec, _B); return (*this); }
-		SIMDVec4_& incr      (    value_type _B) { _Myvec = _mm_add_ps(_Myvec, _mm_set_ps1(_B)); return (*this); }
-		SIMDVec4_& decr      (_in(SIMDVec4_) _B) { _Myvec = _mm_sub_ps(_Myvec, _B); return (*this); }
-		SIMDVec4_& decr      (    value_type _B) { _Myvec = _mm_sub_ps(_Myvec, _mm_set_ps1(_B)); return (*this); }
-		SIMDVec4_  inv() const { return (_mm_div_ps(_mm_set_ps1(1.f), _Myvec)); }
-
-		friend SIMDVec4_ operator&(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_mm_and_ps(_A, _B)); }
-		friend SIMDVec4_ operator|(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return ( _mm_or_ps(_A, _B)); }
-		friend SIMDVec4_ operator^(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_mm_xor_ps(_A, _B)); }
-		friend SIMDVec4_ operator+(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_mm_add_ps(_A, _B)); }
-		friend SIMDVec4_ operator-(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_mm_sub_ps(_A, _B)); }
-		friend SIMDVec4_ operator*(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_mm_mul_ps(_A, _B)); }
-		friend SIMDVec4_ operator*(_in(SIMDVec4_) _A,     value_type _B) { return (_mm_mul_ps(_A, _mm_set_ps1(_B))); }
-		friend SIMDVec4_ operator*(    value_type _A, _in(SIMDVec4_) _B) { return (_mm_mul_ps(_mm_set_ps1(_A), _B)); }
-		friend SIMDVec4_ operator/(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_mm_div_ps(_A, _B)); }
-		friend SIMDVec4_ operator/(_in(SIMDVec4_) _A,     value_type _B) { return (_mm_div_ps(_A, _mm_set_ps1(_B))); }
-		friend SIMDVec4_ operator/(    value_type _A, _in(SIMDVec4_) _B) { return (_mm_div_ps(_mm_set_ps1(_A), _B)); }
-		friend SIMDVec4_ incr     (_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_A + _B); }
-		friend SIMDVec4_ incr     (_in(SIMDVec4_) _A,     value_type _B) { return (_mm_add_ps(_A, _mm_set_ps1(_B))); }
-		friend SIMDVec4_ decr     (_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_A - _B); }
-		friend SIMDVec4_ decr     (_in(SIMDVec4_) _A,     value_type _B) { return (_mm_sub_ps(_A, _mm_set_ps1(_B))); }
-
-		friend SIMDVec4_ mod  (_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_mm_fmod_ps(_A, _B)); }
-		friend SIMDVec4_ mod  (_in(SIMDVec4_) _A,     float      _B) { return ( _mm_fmod_ps(_A, _mm_set_ps1(_B)) ); }
-		friend SIMDVec4_ floor(_in(SIMDVec4_) _A) { return (_mm_floor_ps(_A)); }
-		friend SIMDVec4_ ceil (_in(SIMDVec4_) _A) { return (_mm_ceil_ps(_A)); }
-		friend SIMDVec4_ trunc(_in(SIMDVec4_) _A) { return (_mm_trunc_ps(_A)); }
-
-		friend SIMDVec4_ sqrt (_in(SIMDVec4_) _A) { return (_mm_sqrt_ps(_A)); }
-		friend SIMDVec4_ exp  (_in(SIMDVec4_) _A) { return (_mm_exp_ps(_A)); }
-		friend SIMDVec4_ exp2 (_in(SIMDVec4_) _A) { return (_mm_exp2_ps(_A)); }
-		/*  expn: pow(_B, _A) */
-		
-		friend SIMDVec4_ pow  (_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_mm_pow_ps(_A, _B)); }
-		friend SIMDVec4_ pow  (_in(SIMDVec4_) _A,     float      _B) { return (_mm_pow_ps(_A, _mm_set_ps1(_B))); }
-		
-		friend SIMDVec4_ log10(_in(SIMDVec4_) _A) { return (_mm_log10_ps(_A)); }
-		friend SIMDVec4_ log2 (_in(SIMDVec4_) _A) { return (_mm_log2_ps(_A)); }
-		friend SIMDVec4_ loge (_in(SIMDVec4_) _A) { return (_mm_log_ps(_A)); }
-
-		friend SIMDVec4_ sin  (_in(SIMDVec4_) _A) { return (_mm_sin_ps(_A)); }
-		friend SIMDVec4_ cos  (_in(SIMDVec4_) _A) { return (_mm_cos_ps(_A)); }
-		friend SIMDVec4_ tan  (_in(SIMDVec4_) _A) { return (_mm_tan_ps(_A)); }
-		/*  cot: 1.0/tan
-			sec: 1.0/sin
-			csc: 1.0/cos
-		*/
-
-		friend SIMDVec4_ asin (_in(SIMDVec4_) _A) { return (_mm_asin_ps(_A)); }
-		friend SIMDVec4_ acos (_in(SIMDVec4_) _A) { return (_mm_acos_ps(_A)); }
-		friend SIMDVec4_ atan (_in(SIMDVec4_) _A) { return (_mm_atan_ps(_A)); }
-		friend SIMDVec4_ atan (_in(SIMDVec4_) _Y, _in(SIMDVec4_) _X) { return (_mm_atan2_ps(_Y, _X)); }
-
-		friend value_type dot2(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { auto _Tmp = _A * _B; return (_Tmp[0] + _Tmp[1]); }
-		friend value_type dot3(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { auto _Tmp = _A * _B; return (_Tmp[0] + _Tmp[1] + _Tmp[2]); }
-		friend value_type dot4(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { auto _Tmp = _A * _B; return (_Tmp[0] + _Tmp[1] + _Tmp[2] + _Tmp[3]); }
-		friend SIMDVec4_ cross3(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_mm_cross3_ps(_A, _B)); }
-
-		friend std::string to_string(_in(SIMDVec4_) _Vec) {
-			return ("SIMDVec4f[" + std::to_string(_Vec[0]) + "," + std::to_string(_Vec[1]) + "," + std::to_string(_Vec[2]) + "," + std::to_string(_Vec[3]) + "]");
+		explicit SIMDVec_(const_pointer _Ptr) {
+			if (_Ptr & (16 - 1) == 0) {// aligned 16
+				for (size_t i = 0; i != vector_size; ++i, _Ptr += sizeof(vector_type)) {
+					_Myvec[i] = _Mytraits::_Load(_Ptr);
+				}
+			} else {
+				for (size_t i = 0; i != vector_size; ++i, _Ptr += sizeof(vector_type)) {
+					_Myvec[i] = _Mytraits::_Loadu(_Ptr);
+				}
+			}
 		}
 
-		friend std::ostream& operator<<(_inout(std::ostream) _Ostr, _in(SIMDVec4_) _Vec) { 
+		explicit SIMDVec_(value_type _Val) { 
+			for (size_t i = 0; i != vector_size; ++i) { 
+				_Myvec[i] = _Mytraits::_All(_Val); 
+			} 
+		}
+		
+		SIMDVec_(value_type _Val0, value_type _Val1, value_type _Val2 = T(0), value_type _Val3 = T(0))
+			: _Myvec{ _Mytraits::_Set(_Val0, _Val1, _Val2, _Val3) } { }
+		
+		SIMDVec_(value_type _Val0, value_type _Val1, value_type _Val2, value_type _Val3,
+				 value_type _Val4, value_type _Val5, value_type _Val6, value_type _Val7) 
+			: _Myvec{ _Mytraits::_Set(_Val0, _Val1, _Val2, _Val3), 
+					  _Mytraits::_Set(_Val4, _Val5, _Val6, _Val7) } { }
+
+		SIMDVec_(value_type _Val0, value_type _Val1, value_type _Val2, value_type _Val3,
+				 value_type _Val4, value_type _Val5, value_type _Val6, value_type _Val7,
+				 value_type _Val8, value_type _Val9, value_type _Val10, value_type _Val11)
+			: _Myvec{ _Mytraits::_Set(_Val0, _Val1, _Val2, _Val3), 
+					  _Mytraits::_Set(_Val4, _Val5, _Val6, _Val7),
+					  _Mytraits::_Set(_Val8, _Val9, _Val10, _Val11) } { }
+		
+		SIMDVec_(_in(vector_type) _V0) : _Myvec{ _V0 } { }
+		SIMDVec_(_in(vector_type) _V0, _in(vector_type) _V1) : _Myvec{ _V0, _V1 } { }
+		SIMDVec_(_in(vector_type) _V0, _in(vector_type) _V1, _in(vector_type) _V2) : _Myvec{ _V0, _V1, _V2 } { }
+
+		template<typename _Fn>
+		SIMDVec_(_in(SIMDVec_) _A, _Fn _Func) : _Myvec{ 0 } {
+			for (size_t i = 0; i != vector_size; ++i) {
+				_Myvec[i] = _Func(_A.simd_vector(i));
+			}
+		}
+
+		template<typename _Fn> 
+		SIMDVec_(_in(SIMDVec_) _A, _in(SIMDVec_) _B, _Fn _Func) : _Myvec{ 0 } {
+			for (size_t i = 0; i != vector_size; ++i) {
+				_Myvec[i] = _Func(_A.simd_vector(i), _B.simd_vector(i));
+			}
+		}
+
+		template<typename _Fn>
+		SIMDVec_(_in(SIMDVec_) _A, _in(vector_type) _B, _Fn _Func) : _Myvec{ 0 } {
+			for (size_t i = 0; i != vector_size; ++i) {
+				_Myvec[i] = _Func(_A.simd_vector(i), _B);
+			}
+		}
+
+		template<typename _Fn>
+		SIMDVec_(_in(vector_type) _A, _in(SIMDVec_) _B, _Fn _Func) : _Myvec{ 0 } {
+			for (size_t i = 0; i != vector_size; ++i) {
+				_Myvec[i] = _Func(_A, _B.simd_vector(i));
+			}
+		}
+		/* </construct> */
+
+		operator vector_type() const { return (_Myvec[0]); }
+
+		constexpr size_t size() const { return ( N ); }
+		constexpr size_t vsize() const  { return ( vector_size ); }
+		T*       ptr()            { return ( (T*)&_Myvec ); }
+		const T* ptr() const         { return ( (const T*)&_Myvec ); }
+		T*       ptr(size_t _Pos)       { return ( ptr() + _Pos ); }
+		const T* ptr(size_t _Pos) const    { return ( ptr() + _Pos ); }
+		T&       operator[](size_t _Pos)      { return ( ptr()[_Pos] ); }
+		const T& operator[](size_t _Pos) const   { return ( ptr()[_Pos] ); }
+		vector_type&       simd_vector(size_t _Pos = 0) { return ( _Myvec[_Pos] ); }
+		const vector_type& simd_vector(size_t _Pos = 0) const { return ( _Myvec[_Pos] ); }
+		
+		SIMDVec_& operator=(_in(SIMDVec_) _B) {
+			std::copy(_B.ptr(), _B.ptr(N), this->ptr());
+			return (*this);
+		}
+
+		template<typename _Fn>
+		void assign(_in(SIMDVec_) _A, _Fn _Func) 
+			{	// this = _Func(A[i])
+			for (size_t i = 0; i != vector_size; ++i) 
+				{
+				_Myvec[i] = _Func(_A.simd_vector(i));
+				}
+			}
+
+		template<typename _Fn>
+		void assign(_in(SIMDVec_) _A, _in(SIMDVec_) _B, _Fn _Func) 
+			{	// this = _Func(A[i], B[i])
+			for (size_t i = 0; i != vector_size; ++i) 
+				{
+				_Myvec[i] = _Func(_A.simd_vector(i), _B.simd_vector(i));
+				}
+			}
+
+		template<typename _Fn>
+		void assign(_in(SIMDVec_) _A, _in(vector_type) _B, _Fn _Func) 
+			{	// this = _Func(A[i], B)
+			for (size_t i = 0; i != vector_size; ++i) 
+				{
+				_Myvec[i] = _Func(_A.simd_vector(i), _B);
+				}
+			}
+
+		template<typename _Fn>
+		void assign(_in(vector_type) _A, _in(SIMDVec_) _B, _Fn _Func) 
+			{	// this = _Func(A, B[i])
+			for (size_t i = 0; i != vector_size; ++i) 
+				{
+				_Myvec[i] = _Func(_A, _B.simd_vector(i));
+				}
+			}
+
+		template<size_t _Size>
+		SIMDVec_<_Size, T>& prefix() 
+			{	// [first, first + _Size] ¡Ê [first, last)
+			static_assert(_Size <= N, "[prefix grater than SIMDVec_<>]");
+#ifdef _DEBUG
+			if ((_Size & (4 - 1)) != 0) {
+				std::cout << "[SIMD element must be align 4]" << std::endl;
+			}
+#endif
+			return (reference_cast<SIMDVec_<_Size, T>>(_Myvec));
+			}
+
+		template<size_t _Size>
+		SIMDVec_<_Size, T>& posfix() 
+			{	// [first + _Off, last) ¡Ê [first, last)
+			static_assert(_Size <= N, "[posfix grater than SIMDVec_<>]");
+#ifdef _DEBUG
+			if ((_Size & (4 - 1)) != 0) {
+				std::cout << "[SIMD element must be align 4]" << std::endl;
+			}
+#endif
+			size_t _Off = N - _Size;
+			return ( reference_cast<SIMDVec_<_Size, T>>(*this->ptr(_Off)) );
+			}
+
+		value_type sum() const 
+			{	// sum of all elements  
+			value_type _Sum = _Mytraits::_Sum(_Myvec[0]);
+			for (size_t i = 1; i != vector_size; ++i) { _Sum += _Mytraits::_Sum(_Myvec[i]); }
+			return (_Sum);
+			}
+
+		value_type length() const 
+			{	// sqrt( ¡Æelement[i]^2 ) 
+			value_type _Length = _Mytraits::_Dot4(_Myvec[0], _Myvec[0]);
+			for (size_t i = 1; i != vector_size; ++i) { _Length += _Mytraits::_Dot4(_Myvec[i], _Myvec[i]); }
+			return ( static_cast<value_type>(::sqrt(_Length)) );
+			}
+
+		SIMDVec_& operator&=(_in(SIMDVec_) _B) { this->assign(*this, _B, _Mytraits::_And); return (*this); }
+		SIMDVec_& operator|=(_in(SIMDVec_) _B) { this->assign(*this, _B, _Mytraits::_Or ); return (*this); }
+		SIMDVec_& operator^=(_in(SIMDVec_) _B) { this->assign(*this, _B, _Mytraits::_Xor); return (*this); }
+		SIMDVec_& operator+=(_in(SIMDVec_) _B) { this->assign(*this, _B, _Mytraits::_Add); return (*this); }
+		SIMDVec_& operator-=(_in(SIMDVec_) _B) { this->assign(*this, _B, _Mytraits::_Sub); return (*this); }
+		SIMDVec_& operator*=(_in(SIMDVec_) _B) { this->assign(*this, _B, _Mytraits::_Mul); return (*this); }
+		SIMDVec_& operator/=(_in(SIMDVec_) _B) { this->assign(*this, _B, _Mytraits::_Div); return (*this); }
+		SIMDVec_& incr      (_in(SIMDVec_) _B) { return (*this += _B); }
+		SIMDVec_& decr      (_in(SIMDVec_) _B) { return (*this -= _B); }
+		SIMDVec_& operator*=(    value_type _B) { this->assign(*this, _Mytraits::_All(_B), _Mytraits::_Mul); return (*this); }
+		SIMDVec_& operator/=(    value_type _B) { this->assign(*this, _Mytraits::_All(_B), _Mytraits::_Div); return (*this); }
+		SIMDVec_& incr      (    value_type _B) { this->assign(*this, _Mytraits::_All(_B), _Mytraits::_Add); return (*this); }
+		SIMDVec_& decr      (    value_type _B) { this->assign(*this, _Mytraits::_All(_B), _Mytraits::_Sub); return (*this); }
+		SIMDVec_& normalize (   /*** void ***/);
+
+		friend SIMDVec_ operator-(_in(SIMDVec_) _A     /*** void ***/) { return SIMDVec_(_A, _Mytraits::_All(T(-1)), _Mytraits::_Mul); }
+		friend SIMDVec_ operator&(_in(SIMDVec_) _A, _in(SIMDVec_) _B) { return SIMDVec_(_A, _B, _Mytraits::_And); }
+		friend SIMDVec_ operator|(_in(SIMDVec_) _A, _in(SIMDVec_) _B) { return SIMDVec_(_A, _B, _Mytraits::_Or ); }
+		friend SIMDVec_ operator^(_in(SIMDVec_) _A, _in(SIMDVec_) _B) { return SIMDVec_(_A, _B, _Mytraits::_Xor); }
+		friend SIMDVec_ operator+(_in(SIMDVec_) _A, _in(SIMDVec_) _B) { return SIMDVec_(_A, _B, _Mytraits::_Add); }
+		friend SIMDVec_ operator-(_in(SIMDVec_) _A, _in(SIMDVec_) _B) { return SIMDVec_(_A, _B, _Mytraits::_Sub); }
+		friend SIMDVec_ operator*(_in(SIMDVec_) _A, _in(SIMDVec_) _B) { return SIMDVec_(_A, _B, _Mytraits::_Mul); }
+		friend SIMDVec_ operator/(_in(SIMDVec_) _A, _in(SIMDVec_) _B) { return SIMDVec_(_A, _B, _Mytraits::_Div); }
+		friend SIMDVec_ incr     (_in(SIMDVec_) _A, _in(SIMDVec_) _B) { return (_A + _B); }
+		friend SIMDVec_ decr     (_in(SIMDVec_) _A, _in(SIMDVec_) _B) { return (_A - _B); }
+		friend SIMDVec_ operator*(_in(SIMDVec_) _A,     value_type _B) { return SIMDVec_(_A, _Mytraits::_All(_B), _Mytraits::_Mul); }
+		friend SIMDVec_ operator/(_in(SIMDVec_) _A,     value_type _B) { return SIMDVec_(_A, _Mytraits::_All(_B), _Mytraits::_Div); }
+		friend SIMDVec_ incr     (_in(SIMDVec_) _A,     value_type _B) { return SIMDVec_(_A, _Mytraits::_All(_B), _Mytraits::_Add); }
+		friend SIMDVec_ decr     (_in(SIMDVec_) _A,     value_type _B) { return SIMDVec_(_A, _Mytraits::_All(_B), _Mytraits::_Sub); }
+		friend SIMDVec_ operator*(    value_type _A, _in(SIMDVec_) _B) { return SIMDVec_(_Mytraits::_All(_A), _B, _Mytraits::_Mul); }
+		friend SIMDVec_ operator/(    value_type _A, _in(SIMDVec_) _B) { return SIMDVec_(_Mytraits::_All(_A), _B, _Mytraits::_Div); }
+
+		friend SIMDVec_ mod      (_in(SIMDVec_) _A, _in(SIMDVec_) _B) { return SIMDVec_(_A, _B, _Mytraits::_Mod);  }
+		friend SIMDVec_ mod      (_in(SIMDVec_) _A,    value_type _B) { return SIMDVec_(_A, _Mytraits::_All(_B), _Mytraits::_Mod); }
+		friend SIMDVec_ floor    (_in(SIMDVec_) _A    /*** void ***/) { return SIMDVec_(_A, _Mytraits::_Floor); }
+		friend SIMDVec_ ceil     (_in(SIMDVec_) _A    /*** void ***/) { return SIMDVec_(_A, _Mytraits::_Ceil); }
+		friend SIMDVec_ trunc    (_in(SIMDVec_) _A    /*** void ***/) { return SIMDVec_(_A, _Mytraits::_Trunc); }
+		
+		friend SIMDVec_ invsqrt  (_in(SIMDVec_) _A    /*** void ***/) { return SIMDVec_(_A, _Mytraits::_Invsqrt); }
+		friend SIMDVec_ sqrt     (_in(SIMDVec_) _A    /*** void ***/) { return SIMDVec_(_A, _Mytraits::_Sqrt); }
+		friend SIMDVec_ exp      (_in(SIMDVec_) _A    /*** void ***/) { return SIMDVec_(_A, _Mytraits::_Exp); }
+		friend SIMDVec_ exp2     (_in(SIMDVec_) _A    /*** void ***/) { return SIMDVec_(_A, _Mytraits::_Exp2); }
+
+		friend SIMDVec_ pow      (_in(SIMDVec_) _A, _in(SIMDVec_) _B) { return SIMDVec_(_A, _B, _Mytraits::_Pow); }
+		friend SIMDVec_ pow      (_in(SIMDVec_) _A,    value_type _B) { return SIMDVec_(_A, _Mytraits::_All(_B), _Mytraits::_Pow); }
+
+		friend SIMDVec_ log10    (_in(SIMDVec_) _A        /* void */) { return SIMDVec_(_A, _Mytraits::_Log10); }
+		friend SIMDVec_ log2     (_in(SIMDVec_) _A        /* void */) { return SIMDVec_(_A, _Mytraits::_Log2); }
+		friend SIMDVec_ logE     (_in(SIMDVec_) _A        /* void */) { return SIMDVec_(_A, _Mytraits::_LogE); }
+
+		friend SIMDVec_ sin      (_in(SIMDVec_) _A        /* void */) { return SIMDVec_(_A, _Mytraits::_Sin); }
+		friend SIMDVec_ cos      (_in(SIMDVec_) _A        /* void */) { return SIMDVec_(_A, _Mytraits::_Cos); }
+		friend SIMDVec_ tan      (_in(SIMDVec_) _A        /* void */) { return SIMDVec_(_A, _Mytraits::_Tan); }
+
+		friend SIMDVec_ asin     (_in(SIMDVec_) _A        /* void */) { return SIMDVec_(_A, _Mytraits::_Asin); }
+		friend SIMDVec_ acos     (_in(SIMDVec_) _A        /* void */) { return SIMDVec_(_A, _Mytraits::_Acos); }
+		friend SIMDVec_ atan     (_in(SIMDVec_) _A        /* void */) { return SIMDVec_(_A, _Mytraits::_Atan); }
+		friend SIMDVec_ atan2    (_in(SIMDVec_) _Y, _in(SIMDVec_) _X) { return SIMDVec_(_Y, _X, _Mytraits::_Atan2); }
+
+		friend value_type dot    (_in(SIMDVec_) _A, _in(SIMDVec_) _B) 
+			{	// A dot B
+			value_type _Dot = _Mytraits::_Dot4(_A.simd_vector(0), _B.simd_vector(0));
+			for (size_t i = 1; i != vector_size; ++i) { _Dot += _Mytraits::_Dot4(_A.simd_vector(i), _B.simd_vector(i)); }
+			return ( _Dot );
+			}
+		friend value_type dot2   (_in(SIMDVec_) _A, _in(SIMDVec_) _B) { return _Mytraits::_Dot2(_A.simd_vector(0), _B.simd_vector(0)); }
+		friend value_type dot3   (_in(SIMDVec_) _A, _in(SIMDVec_) _B) { return _Mytraits::_Dot3(_A.simd_vector(0), _B.simd_vector(0)); }
+		friend value_type dot4   (_in(SIMDVec_) _A, _in(SIMDVec_) _B) { return _Mytraits::_Dot4(_A.simd_vector(0), _B.simd_vector(0)); }
+		friend SIMDVec_  cross3  (_in(SIMDVec_) _A, _in(SIMDVec_) _B) { return SIMDVec_(_A, _B, _Mytraits::_Cross3); }
+		friend SIMDVec_ normalize(_in(SIMDVec_) _A    /*** void ***/) { auto _Tmp = dot(_A, _A); return ( _Tmp == T(1) ? _A : _A * invsqrt(SIMDVec_(_Tmp)) ); }
+
+		friend std::string to_string(_in(SIMDVec_) _Vec) { 
+			std::string _Str = _Mytraits::_Tostring(_Vec.simd_vector(0));
+			for (size_t i = 1; i != vector_size; ++i) { _Str += _Mytraits::_Tostring(_Vec.simd_vector(i)); }
+			return ( _Str );
+		}
+
+		friend std::ostream& operator<<(_inout(std::ostream) _Ostr, _in(SIMDVec_) _Vec) { 
 			return (_Ostr << to_string(_Vec));
 		}
+	
+		vector_type _Myvec[vector_size];
+	};// struct SIMDVec_<>
 
-		__m128 _Myvec;
-	};
-
-
-	/* @_Describe: __m128 wrapper */
-	template<>
-	struct SIMDVec4_<double> {
-		using value_type = double;
-		using vector_type = __m256d;
-
-		SIMDVec4_() { _Myvec = _mm256_set1_pd(0.0); }
-
-		explicit SIMDVec4_( float _All ) { _Myvec = _mm256_set1_pd(_All); }
-		
-		SIMDVec4_( double _F0, double _F1, double _F2, double _F3 ) { _Myvec = _mm256_set_pd(_F3, _F2, _F1, _F0); }
-		
-		SIMDVec4_( _in(vector_type) _Vec ) { _Myvec = _Vec; }
-
-		operator vector_type( ) const { return (_Myvec); }
-
-		      size_t  size() const { return ( 4 ); }
-		      double* ptr()           { return (_Myvec.m256d_f64); }
-		const double* ptr() const        { return (_Myvec.m256d_f64); }
-			  double* ptr(size_t _Pos)      { return (_Myvec.m256d_f64 + _Pos); }
-		const double* ptr(size_t _Pos) const   { return (_Myvec.m256d_f64 + _Pos); }
-		vector_type   simd_vector()    const      { return (_Myvec); }
-			  double& operator[](size_t _Pos)        { return (_Myvec.m256d_f64[_Pos]); }
-		const double& operator[](size_t _Pos) const     { return (_Myvec.m256d_f64[_Pos]); }
-
-		SIMDVec4_& operator&=(_in(SIMDVec4_) _B) { _Myvec = _mm256_add_pd(_Myvec, _B); return (*this); }
-		SIMDVec4_& operator|=(_in(SIMDVec4_) _B) { _Myvec =  _mm256_or_pd(_Myvec, _B); return (*this); }
-		SIMDVec4_& operator^=(_in(SIMDVec4_) _B) { _Myvec = _mm256_xor_pd(_Myvec, _B); return (*this); }
-		SIMDVec4_& operator+=(_in(SIMDVec4_) _B) { _Myvec = _mm256_add_pd(_Myvec, _B); return (*this); }
-		SIMDVec4_& operator-=(_in(SIMDVec4_) _B) { _Myvec = _mm256_sub_pd(_Myvec, _B); return (*this); }
-		SIMDVec4_& operator*=(_in(SIMDVec4_) _B) { _Myvec = _mm256_mul_pd(_Myvec, _B); return (*this); }
-		SIMDVec4_& operator*=(    value_type _B) { _Myvec = _mm256_mul_pd(_Myvec, _mm256_set1_pd(_B)); return (*this); }
-		SIMDVec4_& operator/=(_in(SIMDVec4_) _B) { _Myvec = _mm256_div_pd(_Myvec, _B); return (*this); }
-		SIMDVec4_& operator/=(    value_type _B) { _Myvec = _mm256_div_pd(_Myvec, _mm256_set1_pd(_B)); return (*this); }
-		SIMDVec4_& incr      (_in(SIMDVec4_) _B) { _Myvec = _mm256_add_pd(_Myvec, _B); return (*this); }
-		SIMDVec4_& incr      (    value_type _B) { _Myvec = _mm256_add_pd(_Myvec, _mm256_set1_pd(_B)); return (*this); }
-		SIMDVec4_& decr      (_in(SIMDVec4_) _B) { _Myvec = _mm256_sub_pd(_Myvec, _B); return (*this); }
-		SIMDVec4_& decr      (    value_type _B) { _Myvec = _mm256_sub_pd(_Myvec, _mm256_set1_pd(_B)); return (*this); }
-		SIMDVec4_  inv() const { return (_mm256_div_pd(_mm256_set1_pd(1.0), _Myvec)); }
+	//using SIMDVec4i = SIMDVec_<4, int>;
+	using SIMDVec4f = SIMDVec_<4, float>;
+	using SIMDVec4d = SIMDVec_<4, double>;
 
 
-		friend SIMDVec4_ operator&(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_mm256_add_pd(_A, _B)); }
-		friend SIMDVec4_ operator|(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return ( _mm256_or_pd(_A, _B)); }
-		friend SIMDVec4_ operator^(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_mm256_xor_pd(_A, _B)); }
-		friend SIMDVec4_ operator+(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_mm256_add_pd(_A, _B)); }
-		friend SIMDVec4_ operator-(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_mm256_sub_pd(_A, _B)); }
-		friend SIMDVec4_ operator*(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_mm256_mul_pd(_A, _B)); }
-		friend SIMDVec4_ operator*(_in(SIMDVec4_) _A,     double     _B) { return (_mm256_mul_pd(_A, _mm256_set1_pd(_B))); }
-		friend SIMDVec4_ operator*(    double     _A, _in(SIMDVec4_) _B) { return (_mm256_mul_pd(_mm256_set1_pd(_A), _B)); }
-		friend SIMDVec4_ operator/(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_mm256_div_pd(_A, _B)); }
-		friend SIMDVec4_ operator/(_in(SIMDVec4_) _A,     double     _B) { return (_mm256_div_pd(_A, _mm256_set1_pd(_B))); }
-		friend SIMDVec4_ operator/(    double     _A, _in(SIMDVec4_) _B) { return (_mm256_div_pd(_mm256_set1_pd(_A), _B)); }
-		friend SIMDVec4_ incr     (_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_A + _B); }
-		friend SIMDVec4_ incr     (_in(SIMDVec4_) _A,     double     _B) { return (_mm256_add_pd(_A, _mm256_set1_pd(_B))); }
-		friend SIMDVec4_ decr     (_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_A - _B); }
-		friend SIMDVec4_ decr     (_in(SIMDVec4_) _A,     double     _B) { return (_mm256_sub_pd(_A, _mm256_set1_pd(_B))); }
+#define clmagic_SIMD_FAST_CONSTRUCT_ONE_VECTOR(N, TY) \
+	template<> template<typename _Fn> inline \
+		SIMDVec_<##N##, ##TY##>::SIMDVec_(_in(vector_type) _A, _in(SIMDVec_) _B, _Fn _Func) \
+			: _Myvec{ _Func(_A, _B.simd_vector(0)) } { } 
 
-		friend SIMDVec4_ mod  (_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_mm256_fmod_pd(_A, _B)); }
-		friend SIMDVec4_ mod  (_in(SIMDVec4_) _A,     double     _B) { return ( _mm256_fmod_pd(_A, _mm256_set1_pd(_B)) ); }
-		friend SIMDVec4_ floor(_in(SIMDVec4_) _A) { return (_mm256_floor_pd(_A)); }
-		friend SIMDVec4_ ceil (_in(SIMDVec4_) _A) { return ( _mm256_ceil_pd(_A)); }
-		friend SIMDVec4_ trunc(_in(SIMDVec4_) _A) { return (_mm256_trunc_pd(_A)); }
+	clmagic_SIMD_FAST_CONSTRUCT_ONE_VECTOR(2, float)
+	clmagic_SIMD_FAST_CONSTRUCT_ONE_VECTOR(3, float)
+	clmagic_SIMD_FAST_CONSTRUCT_ONE_VECTOR(4, float)
+	clmagic_SIMD_FAST_CONSTRUCT_ONE_VECTOR(2, double)
+	clmagic_SIMD_FAST_CONSTRUCT_ONE_VECTOR(3, double)
+	clmagic_SIMD_FAST_CONSTRUCT_ONE_VECTOR(4, double)
 
-		friend SIMDVec4_ sqrt (_in(SIMDVec4_) _A) { return (_mm256_sqrt_pd(_A)); }
-		friend SIMDVec4_ exp  (_in(SIMDVec4_) _A) { return ( _mm256_exp_pd(_A)); }
-		friend SIMDVec4_ exp2 (_in(SIMDVec4_) _A) { return (_mm256_exp2_pd(_A)); }
-		/*  expn: pow(_B, _A) */
-		
-		friend SIMDVec4_ pow  (_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_mm256_pow_pd(_A, _B)); }
-		friend SIMDVec4_ pow  (_in(SIMDVec4_) _A,     double     _B) { return (_mm256_pow_pd(_A, _mm256_set1_pd(_B))); }
-		
-		friend SIMDVec4_ log10(_in(SIMDVec4_) _A) { return (_mm256_log10_pd(_A)); }
-		friend SIMDVec4_ log2 (_in(SIMDVec4_) _A) { return ( _mm256_log2_pd(_A)); }
-		friend SIMDVec4_ loge (_in(SIMDVec4_) _A) { return (  _mm256_log_pd(_A)); }
 
-		friend SIMDVec4_ sin  (_in(SIMDVec4_) _A) { return (_mm256_sin_pd(_A)); }
-		friend SIMDVec4_ cos  (_in(SIMDVec4_) _A) { return (_mm256_cos_pd(_A)); }
-		friend SIMDVec4_ tan  (_in(SIMDVec4_) _A) { return (_mm256_tan_pd(_A)); }
-		/*  cot: 1.0/tan
-			sec: 1.0/sin
-			csc: 1.0/cos
-		*/
-
-		friend SIMDVec4_ asin (_in(SIMDVec4_) _A) { return (_mm256_asin_pd(_A)); }
-		friend SIMDVec4_ acos (_in(SIMDVec4_) _A) { return (_mm256_acos_pd(_A)); }
-		friend SIMDVec4_ atan (_in(SIMDVec4_) _A) { return (_mm256_atan_pd(_A)); }
-		friend SIMDVec4_ atan (_in(SIMDVec4_) _Y, _in(SIMDVec4_) _X) { return (_mm256_atan2_pd(_Y, _X)); }
-
-		friend double dot2(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { auto _Tmp = _A * _B; return (_Tmp[0] + _Tmp[1]); }
-		friend double dot3(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { auto _Tmp = _A * _B; return (_Tmp[0] + _Tmp[1] + _Tmp[2]); }
-		friend double dot4(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { auto _Tmp = _A * _B; return (_Tmp[0] + _Tmp[1] + _Tmp[2] + _Tmp[3]); }
-		friend SIMDVec4_ cross3(_in(SIMDVec4_) _A, _in(SIMDVec4_) _B) { return (_mm256_cross3_pd(_A, _B)); }
-
-		friend std::string to_string(_in(SIMDVec4_) _Vec) {
-			return ("SIMDVec4d[" + std::to_string(_Vec[0]) + "," + std::to_string(_Vec[1]) + "," + std::to_string(_Vec[2]) + "," + std::to_string(_Vec[3]) + "]");
+	template<size_t N, typename T>
+	SIMDVec_<N, T>& SIMDVec_<N, T>::normalize( ) {
+		T _Tmp = dot(*this, *this);
+		if (_Tmp != T(1)) {
+			*this *= _Mytraits::_Invsqrt(_Mytraits::_All(_Tmp));
 		}
-
-		friend std::ostream& operator<<(_inout(std::ostream) _Ostr, _in(SIMDVec4_) _Vec) { 
-			return (_Ostr << to_string(_Vec));
-		}
-
-		__m256d _Myvec;
-	};
+		return ( *this );
+	}
 
 }// namespace clmagic
 

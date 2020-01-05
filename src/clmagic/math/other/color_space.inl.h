@@ -27,10 +27,10 @@ namespace clmagic
 		}
 
 	/* < RGB > */ 
-	inline ColorRGB::operator Vec3() const
+	inline ColorRGB::operator Vector3_<real_t>() const
 		{
 		const float _Invcolor = 1.0f / 255.0f;
-		const auto _Linearcolor = Vec3(
+		const auto _Linearcolor = Vector3_<real_t>(
 			static_cast<float>(red) * _Invcolor,
 			static_cast<float>(green) * _Invcolor,
 			static_cast<float>(blue) * _Invcolor
@@ -52,7 +52,7 @@ namespace clmagic
 
 
 	/* < HSV > */
-	inline ColorHSV::operator Vec3() const
+	inline ColorHSV::operator Vector3_<real_t>() const
 		{	// convert to linear color
 		const float _Hue$60 = hue / 60.0f;
 		const float _Hue$60_floor = std::floor(_Hue$60);
@@ -65,17 +65,17 @@ namespace clmagic
 			value * (1.0f - (1.0f - _Hue$60_fraction) * saturation)
 			};
 
-		const std::array<Vec3i, 6> _Swizzle = {
-			Vec3i{ 0, 3, 1 },
-			Vec3i{ 2, 0, 1 },
-			Vec3i{ 1, 0, 3 },
-			Vec3i{ 1, 2, 0 },
-			Vec3i{ 3, 1, 0 },
-			Vec3i{ 0, 1, 2 }
+		const std::array<Vec_<3, int>, 6> _Swizzle = {
+			Vec_<3, int>{ 0, 3, 1 },
+			Vec_<3, int>{ 2, 0, 1 },
+			Vec_<3, int>{ 1, 0, 3 },
+			Vec_<3, int>{ 1, 2, 0 },
+			Vec_<3, int>{ 3, 1, 0 },
+			Vec_<3, int>{ 0, 1, 2 }
 			};
 		const size_t _Swizzleindex = static_cast<size_t>(_Hue$60_floor) % 6;
 
-		return (Vec3(
+		return (Vector3_<real_t>(
 			_Values[_Swizzle[_Swizzleindex][0]],
 			_Values[_Swizzle[_Swizzleindex][1]],
 			_Values[_Swizzle[_Swizzleindex][2]]));

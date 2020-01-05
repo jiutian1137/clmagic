@@ -1,5 +1,5 @@
-#ifndef __CLMAGIC_GEOMETRY___MATH___H__
-#define __CLMAGIC_GEOMETRY___MATH___H__
+#ifndef clmagic_MATH_h_
+#define clmagic_MATH_h_
 
 // debug mode if debug compile
 #ifdef _DEBUG
@@ -15,6 +15,7 @@
 #include "math/general.h"
 #include "math/lapack.h"
 #include "math/complex.h"
+#include "math/calculus.h"
 #include "math/illumunation.h"
 #include "math/raytracing.h"
 #include "math/fraction.h"
@@ -35,12 +36,12 @@
 #include "math/raytracing/shape.inl.h"
 #include "math/raytracing/intersect.inl.h"
 
-#include "math/fraction/Perlin.inl.h"
-#include "math/fraction/Perlin_simplex.inl.h"
-#include "math/fraction/Worley.inl.h"
-#include "math/fraction/Worley_cellular.inl.h"
-#include "math/fraction/gradient.inl.h"
-#include "math/fraction/value_noise.inl.h"
+//#include "math/fraction/Perlin.inl.h"
+//#include "math/fraction/Perlin_simplex.inl.h"
+//#include "math/fraction/Worley.inl.h"
+//#include "math/fraction/Worley_cellular.inl.h"
+//#include "math/fraction/gradient.inl.h"
+//#include "math/fraction/value_noise.inl.h"
 
 #include "math/other/rect2d.inl.h"
 #include "math/other/color_space.inl.h"

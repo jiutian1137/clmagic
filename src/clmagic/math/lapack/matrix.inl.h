@@ -60,45 +60,7 @@ namespace clmagic
 		}
 	/* </ construct > */
 
-	/* < convert > */
-	template< size_t M, size_t N, typename _Ty > inline
-		Mat_< M, N, _Ty >::operator std::string() const
-		{	// convert to string
-		using std::to_string;
-		std::string _Str;
-
-		_Str += "mat";
-		_Str += std::to_string(M);
-		_Str += "x";
-		_Str += std::to_string(N);
-		_Str += "[\n";
-		for (int i = 0; i != M; ++i)
-			{
-			for (size_t j = 0; j != N; ++j) 
-				{
-				_Str += to_string(this->at(i, j));
-				_Str += ", ";
-				}
-			_Str.back() =  '\n';
-			}
-		_Str += "]";
-		return (_Str);
-		}
-	/* </ convert > */
-
 	/* < behavior > */
-	template< size_t M, size_t N, typename T > inline
-		Vec_<N, T>& Mat_<M, N, T>::row(size_t _Pos)
-		{
-		return ( *((Vec_<N, T>*)((*this)[_Pos])) );
-		}
-
-	template< size_t M, size_t N, typename T > inline
-		const Vec_<N, T>& Mat_<M, N, T>::row(size_t _Pos) const
-		{
-		return ( *((const Vec_<N, T>*)((*this)[_Pos])) );
-		}
-
 	template< size_t M, size_t N, typename T > inline
 		void Mat_<M, N, T>::assign(std::initializer_list<T> _Ilist)
 		{	// construct by initializer_list<basic type>
@@ -145,28 +107,40 @@ namespace clmagic
 		}
 
 	template<size_t M, size_t N, typename T> inline
-		Mat_<M, N, T> operator+ (_in(Mat_<M, N, T>) _Lhs, _in(Mat_<M, N, T>) _Rhs)
+		Mat_<M, N, T> operator+ (_in(Mat_<M, N, T>) _A, _in(Mat_<M, N, T>) _B)
 		{	// return (_Lhs + _Rhs)
 		Mat_<M,N,T> _Result;
-		_Add_vector_vector( _Result.ptr(), _Lhs.ptr(), _Rhs.ptr(), _Result.size() );
+		for (size_t i = 0; i < M; ++i) {
+			for (size_t j = 0; j < N; j++) {
+				_Result[i][j] = _A[i][j] + _B[i][j];
+			}
+		}
 		return ( _Result );
 		}
 
 	template<size_t M, size_t N, typename T> inline
-		Mat_<M, N, T> operator- (_in(Mat_<M, N, T>) _Lhs, _in(Mat_<M, N, T>) _Rhs)
+		Mat_<M, N, T> operator- (_in(Mat_<M, N, T>) _A, _in(Mat_<M, N, T>) _B)
 		{	// return (_Lhs - _Rhs)
-		Mat_<M,N,T> _Result;
-		_Sub_vector_vector( _Result.ptr(), _Lhs.ptr(), _Rhs.ptr(), _Result.size() );
-		return ( _Result );
+		Mat_<M, N, T> _Result;
+		for (size_t i = 0; i < M; ++i) {
+			for (size_t j = 0; j < N; j++) {
+				_Result[i][j] = _A[i][j] - _B[i][j];
+			}
+		}
+		return (_Result);
 		}
 
 	// < gems_mul(matrix single) >
 	template<size_t M, size_t N, typename T> inline
-		Mat_<M, N, T> operator* (_in(Mat_<M, N, T>) _Lhs, _in(T) _Rhs)
+		Mat_<M, N, T> operator* (_in(Mat_<M, N, T>) _A, _in(T) _B)
 		{
 		Mat_<M, N, T> _Result;
-		_Mul_vector_scalar<T>( _Result.ptr(), _Lhs.ptr(), _Rhs, _Result.size() );
-		return ( _Result );
+		for (size_t i = 0; i < M; ++i) {
+			for (size_t j = 0; j < N; j++) {
+				_Result[i][j] = _A[i][j] * _B;
+			}
+		}
+		return (_Result);
 		}
 
 	template<size_t M, size_t N, typename T> inline
@@ -178,33 +152,41 @@ namespace clmagic
 
 	// < gemm_mul(matrix matrix) >	
 	template<size_t M, size_t N, size_t P, typename T> inline
-		Mat_<M, P, T> operator* ( _in(Mat_<M, N, T>) _Lhs,  _in(Mat_<N, P, T>) _Rhs )
-		{
-		Mat_<M, P, T> _Result;
-		_Mul_matrix<T>( _Result.ptr(), _Lhs.ptr(), M, N, _Rhs.ptr(), P );
-		return ( _Result );
+		Mat_<M, P, T> operator* ( _in(Mat_<M, N, T>) _Lhs,  _in(Mat_<N, P, T>) _Rhs ) {
+			Mat_<M, P, T> _Result;
+			_Mul_matrix<T>( _Result.ptr(), _Lhs.ptr(), M, N, _Rhs.ptr(), P );
+			return ( _Result );
 		}
 	// </ gemm_mul(matrix matrix) >
 
 	template<size_t M, size_t N, typename T> inline
-		Mat_<M, N, T>& operator+= ( _inout(Mat_<M,N, T>) _Lhs, _in(Mat_<M,N, T>) _Rhs )
-		{
-		_Add_vector_vector( _Lhs.ptr(), _Lhs.ptr(), _Rhs.ptr(), _Lhs.size() );
-		return ( _Lhs );
+		Mat_<M, N, T>& operator+= ( _inout(Mat_<M,N, T>) _A, _in(Mat_<M,N, T>) _B ) {
+			for (size_t i = 0; i < M; ++i) {
+				for (size_t j = 0; j < N; j++) {
+					_A[i][j] = _A[i][j] + _B[i][j];
+				}
+			}
+			return ( _A );
 		}
 
 	template<size_t M, size_t N, typename T> inline
-		Mat_<M, N, T>& operator-= ( _inout(Mat_<M,N, T>) _Lhs, _in(Mat_<M,N, T>) _Rhs)
-		{
-		_Sub_vector_vector(_Lhs.ptr(), _Lhs.ptr(), _Rhs.ptr(), _Lhs.size());
-		return (_Lhs);
+		Mat_<M, N, T>& operator-= ( _inout(Mat_<M,N, T>) _A, _in(Mat_<M,N, T>) _B) {
+			for (size_t i = 0; i < M; ++i) {
+				for (size_t j = 0; j < N; j++) {
+					_A[i][j] = _A[i][j] - _B[i][j];
+				}
+			}
+			return (_A);
 		}
 
 	template<size_t M, size_t N, typename T> inline
-		Mat_<M, N, T>& operator*= ( _inout(Mat_<M, N, T>) _Lhs, _in(T) _Rhs )
-		{
-		_Mul_vector_scalar( _Lhs.ptr(), _Lhs.ptr(), _Rhs, _Lhs.size() );
-		return (_Lhs);
+		Mat_<M, N, T>& operator*= ( _inout(Mat_<M, N, T>) _A, _in(T) _B ) {
+			for (size_t i = 0; i < M; ++i) {
+				for (size_t j = 0; j < N; j++) {
+					_A[i][j] = _A[i][j] * _B;
+				}
+			}
+			return (_A);
 		}
 
 	template<size_t M, typename T> inline
@@ -228,31 +210,34 @@ namespace clmagic
 		}
 
 	template<typename T> inline
-		Vec3_<T> transform_coord(_in(Vec3_<T>) _Lhs, _in(Mat_<4, 4, T>) _Matrix) 
-		{	// right hand matrix operation
-		Vec_<4, T> _Result = _Matrix.row(3);
-		_Result += _Lhs.z * _Matrix.row(2);
-		_Result += _Lhs.y * _Matrix.row(1);
-		_Result += _Lhs.x * _Matrix.row(0);
+	Vector3_<T> transform_coord(_in(Vector3_<T>) _Lhs, _in(Mat_<4, 4, T>) _Matrix)
+		{	// _Matrix * Vector[_Lhs, 1.0]
+		Vec_<4, T> _Result  = _Matrix.row(3);
+				   _Result += _Matrix.row(2) * _Lhs[2];
+				   _Result += _Matrix.row(1) * _Lhs[1];
+				   _Result += _Matrix.row(0) * _Lhs[0];
 
 		if ( _Result[3] != T(1) ) 
-			{
+			{	/*  _Result[3]   = X
+					_Result[3]   = X*1
+					_Result[3]/X = 1
+				*/
 			_Result /= _Result[3];
 			}
 
-		return ( static_cast<Vec3_<T>>(_Result) );
+		return ( reference_cast<Vector3_<T>>(_Result) );
 		}
 
 	template<typename T> inline 
-		Vec3_<T> transform_normal(_in(Vec3_<T>) _Lhs, _in(Mat_<4, 4, T>) _Matrix) 
-		{	// right hand matrix operation
-		Vec_<4, T> _Result  = _Lhs.z * _Matrix.row(2);
-				   _Result += _Lhs.y * _Matrix.row(1);
-				   _Result += _Lhs.x * _Matrix.row(0);
-		return ( static_cast<Vec3_<T>>(_Result) );
+	Normal_<T> transform_normal(_in(Normal_<T>) _Lhs, _in(Mat_<4, 4, T>) _Matrix)
+		{	// Mat3x3(_Matrix) * Vec3, igonore translate
+		Vec_<4, T> _Result  = _Lhs[0] * _Matrix.row(0);
+				   _Result += _Lhs[1] * _Matrix.row(1);
+				   _Result += _Lhs[2] * _Matrix.row(2);
+		return ( reference_cast<Normal_<T>>(_Result) );
 		}
 
-	inline Vec3_<float> screen_to_world(_in(Vec3_<float>) _Vec, _in(Mat4) _Viewmatrix, _in(Mat4) _Projmatrix)
+	inline Vector3_<float> screen_to_world(_in(Vector3_<float>) _Vec, _in(Mat4) _Viewmatrix, _in(Mat4) _Projmatrix)
 		{
 		auto _Vec128 = DirectX::XMLoadFloat3(reinterpret_cast<const DirectX::XMFLOAT3*>(&_Vec));
 		auto _Mat128view = DirectX::XMLoadFloat4x4(reinterpret_cast<const DirectX::XMFLOAT4X4*>(&_Viewmatrix));
@@ -265,7 +250,7 @@ namespace clmagic
 		_Vec128 = DirectX::XMVector3TransformCoord(_Vec128, _Mat128view);
 		_Vec128 = DirectX::XMVector4Normalize(_Vec128);
 
-		return (*reinterpret_cast<Vec3_<float>*>(&_Vec128));
+		return (*reinterpret_cast<Vector3_<float>*>(&_Vec128));
 		}
 
 	template<typename _Ty> inline
@@ -287,95 +272,89 @@ namespace clmagic
 		}
 
 	template<typename T> inline 
-		Mat_<4, 4, T> scaling_matrix(_in(Vec3_<T>) _sXyz)
-		{
-		return ( scaling_matrix(_sXyz.x, _sXyz.y, _sXyz.z) );
+		Mat_<4, 4, T> scaling_matrix(_in(Vector3_<T>) _sXyz) {
+			return ( scaling_matrix(_sXyz[0], _sXyz[1], _sXyz[2]) );
 		}
 
 	template<typename T> inline
-		Mat_<4, 4, T> rotation_matrix(_in(Vec3_<T>) _Axis, _in(T) _Radians)
+		Mat_<4, 4, T> rotation_matrix(_in(Normal_<T>) _Axis, _in(T) _Radians)
 		{
 		using namespace::DirectX;
-		auto _A = _mm_loadu_ps(static_cast<const float*>(_Axis));
+		auto _A = _mm_loadu_ps(_Axis.ptr());
 		return (*(Mat4*)(&DirectX::XMMatrixRotationAxis(_A, _Radians)));
 		}
 
 	template<typename T> inline
-		Mat_<4, 4, T> translation_matrix( _in(T) _X, _in(T) _Y, _in(T) _Z) 
-		{
-		return ( Mat_<4, 4, T>(
-			T(1), T(0), T(0), T(0),
-			T(0), T(1), T(0), T(0),
-			T(0), T(0), T(1), T(0),
-			  _X,   _Y,   _Z, T(1)) );
+		Mat_<4, 4, T> translation_matrix( _in(T) _X, _in(T) _Y, _in(T) _Z) {
+			return ( Mat_<4, 4, T>(
+				T(1), T(0), T(0), T(0),
+				T(0), T(1), T(0), T(0),
+				T(0), T(0), T(1), T(0),
+				  _X,   _Y,   _Z, T(1)) );
 		}
 
 	template<typename T> inline
-		Mat_<4, 4, T> translation_matrix( _in(Vec3_<T>) _dXyz) 
-		{
-		return (translation_matrix(_dXyz.x, _dXyz.y, _dXyz.z));
+		Mat_<4, 4, T> translation_matrix( _in(Vector3_<T>) _dXyz) {
+			return (translation_matrix(_dXyz[0], _dXyz[1], _dXyz[2]));
 		}
 
 	template<typename T> inline 
-		Mat_<4, 4, T> Lookat( _in(Vec3_<T>) _Eye, _in(Vec3_<T>) _Forward, _in(Vec3_<T>) _Up) 
+		Mat_<4, 4, T> Lookat( _in(Vector3_<T>) _Eye, _in(Normal_<T>) _Fwd, _in(Normal_<T>) _Up)
 		{
+		Vector3_<T> f = normalize( _Fwd );
+		Vector3_<T> r = normalize( cross3(f, _Up) );
+		Vector3_<T> u = normalize( cross3(r, f) );
+		Vector3_<T> p = proj(_Eye, r, u, f);
+
+		return ( Mat_<4, 4, T>(
+			 r[0],  u[0], -f[0], T(0),
+			 r[1],  u[1], -f[1], T(0),
+			 r[2],  u[2], -f[2], T(0),
+			-p[0], -p[1],  p[2], T(1)) );
 		/*
+		¢Ù:    [ r.x  r.y  r.z ]        [ Right   ]
+			T( [ u.x  u.y  u.z ] ) ~ T( [ Up      ]
+			   [-f.x -f.y -f.z ]        [-Forward ]
+		¢Ú: proj(_Eye,  projection to [Right, Up, Forward]'s matrix
+
 		right hand coordinate
 		[  r.x   u.x    -f.x   0 ]
 		[  r.y   u.y    -f.y   0 ]
 		[  r.z   u.z    -f.z   0 ]
 		[-e¡¤r  -e¡¤u   e¡¤f   1 ]
 		*/
-		Vec3_<T> f = normalize(_Forward);
-		Vec3_<T> r = normalize( cross(f, _Up) );
-		Vec3_<T> u = normalize( cross(r, f) );
-
-		return ( Mat_<4, 4, T>(
-			r.x, u.x, -f.x, T(0),
-			r.y, u.y, -f.y, T(0),
-			r.z, u.z, -f.z, T(0),
-			-dot(_Eye, r), -dot(_Eye, u), dot(_Eye, f), T(1)) );
-		/*auto _Eyeposition = simd_128f::load(_Eye.ptr());
-		auto _Focus = _Eye + _Forward;
-		auto _Focusposition = simd_128f::load(_Focus.ptr());
-		auto _Upvector = simd_128f::load(_Up.ptr());
-		return (const_reference_cast<const Mat_<4, 4, T>>( DirectX::XMMatrixLookAtRH(_Eyeposition, _Focusposition, _Upvector)));*/
 		}
 
 	template<typename T> inline
-		Mat_<4, 4, T> Lookat2(_in(Vec3_<T>) _Eye, _in(Vec3_<T>) _Target, _in(Vec3_<T>) _Up)
-		{
-		return ( Lookat(_Eye, _Target - _Eye, _Up) );
+		Mat_<4, 4, T> Lookat2(_in(Vector3_<T>) _Eye, _in(Vector3_<T>) _Target, _in(Normal_<T>) _Up) {
+			return ( Lookat(_Eye, _Target - _Eye, _Up) );
 		}
 
 	template<typename T> inline
-		Mat_<4, 4, T> Ortho( _in(T) l, _in(T) r, _in(T) b, _in(T) t, _in(T) n, _in(T) f) 
-		{
-		/*
-		[    2/(r-l),            0,            0, 0]
-		[		   0,      2/(t-b),            0, 0]
-		[          0,            0,      2/(f-n), 0]
-		[-(r+l)(r-l), -(t+b)/(t-b), -(f+n)/(f-n), 1]
-		*/
-		return (Mat_<4, 4, T>(
-			T(2)/(r-l),	T(0),	    T(0),       T(0),
-			T(1),		T(2)/(t-b), T(0),       T(0),
-			T(1),       T(0),		T(2)/(f-n), T(0),
-			-(r+l)/(r-l), -(t+b)/(t-b), -(f+n)/(f-n), T(1)) );
+		Mat_<4, 4, T> Ortho( _in(T) l, _in(T) r, _in(T) b, _in(T) t, _in(T) n, _in(T) f) {
+			return (Mat_<4, 4, T>(
+				T(2)/(r-l),	T(0),	    T(0),       T(0),
+				T(1),		T(2)/(t-b), T(0),       T(0),
+				T(1),       T(0),		T(2)/(f-n), T(0),
+				-(r+l)/(r-l), -(t+b)/(t-b), -(f+n)/(f-n), T(1)) );
+			/*
+			[    2/(r-l),            0,            0, 0]
+			[		   0,      2/(t-b),            0, 0]
+			[          0,            0,      2/(f-n), 0]
+			[-(r+l)(r-l), -(t+b)/(t-b), -(f+n)/(f-n), 1]
+			*/
 		}
 
 	template<typename T> inline
-		Mat_<4, 4, T> Perspective( _in(T) _Fov, _in(T) _Aspect, _in(T) _Znear, _in(T) _Zfar) 
-		{
-		//return (const_reference_cast<const Mat_<4, 4, T>>( DirectX::XMMatrixPerspectiveFovRH(_Fov, _Aspect, _Znear, _Zfar)));
-		T _Sin = sin(_Fov * T(0.5));
-		T _Cos = cos(_Fov * T(0.5));
+		Mat_<4, 4, T> Perspective( _in(T) _Fov, _in(T) _Aspect, _in(T) _Znear, _in(T) _Zfar) {
+			T _Sin = sin(_Fov * T(0.5));
+			T _Cos = cos(_Fov * T(0.5));
 
-		return (Mat_<4, 4, T>(
-			_Cos/_Sin/_Aspect,      T(0),                          T(0), T( 0),
-			T(0),              _Cos/_Sin,                          T(0), T( 0),
-			T(0),                   T(0),        _Zfar/(_Znear - _Zfar), T(-1),
-			T(0),                   T(0), _Zfar/(_Znear - _Zfar)*_Znear, T( 0) ) );
+			return (Mat_<4, 4, T>(
+				_Cos/_Sin/_Aspect,      T(0),                          T(0), T( 0),
+				T(0),              _Cos/_Sin,                          T(0), T( 0),
+				T(0),                   T(0),        _Zfar/(_Znear - _Zfar), T(-1),
+				T(0),                   T(0), _Zfar/(_Znear - _Zfar)*_Znear, T( 0) ) );
 		}
 	/* </ gen_mat > */
 

@@ -76,9 +76,6 @@
     <ClInclude Include="..\src\clmagic\math\lapack\transform.inl.h">
       <Filter>private\lapack</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\lapack\vector.inl.h">
-      <Filter>private\lapack</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\clmagic\math\complex\quaternion.inl.h">
       <Filter>private\complex</Filter>
     </ClInclude>
@@ -117,6 +114,9 @@
     </ClInclude>
     <ClInclude Include="..\src\clmagic\math\calculus.h">
       <Filter>public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\math\lapack\vector.inl.h">
+      <Filter>private\lapack</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

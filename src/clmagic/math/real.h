@@ -1,6 +1,6 @@
 #pragma once
-#ifndef __CLMAGIC_CORE_GEOMETRY_MATH___REAL___H__
-#define __CLMAGIC_CORE_GEOMETRY_MATH___REAL___H__
+#ifndef clmagic_math_REAL_h_
+#define clmagic_math_REAL_h_
 #include "clmagic.h"
 #include <cmath>
 #include <iostream>

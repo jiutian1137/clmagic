@@ -1,53 +1,14 @@
 ﻿#pragma once
-#ifndef __CLMAGIC_CORE_GEOMETRY_MATH___FRACTION___H__
-#define __CLMAGIC_CORE_GEOMETRY_MATH___FRACTION___H__
+#ifndef clmagic_math_FRACTION_h_
+#define clmagic_math_FRACTION_h_
 #include "lapack.h"
 #include <fstream>
 
 namespace clmagic 
 {
-#ifndef _CLMAGIC_NOISE_HASH_FUNC_POINTER
-	/*
-	@_hash_function_pointer:
-		name rule: _Hash[return component][argument component]_func_pointer
-	*/
-	template<typename _Ty>
-	using _Hash11_func_pointer = _Ty(*)(_Ty);
-
-	template<typename _Ty>
-	using _Hash21_func_pointer = Vec2_<_Ty>(*)(_Ty);
-
-	template<typename _Ty>
-	using _Hash12_func_pointer = _Ty(*)(Vec2_<_Ty>);
-
-	template<typename _Ty>
-	using _Hash22_func_pointer = Vec2_<_Ty>(*)(Vec2_<_Ty>);
-
-	template<typename _Ty>
-	using _Hash32_func_pointer = Vec3_<_Ty>(*)(Vec2_<_Ty>);
-
-	template<typename _Ty>
-	using _Hash33_func_pointer = Vec3_<_Ty>(*)(Vec3_<_Ty>);
-
-	template<typename _Ty>
-	using _Hash43_func_pointer = Vec4_<_Ty>(*)(Vec3_<_Ty>);
-
-	template<typename _Ty>
-	using _Hash44_func_pointer = Vec4_<_Ty>(*)(Vec4_<_Ty>);
-
-	template<typename _Ty>
-	using _Hash34_func_pointer = Vec3_<_Ty>(*)(Vec4_<_Ty>);
-#endif // !_CLMAGIC_NOISE_HASH_FUNC_POINTER
-
-
-	
-
-
 	// @_Ty: this _Ty is set precision
 	template<typename _Ty>
-	class NoiseGenerator
-	{
-	public:
+	struct NoiseGenerator {
 		NoiseGenerator(_Ty _Frequency = _Ty(2.76434f), _Ty _Ampt = _Ty(0.51749673f))
 			: _Myfreq(_Frequency), _Myampt(_Ampt)
 			{
@@ -175,65 +136,64 @@ namespace clmagic
 
 
 	template<typename _Ty> inline
-		_Ty fbm_1(const std::vector<_Ty>& _Octave) 
-		{
-		_Ty _Result = _Ty(0);
-		for (size_t i = 0; i != _Octave.size(); ++i) _Result += _Octave[i];
+	_Ty fbm_1(const std::vector<_Ty>& _Octave) 
+		{	// ∑Oct
+		_Ty _Result = _Octave[0];
+		std::for_each(_Octave.begin() + 1, _Octave.end(),
+			[&_Result](_Ty oct) { _Result += oct; }
+			);
 		return ( _Result );
 		}
 
 	template<typename _Ty> inline
-		_Ty fbm_2(const std::vector<_Ty>& _Octave)
-		{
-		_Ty _Result = _Ty(0);
-		for (size_t i = 0; i != _Octave.size(); ++i) 
-			{
-			_Result += std::abs(_Octave[i]);
-			}
+	_Ty fbm_2(const std::vector<_Ty>& _Octave)
+		{	// ∑abs(Oct)
+		auto _Result = abs(_Octave[0]);
+		std::for_each(_Octave.begin() + 1, _Octave.end(), 
+			[&_Result](_Ty oct) { _Result += abs(oct); }
+			);
 		return (_Result);
 		}
 
 	template<typename _Ty> inline
-		_Ty fbm_3(const std::vector<_Ty>& _Octave)
-		{
-		_Ty _Result = _Ty(0);
-		for (size_t i = 0; i != _Octave.size(); ++i)
-			{
-			_Result += std::abs(_Octave[i]);
-			}
-		return ( std::sin(_Result) );
+	_Ty fbm_3(const std::vector<_Ty>& _Octave)
+		{	// sin( ∑abs(Oct) )
+		return ( std::sin(fbm_2(_Octave)) );
 		}
 
 	template<typename _Ty> inline
-	_Ty permute(_in(_Ty) x) {// @_Equaltion: (34*x^2 + x) % 289
+	_Ty permute(_in(_Ty) x) 
+		{// @_Equaltion: (34*x^2 + x) % 289
 		return ((Real(34) * x * x + x) % Real(289));
-	}
+		}
 
-	template<typename _Ty> Vec2_<_Ty> cellular(Vec2_<_Ty> P, _Hash22_func_pointer<_Ty>);
+	template<typename _Ty, typename _Fn> Vector2_<_Ty> cellular(Vector2_<_Ty> P, _Fn _Hfunc);
 
-	template<typename _Ty> _Ty gradient2(Vec2_<_Ty> _Pos, _Hash22_func_pointer<_Ty> _Hash);
-	template<typename _Ty> _Ty gradient3(Vec3_<_Ty> _Pos, _Hash33_func_pointer<_Ty> _Hash);
-
-	template<typename _Ty> Vec3_<_Ty> gradientd2(Vec2_<_Ty> _Pos, _Hash22_func_pointer<_Ty> _Hash);
-	template<typename _Ty> Vec4_<_Ty> gradientd3(Vec3_<_Ty> _Pos, _Hash33_func_pointer<_Ty> _Hash);
-
-	// Classic Perlin noise
-	template<typename _Ty> _Ty cnoise2(Vec2_<_Ty> _Pos);
-	template<typename _Ty> _Ty cnoise3(Vec3_<_Ty> _Pos);
-
-	// Classic Perlin noise, periodic variant
-	template<typename _Ty> _Ty pnoise2(Vec2_<_Ty> _Pos, Vec2_<_Ty> _Rep);
-	template<typename _Ty> _Ty pnoise3(Vec3_<_Ty> _Pos, Vec3_<_Ty> _Rep);
+	template<typename _Ty, typename _Fn> _Ty gradient2(Vector2_<_Ty> _Pos, _Fn _Hfunc);
+	template<typename _Ty, typename _Fn> _Ty gradient3(Vector3_<_Ty> _Pos, _Fn _Hfunc);
 
 	// perfermance well
-	template<typename _Ty> _Ty value2(Vec2_<_Ty> p, _Hash22_func_pointer<_Ty> _Hash);
-	template<typename _Ty> _Ty value3(Vec3_<_Ty> x, _Hash33_func_pointer<_Ty> _Hash);
+	template<typename _Ty, typename _Fn> _Ty value2(Vector2_<_Ty> p, _Fn _Hash22);
+	template<typename _Ty, typename _Fn> _Ty value3(Vector3_<_Ty> x, _Fn _Hash33);
 
-	template<typename _Ty> Vec4_<_Ty> valued3(Vec3_<_Ty> x, _Hash33_func_pointer<_Ty>);
+	template<typename _Ty, typename _Fn> _Ty worley2(Vector2_<_Ty> _Pos, _Fn _Hash22);
+	template<typename _Ty, typename _Fn> _Ty worley3(Vector3_<_Ty> _Pos, _Fn _Hash33);
 
-	template<typename _Ty> _Ty worley2(Vec2_<_Ty> _Pos, _Hash22_func_pointer<_Ty> _Hash);
-	template<typename _Ty> _Ty worley3(Vec3_<_Ty> _Pos, _Hash33_func_pointer<_Ty> _Hash);
+	// Classic Perlin noise
+	template<typename _Ty> _Ty cnoise2(Vector2_<_Ty> _Pos);
+	template<typename _Ty> _Ty cnoise3(Vector3_<_Ty> _Pos);
 
+	// Classic Perlin noise, periodic variant
+	template<typename _Ty> _Ty pnoise2(Vector2_<_Ty> _Pos, Vector2_<_Ty> _Rep);
+	template<typename _Ty> _Ty pnoise3(Vector3_<_Ty> _Pos, Vector3_<_Ty> _Rep);
+
+
+	template<typename _Ty, typename _Fn>
+		Vector3_<_Ty> gradient2d(Vector2_<_Ty> _Pos, _Fn _Hash22);
+	template<typename _Ty, typename _Fn>
+		Vector4_<_Ty> gradient3d(Vector3_<_Ty> _Pos, _Fn _Hash33);
+	template<typename _Ty, typename _Fn> 
+		Vector4_<_Ty> value3d(Vector3_<_Ty> _Pos, _Fn _Hash33);
 }// namespace clmagic
 
 #endif

@@ -1,6 +1,6 @@
 #pragma once
-#ifndef __CLMAGIC_CORE_GEOMETRY_MATH___PHYSICS___H__
-#define __CLMAGIC_CORE_GEOMETRY_MATH___PHYSICS___H__
+#ifndef clmagic_math_PHYSICS_h_
+#define clmagic_math_PHYSICS_h_
 
 namespace clmagic 
 {

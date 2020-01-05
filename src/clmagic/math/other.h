@@ -1,6 +1,6 @@
 #pragma once
-#ifndef _CLMAGIC_CORE_GEOMETRY_RECT2D_H_
-#define _CLMAGIC_CORE_GEOMETRY_RECT2D_H_
+#ifndef clmagic_math_OTHER_h_
+#define clmagic_math_OTHER_h_
 #include "lapack.h"
 #include "raytracing.h"
 
@@ -28,13 +28,13 @@ namespace clmagic
 			{ /*empty*/ }
 
 		template<typename T>
-		constexpr ColorRGB( _in(Vec3_<T>) _Linearcolor )
+		constexpr ColorRGB( _in(Vector3_<T>) _Linearcolor )
 			: red(  static_cast<unsigned char>(_Linearcolor[0] * 255.f) ),
 			  green(static_cast<unsigned char>(_Linearcolor[1] * 255.f) ),
 			  blue( static_cast<unsigned char>(_Linearcolor[2] * 255.f) )
 			{ /*empty*/ }
 
-		operator Vec3() const;
+		operator Vector3_<real_t>() const;
 		explicit operator std::string() const;
 
 		std::string to_hexstring() const;
@@ -100,7 +100,7 @@ namespace clmagic
 			value = _Max;
 			}
 
-		operator Vec3() const;
+		operator Vector3_<real_t>() const;
 		explicit operator std::string() const;
 
 		union
@@ -112,14 +112,15 @@ namespace clmagic
 	
 	
 	
-	enum class RECT_COORD
-	{
-		LEFTTOP, LEFTBOTTOM, RIGHTTOP, RIGHTBOTTOM, CENTER
+	enum class RECT_COORD {
+		LEFTTOP,
+		LEFTBOTTOM,
+		RIGHTTOP, 
+		RIGHTBOTTOM, 
+		CENTER
 	};
-	Vec2 rectcoords_cast(RECT_COORD In_Coord);
-	std::string to_string(RECT_COORD _Rectcoord);
 
-
+	template<typename T>
 	class rect2d
 	{
 		// 0.0,1.0    1.0,1.0
@@ -132,51 +133,58 @@ namespace clmagic
 		// lb = pos - size * uv
 		//
 	public:
+#if defined(clmagic_using_SIMDstructure)
+		using position_type = SIMDVec_<2, T>;
+		using region_type   = SIMDVec_<2, T>;
+#else
+		using position_type = Vec_<2, T>;
+		using region_type   = Vec_<2, T>;
+#endif
+
+		static position_type rectcoords_cast(RECT_COORD In_Coord);
+		static std::string to_string(RECT_COORD _Rectcoord);
+
 		// <construct>
-		rect2d();
-		rect2d(const Vec2& _Pos, const Vec2& _Uv, const Vec2& _Size);
-		rect2d(const Vec2& _Pos, RECT_COORD _Coord, const Vec2& _Size);
-		rect2d(const Vec2& _Pos, RECT_COORD _Coord, float _Width, float _Height);
+		rect2d() : _Mypos(T(0)), _Mysize(T(0)) { }
+		rect2d(const position_type& _Pos, const position_type& _Uv, const region_type& _Size) : _Mypos(_Pos - _Size * _Uv), _Mysize(_Size) { }
+		rect2d(const position_type& _Pos, RECT_COORD _Coord, const region_type& _Size) : rect2d(_Pos, rectcoords_cast(_Coord), _Size){ }
+		rect2d(const position_type& _Pos, RECT_COORD _Coord, float _Width, float _Height) : rect2d(_Pos, rectcoords_cast(_Coord), region_type(_Width, _Height)) { }
 		// </construct>
 
-		// <convert>
-		operator std::string() const;
-		// </convert>
-
 		// <method>
-		int intersect(const Vec2 _Point) const;
-		bool intersect(const Vec2 _Point, _out(Hit_<float>)) const;
-		Vec2 translate(float _dX, float _dY);
-		Vec2 scale_step(float _sX, float _sY);
-		Vec2 scale_rate(float _sX, float _sY);
+		int intersect(const position_type& _Point) const;
+		bool intersect(const position_type& _Point, _out(Hit_<T>)) const;
+		position_type translate(T _dX, T _dY);
+		region_type   scale_step(T _sX, T _sY);
+		region_type   scale_rate(T _sX, T _sY);
 
-		template<typename _Ty = float> Vec2_<_Ty> get_pos(const Vec2& _Uv) const;
-		template<typename _Ty = float> Vec2_<_Ty> get_pos(float _U, float _V) const;
+		template<typename _Ty = float> Vector2_<_Ty> get_pos(const position_type& _Uv) const;
+		template<typename _Ty = float> Vector2_<_Ty> get_pos(T _U, T _V) const;
 
-		template<typename _Ty = float> Vec2_<_Ty> leftbottom() const;
-		template<typename _Ty = float> Vec2_<_Ty> lefttop() const;
-		template<typename _Ty = float> Vec2_<_Ty> righttop() const;
-		template<typename _Ty = float> Vec2_<_Ty> rightbottom() const;
-		template<typename _Ty = float> Vec2_<_Ty> center() const;
-		template<typename _Ty = float> _Ty left() const;
-		template<typename _Ty = float> _Ty top() const;
-		template<typename _Ty = float> _Ty right() const;
-		template<typename _Ty = float> _Ty bottom() const;
-		template<typename _Ty = float> _Ty width() const;
-		template<typename _Ty = float> _Ty height() const;
+		template<typename _Ty = float> Vector2_<_Ty> leftbottom() const { return Vector2_<_Ty>((_Ty)_Mypos[0], (_Ty)_Mypos[1]); }
+		template<typename _Ty = float> Vector2_<_Ty> lefttop()    const { return get_pos<_Ty>(T(0), T(1)); }
+		template<typename _Ty = float> Vector2_<_Ty> righttop()   const { return get_pos<_Ty>(T(1), T(1)); }
+		template<typename _Ty = float> Vector2_<_Ty> rightbottom() const{ return get_pos<_Ty>(T(1), T(0)); }
+		template<typename _Ty = float> Vector2_<_Ty> center()     const { return get_pos<_Ty>(T(0.5), T(0.5)); }
+		template<typename _Ty = float> _Ty left() const   { return static_cast<_Ty>(_Mypos[0]); }
+		template<typename _Ty = float> _Ty bottom() const { return static_cast<_Ty>(_Mypos[1]); }
+		template<typename _Ty = float> _Ty right() const  { return static_cast<_Ty>(_Mypos[0] + _Mysize[0]); }
+		template<typename _Ty = float> _Ty top() const    { return static_cast<_Ty>(_Mypos[1] + _Mysize[1]); }
+		template<typename _Ty = float> _Ty width() const  { return ((_Ty)_Mysize[0]); }
+		template<typename _Ty = float> _Ty height() const { return ((_Ty)_Mysize[1]); }
 
-		void set_pos(Vec2 _Newpos);
-		void set_size(float _Newwidth, float _Newheight);
+		void set_pos(const position_type& _Newpos) { _Mypos = _Newpos; }
+		void set_size(float _Newwidth, float _Newheight) { _Mysize = region_type(_Newwidth, _Newheight); }
 
-		Vec2& my_pos();
-		Vec2& my_size();
-		const Vec2& my_size() const;
-		const Vec2& my_pos() const;
+		position_type& my_pos() { return (_Mypos); }
+		region_type& my_size()  { return (_Mysize); }
+		const position_type& my_pos() const { return (_Mypos); }
+		const region_type& my_size()  const { return (_Mysize); }
 		// </method>
 
 	private:
-		Vec2 _Mypos;// left bottom
-		Vec2 _Mysize;// width height
+		position_type _Mypos;
+		region_type   _Mysize;
 	};
 }// namespace clmagic
 

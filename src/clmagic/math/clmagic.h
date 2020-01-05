@@ -54,6 +54,11 @@ namespace clmagic {
 			return (*reinterpret_cast<_Tydst*>(&_Src));
 		}
 
+	constexpr size_t constexpr_align(size_t N, size_t _Bound) {
+		size_t _Off = N & (_Bound - 1);
+		return (_Off == 0 ? N : (N + _Bound - _Off));
+	}
+
 	/* 'shuffle' is often used in vector mathematics  */
 	template<typename _OutTy, typename _InTy, typename ..._Tys>
 		void _Shuffle_fill(_out(_OutTy) _Dest, _in(_InTy) _Source, size_t i, size_t s, _Tys... _Args) {

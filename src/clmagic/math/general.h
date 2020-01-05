@@ -1,6 +1,6 @@
 ﻿#pragma once
-#ifndef __CLMAGIC_CORE_GEOMETRY_MATH___GENERAL___H__
-#define __CLMAGIC_CORE_GEOMETRY_MATH___GENERAL___H__
+#ifndef clmagic_math_GENERAL_h_
+#define clmagic_math_GENERAL_h_
 #include "simd.h"
 #include "real.h"
 #include <array>
@@ -222,10 +222,10 @@ namespace clmagic
 	inline double atan(double x) 
 	{ return ( std::atan(x) ); }
 
-	inline float atan(float y, float x) 
+	inline float atan2(float y, float x) 
 	{ return ( std::atan2(y, x) ); }
 
-	inline double atan(double y, double x) 
+	inline double atan2(double y, double x) 
 	{ return ( std::atan2(y, x) ); }
 
 	inline bool is_powof2(unsigned int x) 
