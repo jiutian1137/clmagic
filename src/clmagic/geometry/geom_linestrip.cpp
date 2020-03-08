@@ -33,10 +33,10 @@ namespace clmagic
 		std::vector<Vec3> _Result;
 
 		Vec3 _Dir = normalize(_End - _Start);
-		Mat4 _Linecoord = Mat4::identity();
+		mat4 _Linecoord = mat4::identity();
 		if ( !equals( _Dir, cY, Vec3(0.0002f) ) ) 
 			{
-			_Linecoord = static_cast<Mat4>(Quaternion(cross(cY, _Dir), std::acos(dot(cY, _Dir))));
+			_Linecoord = static_cast<mat4>(Quaternion(cross(cY, _Dir), std::acos(dot(cY, _Dir))));
 			}
 		_Linecoord *= translation_matrix(_Start);
 

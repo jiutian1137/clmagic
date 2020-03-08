@@ -405,14 +405,14 @@ struct CD3DX12_CLEAR_VALUE : public D3D12_CLEAR_VALUE
         D3D12_CLEAR_VALUE(o)
     {}
     CD3DX12_CLEAR_VALUE( 
-        DXGI_FORMAT format, 
+        DXGI_FORmat format, 
         const FLOAT color[4] )
     {
         Format = format;
         memcpy( Color, color, sizeof( Color ) );
     }
     CD3DX12_CLEAR_VALUE( 
-        DXGI_FORMAT format, 
+        DXGI_FORmat format, 
         FLOAT depth,
         UINT8 stencil )
     {
@@ -612,7 +612,7 @@ struct CD3DX12_SUBRESOURCE_FOOTPRINT : public D3D12_SUBRESOURCE_FOOTPRINT
         D3D12_SUBRESOURCE_FOOTPRINT(o)
     {}
     CD3DX12_SUBRESOURCE_FOOTPRINT( 
-        DXGI_FORMAT format, 
+        DXGI_FORmat format, 
         UINT width, 
         UINT height, 
         UINT depth, 
@@ -1195,11 +1195,11 @@ inline void D3D12DecomposeSubresource( UINT Subresource, UINT MipLevels, UINT Ar
 //------------------------------------------------------------------------------------------------
 inline UINT8 D3D12GetFormatPlaneCount(
     _In_ ID3D12Device* pDevice,
-    DXGI_FORMAT Format
+    DXGI_FORmat Format
     )
 {
-    D3D12_FEATURE_DATA_FORMAT_INFO formatInfo = {Format};
-    if (FAILED(pDevice->CheckFeatureSupport(D3D12_FEATURE_FORMAT_INFO, &formatInfo, sizeof(formatInfo))))
+    D3D12_FEATURE_DATA_FORmat_INFO formatInfo = {Format};
+    if (FAILED(pDevice->CheckFeatureSupport(D3D12_FEATURE_FORmat_INFO, &formatInfo, sizeof(formatInfo))))
     {
         return 0;
     }
@@ -1221,7 +1221,7 @@ struct CD3DX12_RESOURCE_DESC : public D3D12_RESOURCE_DESC
         UINT height,
         UINT16 depthOrArraySize,
         UINT16 mipLevels,
-        DXGI_FORMAT format,
+        DXGI_FORmat format,
         UINT sampleCount,
         UINT sampleQuality,
         D3D12_TEXTURE_LAYOUT layout,
@@ -1244,7 +1244,7 @@ struct CD3DX12_RESOURCE_DESC : public D3D12_RESOURCE_DESC
         D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE )
     {
         return CD3DX12_RESOURCE_DESC( D3D12_RESOURCE_DIMENSION_BUFFER, resAllocInfo.Alignment, resAllocInfo.SizeInBytes, 
-            1, 1, 1, DXGI_FORMAT_UNKNOWN, 1, 0, D3D12_TEXTURE_LAYOUT_ROW_MAJOR, flags );
+            1, 1, 1, DXGI_FORmat_UNKNOWN, 1, 0, D3D12_TEXTURE_LAYOUT_ROW_MAJOR, flags );
     }
     static inline CD3DX12_RESOURCE_DESC Buffer( 
         UINT64 width,
@@ -1252,10 +1252,10 @@ struct CD3DX12_RESOURCE_DESC : public D3D12_RESOURCE_DESC
         UINT64 alignment = 0 )
     {
         return CD3DX12_RESOURCE_DESC( D3D12_RESOURCE_DIMENSION_BUFFER, alignment, width, 1, 1, 1, 
-            DXGI_FORMAT_UNKNOWN, 1, 0, D3D12_TEXTURE_LAYOUT_ROW_MAJOR, flags );
+            DXGI_FORmat_UNKNOWN, 1, 0, D3D12_TEXTURE_LAYOUT_ROW_MAJOR, flags );
     }
     static inline CD3DX12_RESOURCE_DESC Tex1D( 
-        DXGI_FORMAT format,
+        DXGI_FORmat format,
         UINT64 width,
         UINT16 arraySize = 1,
         UINT16 mipLevels = 0,
@@ -1267,7 +1267,7 @@ struct CD3DX12_RESOURCE_DESC : public D3D12_RESOURCE_DESC
             mipLevels, format, 1, 0, layout, flags );
     }
     static inline CD3DX12_RESOURCE_DESC Tex2D( 
-        DXGI_FORMAT format,
+        DXGI_FORmat format,
         UINT64 width,
         UINT height,
         UINT16 arraySize = 1,
@@ -1282,7 +1282,7 @@ struct CD3DX12_RESOURCE_DESC : public D3D12_RESOURCE_DESC
             mipLevels, format, sampleCount, sampleQuality, layout, flags );
     }
     static inline CD3DX12_RESOURCE_DESC Tex3D( 
-        DXGI_FORMAT format,
+        DXGI_FORmat format,
         UINT64 width,
         UINT height,
         UINT16 depth,

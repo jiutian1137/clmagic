@@ -132,7 +132,7 @@ namespace clmagic
 	public:
 		QuadGeometry() { /* empty */ }
 		QuadGeometry(Vec3 _P0, Vec3 _P1, Vec3 _P2, Vec3 _P3,
-			_in(MatrixTransform) _Transform = MatrixTransform(), Vec2_<size_t> _Subdivide = Vec2_<size_t>(1));
+			_in(matrixTransform) _Transform = matrixTransform(), Vec2_<size_t> _Subdivide = Vec2_<size_t>(1));
 
 		virtual size_t nb_vertices() const { return (_Myindx.size() * 4); }
 		virtual std::vector<Vec4> all_(const std::vector<Vec4>& _Data, size_t _Attrib) const override;
@@ -164,7 +164,7 @@ namespace clmagic
 	class SphereGeometry : public SimpleGeometry
 	{
 	public:
-		SphereGeometry(float _Radius, size_t _Countslice, size_t _Countstack, _in(MatrixTransform) _Transform = MatrixTransform());
+		SphereGeometry(float _Radius, size_t _Countslice, size_t _Countstack, _in(matrixTransform) _Transform = matrixTransform());
 
 		virtual size_t nb_vertices() const { return (_Myindx.size() * 3); }
 		virtual std::vector<Vec4> all_(const std::vector<Vec4>& _Data, size_t _Attrib) const override;
@@ -176,7 +176,7 @@ namespace clmagic
 	class DiskGeometry : public SimpleGeometry
 	{
 	public:
-		DiskGeometry(size_t _Subdivide, _in(MatrixTransform) _InnerT, _in(MatrixTransform) _OuterT = MatrixTransform());
+		DiskGeometry(size_t _Subdivide, _in(matrixTransform) _InnerT, _in(matrixTransform) _OuterT = matrixTransform());
 
 		virtual size_t nb_vertices() const { return (_Myindx.size() * 4); }
 		virtual std::vector<Vec4> all_(const std::vector<Vec4>& _Data, size_t _Attrib) const override;

@@ -1,7 +1,7 @@
 #include "ui.h"
 
 namespace clmagic {
-	cv::Mat ui::generate(cv::Rect _Range) {
+	cv::mat ui::generate(cv::Rect _Range) {
 		if (_Range.area() <= 0) {
 			_Range = cv::Rect(0, 0, _Mytex.cols, _Mytex.rows);
 		}

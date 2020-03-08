@@ -8,7 +8,7 @@ using namespace DirectX;
 
 Camera::Camera()
 {
-	SetLens(0.25f*MathHelper::Pi, 1.0f, 1.0f, 1000.0f);
+	SetLens(0.25f*mathHelper::Pi, 1.0f, 1.0f, 1000.0f);
 }
 
 Camera::~Camera()
@@ -124,7 +124,7 @@ void Camera::SetLens(float fovY, float aspect, float zn, float zf)
 	mNearWindowHeight = 2.0f * mNearZ * tanf( 0.5f*mFovY );
 	mFarWindowHeight  = 2.0f * mFarZ * tanf( 0.5f*mFovY );
 
-	XMMATRIX P = XMMatrixPerspectiveFovLH(mFovY, mAspect, mNearZ, mFarZ);
+	XMmatRIX P = XMmatrixPerspectiveFovLH(mFovY, mAspect, mNearZ, mFarZ);
 	XMStoreFloat4x4(&mProj, P);
 }
 
@@ -153,13 +153,13 @@ void Camera::LookAt(const XMFLOAT3& pos, const XMFLOAT3& target, const XMFLOAT3&
 	mViewDirty = true;
 }
 
-XMMATRIX Camera::GetView()const
+XMmatRIX Camera::GetView()const
 {
 	assert(!mViewDirty);
 	return XMLoadFloat4x4(&mView);
 }
 
-XMMATRIX Camera::GetProj()const
+XMmatRIX Camera::GetProj()const
 {
 	return XMLoadFloat4x4(&mProj);
 }
@@ -202,7 +202,7 @@ void Camera::Pitch(float angle)
 {
 	// Rotate up and look vector about the right vector.
 
-	XMMATRIX R = XMMatrixRotationAxis(XMLoadFloat3(&mRight), angle);
+	XMmatRIX R = XMmatrixRotationAxis(XMLoadFloat3(&mRight), angle);
 
 	XMStoreFloat3(&mUp,   XMVector3TransformNormal(XMLoadFloat3(&mUp), R));
 	XMStoreFloat3(&mLook, XMVector3TransformNormal(XMLoadFloat3(&mLook), R));
@@ -214,7 +214,7 @@ void Camera::RotateY(float angle)
 {
 	// Rotate the basis vectors about the world y-axis.
 
-	XMMATRIX R = XMMatrixRotationY(angle);
+	XMmatRIX R = XMmatrixRotationY(angle);
 
 	XMStoreFloat3(&mRight,   XMVector3TransformNormal(XMLoadFloat3(&mRight), R));
 	XMStoreFloat3(&mUp, XMVector3TransformNormal(XMLoadFloat3(&mUp), R));
@@ -223,7 +223,7 @@ void Camera::RotateY(float angle)
 	mViewDirty = true;
 }
 
-void Camera::UpdateViewMatrix()
+void Camera::UpdateViewmatrix()
 {
 	if(mViewDirty)
 	{

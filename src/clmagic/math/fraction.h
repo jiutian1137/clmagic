@@ -158,42 +158,43 @@ namespace clmagic
 	template<typename _Ty> inline
 	_Ty fbm_3(const std::vector<_Ty>& _Octave)
 		{	// sin( ∑abs(Oct) )
-		return ( std::sin(fbm_2(_Octave)) );
+		return ( sin(fbm_2(_Octave)) );
 		}
 
 	template<typename _Ty> inline
 	_Ty permute(_in(_Ty) x) 
 		{// @_Equaltion: (34*x^2 + x) % 289
-		return ((Real(34) * x * x + x) % Real(289));
+		using _Sty = scalar_type<_Ty>;
+		return mod(static_cast<_Sty>(34) * x * x + x, static_cast<_Sty>(289));
 		}
 
-	template<typename _Ty, typename _Fn> Vector2_<_Ty> cellular(Vector2_<_Ty> P, _Fn _Hfunc);
+	template<typename _Ty, typename _Fn> vector2<_Ty> cellular(vector2<_Ty> P, _Fn _Hfunc);
 
-	template<typename _Ty, typename _Fn> _Ty gradient2(Vector2_<_Ty> _Pos, _Fn _Hfunc);
-	template<typename _Ty, typename _Fn> _Ty gradient3(Vector3_<_Ty> _Pos, _Fn _Hfunc);
+	template<typename _Ty, typename _Fn> _Ty gradient2(vector2<_Ty> _Pos, _Fn _Hfunc);
+	template<typename _Ty, typename _Fn> _Ty gradient3(vector3<_Ty> _Pos, _Fn _Hfunc);
 
 	// perfermance well
-	template<typename _Ty, typename _Fn> _Ty value2(Vector2_<_Ty> p, _Fn _Hash22);
-	template<typename _Ty, typename _Fn> _Ty value3(Vector3_<_Ty> x, _Fn _Hash33);
+	template<typename _Ty, typename _Fn> _Ty value2(vector2<_Ty> p, _Fn _Hash22);
+	template<typename _Ty, typename _Fn> _Ty value3(vector3<_Ty> x, _Fn _Hash33);
 
-	template<typename _Ty, typename _Fn> _Ty worley2(Vector2_<_Ty> _Pos, _Fn _Hash22);
-	template<typename _Ty, typename _Fn> _Ty worley3(Vector3_<_Ty> _Pos, _Fn _Hash33);
+	template<typename _Ty, typename _Fn> _Ty worley2(vector2<_Ty> _Pos, _Fn _Hash22);
+	template<typename _Ty, typename _Fn> _Ty worley3(vector3<_Ty> _Pos, _Fn _Hash33);
 
 	// Classic Perlin noise
-	template<typename _Ty> _Ty cnoise2(Vector2_<_Ty> _Pos);
-	template<typename _Ty> _Ty cnoise3(Vector3_<_Ty> _Pos);
+	template<typename _Ty> _Ty cnoise2(vector2<_Ty> _Pos);
+	template<typename _Ty> _Ty cnoise3(vector3<_Ty> _Pos);
 
 	// Classic Perlin noise, periodic variant
-	template<typename _Ty> _Ty pnoise2(Vector2_<_Ty> _Pos, Vector2_<_Ty> _Rep);
-	template<typename _Ty> _Ty pnoise3(Vector3_<_Ty> _Pos, Vector3_<_Ty> _Rep);
+	template<typename _Ty> _Ty pnoise2(vector2<_Ty> _Pos, vector2<_Ty> _Rep);
+	template<typename _Ty> _Ty pnoise3(vector3<_Ty> _Pos, vector3<_Ty> _Rep);
 
 
 	template<typename _Ty, typename _Fn>
-		Vector3_<_Ty> gradient2d(Vector2_<_Ty> _Pos, _Fn _Hash22);
+		vector3<_Ty> gradient2d(vector2<_Ty> _Pos, _Fn _Hash22);
 	template<typename _Ty, typename _Fn>
-		Vector4_<_Ty> gradient3d(Vector3_<_Ty> _Pos, _Fn _Hash33);
+		vector4<_Ty> gradient3d(vector3<_Ty> _Pos, _Fn _Hash33);
 	template<typename _Ty, typename _Fn> 
-		Vector4_<_Ty> value3d(Vector3_<_Ty> _Pos, _Fn _Hash33);
+		vector4<_Ty> value3d(vector3<_Ty> _Pos, _Fn _Hash33);
 }// namespace clmagic
 
 #endif

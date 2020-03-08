@@ -1,6 +1,6 @@
 #pragma once
-#ifndef __CLMAGIC_CORE_GEOMETRY_MATH_RAYTRACING___INTERSECT___H__
-#define __CLMAGIC_CORE_GEOMETRY_MATH_RAYTRACING___INTERSECT___H__
+#ifndef __CLMAGIC_CORE_GEOMETRY_matH_RAYTRACING___INTERSECT___H__
+#define __CLMAGIC_CORE_GEOMETRY_matH_RAYTRACING___INTERSECT___H__
 #include "../raytracing.h"
 
 namespace clmagic 
@@ -19,13 +19,13 @@ namespace clmagic
 		if ( _Ray._Mysight.exclude( t ) )
 			return ( false );// direction different, or out of sight
 
-		Vector3_<T> impact = o + t * d;			
+		vector3<T> impact = o + t * d;			
 
-		_Result._Myresult = ShapeType::ePLANE;
+		_Result._Myresult = eShapeType::ePLANE;
 		_Result._Myt      = t;
 		_Result._Myorigin = impact;
 		_Result._Mynormal = faceforward(N, d, N);
-		_Result._Myuv     = Vector2_<T>(impact[0], impact[2]);// [x,z]
+		_Result._Myuv     = vector2<T>(impact[0], impact[2]);// [x,z]
 		return ( true );
 		}
 
@@ -34,21 +34,21 @@ namespace clmagic
 	*/
 
 	template<typename T> inline
-		bool _Clip_test_spherical(_in(Ray_<T>) _Ray, _in(Sphere_<T>) _Sphere,
-			/*in*/T t0, /*in*/T t1, _in(Vector3_<T>) o, _in(Vector3_<T>) d,
-			_out(T) t, _out(Vector3_<T>) impack, _out(T) phi, _out(T) theta)
-		{
+	bool _Clip_test_spherical(_in(Ray_<T>) _Ray, _in(Sphere_<T>) _Sphere,
+		/*in*/T t0, /*in*/T t1, _in(vector3<T>) o, _in(vector3<T>) d,
+		_out(T) t, _out(vector3<T>) impack, _out(T) phi, _out(T) theta) 
+		{	// 
 		sort(t0, t1);
 		t      = t0;
 		impack = o + t * d;
-		phi    = atan2(impack.y, impack.x); if (phi < T(0)) phi += T(c2Pi);
-		theta  = acos(impack.z / _Sphere.r);
+		phi    = atan2(impack[1], impack[0]); if (phi < T(0)) phi += const_value<T>::Pi();
+		theta  = acos(impack[2] / _Sphere.r);
 		if ( _Ray.sight_range.exclude(t) || _Sphere.phi_range.exclude(phi) || _Sphere.theta_range.exclude(theta) )
-			{
+			{	// t 
 			t      = t1;
 			impack = o + t * d;
-			phi    = atan2(impack.y, impack.x); if (phi < T(0)) phi += T(c2Pi);
-			theta  = acos(impack.z / _Sphere.r);
+			phi    = atan2(impack[1], impack[0]); if (phi < T(0)) phi += const_value<T>::Pi();
+			theta  = acos(impack[2] / _Sphere.r);
 			if ( _Ray.sight_range.exclude(t) || _Sphere.phi_range.exclude(phi) || _Sphere.theta_range.exclude(theta) )
 				{
 				return ( false );
@@ -59,27 +59,27 @@ namespace clmagic
 		}
 
 	template<typename T> inline
-		bool intersect(_in(Ray_<T>) _Ray, _in(Sphere_<T>) _Sphere, _out(Hit_<T>) _Result) {
-			// 1. transform to object
-			const auto o = _Sphere.world.inv_transform_copy(_Ray.o);
-			const auto d = _Sphere.world.inv_transform_copy(Normal_<T>(_Ray.d));
-			T t0, t1;
-			T t; Vector3_<T> impack; T phi; T theta;
+	bool intersect(_in(Ray_<T>) _Ray, _in(Sphere_<T>) _Sphere, _out(Hit_<T>) _Result) {
+		// 1. transform to object
+		const auto o = _Sphere.world.inv_transform_copy(_Ray.o);
+		const auto d = _Sphere.world.inv_transform_copy(unit_vector<T>(_Ray.d));
+		T t0, t1;
+		T t; vector3<T> impack; T phi; T theta;
 
-			if ( spherical_equation(o, d, _Sphere.r, t0, t1 ) ) {
-				if ( _Clip_test_spherical(_Ray, _Sphere, t0, t1, o, d, /*out..*/t, impack, phi, theta) ) {
-					_Result._Myresult = ShapeType::eSPHERE;
-					_Result._Myt      = t;
-					_Result._Myorigin = _Sphere.world.transform_copy(impack);
-					_Result._Mynormal = _Sphere.world.transform_copy(Normal_<T>(impack / _Sphere.r));
-					_Result._Myuv[0]  = phi / _Sphere.phi_range.range();
-					_Result._Myuv[1]  = _Sphere.theta_range.remap(theta);
-					return ( true );
-				}
+		if ( spherical_equation(o, d, _Sphere.r, t0, t1 ) ) {
+			if ( _Clip_test_spherical(_Ray, _Sphere, t0, t1, o, d, /*out..*/t, impack, phi, theta) ) {
+				_Result._Myresult = eShapeType::eSPHERE;
+				_Result._Myt      = t;
+				_Result._Myorigin = _Sphere.world.transform_copy(impack);
+				_Result._Mynormal = _Sphere.world.transform_copy(unit_vector<T>(impack / _Sphere.r));
+				_Result._Myuv[0]  = phi / _Sphere.phi_range.range();
+				_Result._Myuv[1]  = _Sphere.theta_range.remap(theta);
+				return ( true );
 			}
-
-			return ( false );
 		}
+
+		return ( false );
+	}
 
 	//template<typename T> inline
 	//	bool intersect(_in(Ray_<T>) _Ray, _in(Cylinder_<T>) _Cylinder, _out(Hit_<T>) _Result) {
@@ -126,7 +126,7 @@ namespace clmagic
 	//		}
 
 	//		// 4. initial hit result
-	//		_Result._Myresult = ShapeType::CYLINDER;
+	//		_Result._Myresult = eShapeType::CYLINDER;
 	//		_Result._Myt = t;
 	//		_Result._Myorigin = _Cylinder._Myworld.transform(impact);
 	//		_Result._Mynormal = _Cylinder._Myworld.transform(Vec3(cos(phi), T(0), sin(phi)), _Tag_normal());
@@ -155,7 +155,7 @@ namespace clmagic
 	//			return ( false );
 	//		}
 	//		
-	//		_Result._Myresult = ShapeType::DISK;
+	//		_Result._Myresult = eShapeType::DISK;
 	//		_Result._Myt      = t;
 	//		_Result._Myorigin = _Disk._Myworld.transform(_Impact);
 	//		_Result._Mynormal = _Disk._Myworld.transform(normalize(_Impact), _Tag_normal() );
@@ -202,7 +202,7 @@ namespace clmagic
 	//		}
 
 	//		// 4. initial hit result
-	//		_Result._Myresult = ShapeType::CONE;
+	//		_Result._Myresult = eShapeType::CONE;
 	//		_Result._Myt	  = t;
 	//		_Result._Myorigin = transform(_Cone._Myworld, impact);
 	//		_Result._Mynormal = transform(_Cone._Myworld, normalize(impact), _Tag_normal());
@@ -247,7 +247,7 @@ namespace clmagic
 	//		}
 
 	//		// 4.
-	//		_Result._Myresult = ShapeType::PARABOLOID;
+	//		_Result._Myresult = eShapeType::PARABOLOID;
 	//		_Result._Myt	  = t;
 	//		_Result._Myorigin = transform(_Paraboloid._Myworld, impact);
 	//		_Result._Mynormal = transform(_Paraboloid._Myworld, normalize(impact), _Tag_normal());
@@ -271,11 +271,11 @@ namespace clmagic
 			[b1] = --------------[s1¡¤s ]
 			[b2]       s1¡¤e1    [s2¡¤d ]
 			*/
-			Vector3_<T> _e1 = _Triangle._Myp1 - _Triangle._Myp0;
-			Vector3_<T> _e2 = _Triangle._Myp2 - _Triangle._Myp0;
-			Vector3_<T> _s  = _Ray.o - _Triangle._Myp0;
+			vector3<T> _e1 = _Triangle._Myp1 - _Triangle._Myp0;
+			vector3<T> _e2 = _Triangle._Myp2 - _Triangle._Myp0;
+			vector3<T> _s  = _Ray.o - _Triangle._Myp0;
 
-			Vector3_<T> _s1 = cross3(_Ray.d, _e2);
+			vector3<T> _s1 = cross3(_Ray.d, _e2);
 			T _Invdet = dot(_s1, _e1); if (equal(_Invdet, T(0), T(0.00002))) return ( false );
 			_Invdet = T(1) / _Invdet;
 
@@ -283,7 +283,7 @@ namespace clmagic
 			if (_b1 < T(0) || _b1 > T(1))
 				return ( false );
 
-			Vector3_<T> _s2 = cross3(_s, _e1);
+			vector3<T> _s2 = cross3(_s, _e1);
 			T _b2 = _Invdet * dot(_s2, _Ray.d);
 			if (_b2 < T(0) || _b2 + _b1 > T(1))
 				return ( false );
@@ -292,37 +292,37 @@ namespace clmagic
 			if ( _Ray.sight_range.exclude(_t) )
 				return ( false );// direction different, or out of sight
 
-			_Result._Myresult = ShapeType::TRIANGLE;
+			_Result._Myresult = eShapeType::TRIANGLE;
 			_Result._Myt      = _t;
 			_Result._Myorigin = _Ray.o + _t * _Ray.d;
 			_Result._Mynormal = normalize(cross3(_Triangle._Myp1 - _Triangle._Myp0, _Triangle._Myp2 - _Triangle._Myp0));
-			_Result._Myuv     = Vector2_<T>(_b1, _b2);
+			_Result._Myuv     = vector2<T>(_b1, _b2);
 			return ( true );
 		}
 
 
-	template<typename T> inline
+	template<typename T> 
 	PerspectiveRay_<T>::PerspectiveRay_()
-		: _Myview( Mat_<4, 4, T>::identity() ),
-		_Myproj( Mat_<4, 4, T>::identity() ),
-		_Mylook{ Vector3_<T>(T(0)), -cZ },
+		: _Myview( matrix<4, 4, T>::identity() ),
+		_Myproj( matrix<4, 4, T>::identity() ),
+		_Mylook{ vector3<T>(T(0), T(1.8), T(0)), unit_vector<T>(T(0), T(0), T(-1.0)) },
 		_Myup(T(0), T(1), T(0)),
 		_Myright(T(1), T(0), T(0)),
-		_Myfov(   to_radians( T(60) ) ),
-		_Myaspect( T(1200.0 / 860.0) ),
-		_Mynear(   T(0.0001) ),
-		_Myfar(    T(10000.0) ) {
+		_Myfov(   to_radians( T(45) ) ),
+		_Myaspect( T(16.0/ 9.0) ),
+		_Mynear(   T(1.0/*m*/) ),
+		_Myfar(    T(103000.0/*m*/) ) {
 		this->update_viewmatrix();
 		this->reset_perspective(_Myfov, _Myaspect, _Mynear, _Myfar);
 	}
 
 	template<typename T> inline
 	void PerspectiveRay_<T>::reset_perspective(_in(T) _Fov, _in(T) _Aspect, _in(T) _Near, _in(T) _Far) {
-		_Myfov = _Fov;
+		_Myfov    = _Fov;
 		_Myaspect = _Aspect;
-		_Mynear = _Near;
-		_Myfar = _Far;
-		_Myproj = Perspective(_Myfov, _Myaspect, _Mynear, _Myfar);
+		_Mynear   = _Near;
+		_Myfar    = _Far;
+		_Myproj   = Perspective(_Myfov, _Myaspect, _Mynear, _Myfar);
 	}
 
 	template<typename T> inline
@@ -338,27 +338,27 @@ namespace clmagic
 	template<typename T> inline
 	void PerspectiveRay_<T>::pitch(_in(T) _Radians) {
 		Quaternion_<T> _Rotator = Quaternion_<T>(_Myright, _Radians);
-		_Myup = _Rotator.rotate(_Myup);
-		_Mylook.d = _Rotator.rotate(_Mylook.d);
+		_Rotator.rotate(_Myup);
+		_Rotator.rotate(_Mylook.d);
 	}
 
 	template<typename T> inline
 	void PerspectiveRay_<T>::yaw(_in(T) _Radians) {
-		Quaternion_<T> _Rotator = Quaternion_<T>(cY, _Radians);
-		_Myup = _Rotator.rotate(_Myup);
-		_Myright = _Rotator.rotate(_Myright);
-		_Mylook.d = _Rotator.rotate(_Mylook.d);
+		Quaternion_<T> _Rotator = Quaternion_<T>(unit_vector<T>(0.f, 1.f, 0.f), _Radians);
+		_Rotator.rotate(_Myup);
+		_Rotator.rotate(_Myright);
+		_Rotator.rotate(_Mylook.d);
 	}
 
 	template<typename T> inline
 	void PerspectiveRay_<T>::zoom(_in(T) _Percentage) {
 		_Myfov += _Percentage;
-		_Myproj = Perspective(_Myfov, _Myaspect, _Mynear, _Myfar);
+		_Myproj = Perspective (_Myfov, _Myaspect, _Mynear, _Myfar);
 	}
 	
 	template<typename T> inline
 	void PerspectiveRay_<T>::update_viewmatrix() {
-		_Myview = Lookat(_Mylook.o, _Mylook.d, _Myup);
+		//_Myview = Lookat<T>(_Mylook.o, _Mylook.d, _Myup);
 	}
 
 }// namespace clmagic

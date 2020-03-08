@@ -22,7 +22,7 @@ namespace clmagic
 		using _Mybase = std::basic_stringbuf<char, _Traits, _Alloc>;
 
 	public:
-		using _Mysb = _Mybase::_Mysb;
+		using _Mysb = typename _Mybase::_Mysb;
 		using _Mystr = typename std::basic_string<_Elem, _Traits, _Alloc>;
 		using size_type = typename _Mystr::size_type;
 		using filename_type = typename std::string;

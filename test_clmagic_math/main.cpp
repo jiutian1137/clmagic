@@ -1,6 +1,8 @@
-﻿#include "../src/clmagic/math/simd.h"
-#include "../src/clmagic/math.h"
+﻿#include "../src/clmagic/math.h"
 #include "../src/clmagic/basic.h"
+#include <array>
+#include <bitset>
+#include <chrono>
 #include <random>
 #include <iomanip>
 #include <iostream>
@@ -8,106 +10,9 @@
 #include "glm/glm.hpp"
 #include "glm/ext.hpp"
 #include "glm/fwd.hpp"
+#include "glm/gtc/noise.hpp"
 
-
-
-
-
-#include "Common/d3dApp.h"
-#include <DirectXColors.h>
-
-class InitDirect3DApp : public D3DApp {
-	using _Mybase = D3DApp;
-public:
-	InitDirect3DApp(HINSTANCE hInstance) : D3DApp(hInstance) { }
-	~InitDirect3DApp() { }
-
-	virtual bool Initialize() override {
-		return (_Mybase::Initialize());
-	}
-
-private:
-	virtual void OnResize() override {
-		_Mybase::OnResize();
-	}
-
-	virtual void Update(const GameTimer& _Timer) override {
-	
-	}
-
-	virtual void Draw(const GameTimer& _Timer) override {
-		// Reuse the memory associated with command recording.
-   // We can only reset when the associated command lists have finished execution on the GPU.
-		ThrowIfFailed(mDirectCmdListAlloc->Reset());
-
-		// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
-		// Reusing the command list reuses memory.
-		ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
-
-		// Indicate a state transition on the resource usage.
-		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
-			D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-
-		// Set the viewport and scissor rect.  This needs to be reset whenever the command list is reset.
-		mCommandList->RSSetViewports(1, &mScreenViewport);
-		mCommandList->RSSetScissorRects(1, &mScissorRect);
-
-		// Clear the back buffer and depth buffer.
-		mCommandList->ClearRenderTargetView(CurrentBackBufferView(), DirectX::Colors::LightSteelBlue, 0, nullptr);
-		mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-
-		// Specify the buffers we are going to render to.
-		mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
-
-		// Indicate a state transition on the resource usage.
-		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
-			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
-
-		// Done recording commands.
-		ThrowIfFailed(mCommandList->Close());
-
-		// Add the command list to the queue for execution.
-		ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
-		mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
-
-		// swap the back and front buffers
-		ThrowIfFailed(mSwapChain->Present(0, 0));
-		mCurrBackBuffer = (mCurrBackBuffer + 1) % SwapChainBufferCount;
-
-		// Wait until frame commands are complete.  This waiting is inefficient and is
-		// done for simplicity.  Later we will show how to organize our rendering code
-		// so we do not have to wait per frame.
-		FlushCommandQueue();
-	}
-};
-
-void test_d3d12(HINSTANCE hInstance) {
-#if defined(_DEBUG)
-	
-#endif
-	
-	try
-	{
-		InitDirect3DApp _App(hInstance);
-		if (_App.Initialize()) {
-			_App.Run();
-		}
-	}
-	catch (const std::exception& e)
-	{
-		MessageBox(nullptr, e.what(), "HR Failed", MB_OK);
-	}
-}
-
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int showCmd) {
-	test_d3d12(hInstance);
-
-	std::cin.get();
-	return (0);
-}
-
-
-
+#pragma comment(lib, "lib/opencv_world411d.lib")
 
 //void test_foundation() {
 //	using namespace::clmagic;
@@ -158,7 +63,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
 //}
 //
 //
-#pragma comment(lib, "opencv_world411d.lib")
+//#pragma comment(lib, "opencv_world411d.lib")
 //class CpuShaderProgram {
 //	std::vector<char> memory_pool;
 //	char* memory_top;
@@ -179,7 +84,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
 //		_Time_current = duration_cast<microseconds>(system_clock::now().time_since_epoch());
 //		real_t t = 0.001f * static_cast<real_t>((_Time_current - _Time_start).count());
 //
-//		cv::Mat _Src(_Window_height, _Window_width, CV_32FC4);
+//		cv::mat _Src(_Window_height, _Window_width, CV_32FC4);
 //		for (int i = 0; i != _Src.rows; ++i) {
 //			for (int j = 0; j != _Src.cols; ++j) {
 //				auto _Texcoord = Vec2(float(j), float(i));
@@ -207,7 +112,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
 //
 //	Sphere_<real_t> _Test_obj1;
 //	_Test_obj1.r = 66.f;
-//	_Test_obj1.world = Mat4(Quaternion(cY, t));
+//	_Test_obj1.world = mat4(Quaternion(cY, t));
 //
 //	Hit_<real_t> _Hit;
 //
@@ -218,60 +123,276 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
 //	return ( Vec4(0.f) );
 //}
 
+#ifdef __cuda_cuda_h__
+
+#endif
 
 
-void test_simd() {
 
-	//#define Ouput_F32vec4(Vec) std::cout << (Vec)[0] << "," << (Vec)[1] << "," << (Vec)[2] << "," << (Vec)[3] << std::endl
-	//	F32vec4 _A(1.f, 2.f, 3.f, 4.f);
-	//	F32vec4 _B(5.f);
-	//	auto _C = _A * _B;
-	//	Ouput_F32vec4(_C);
-	//	std::cout << simd_dot(_A, _B) << std::endl;
-	//	F32mat4 _Mat(1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f, 16.f);
-	//	Ouput_F32vec4(_Mat * _A);
-	//	char* _Memory = new char[1024 * 16];
-	//	
-	//	F32mat4* _Mat_arr = cv::alignPtr((F32mat4*)_Memory);
-	//	std::cout << _Mat_arr << std::endl;
-	//
-	//	F64vec4 _Test_shuffle{ 10.f, 11.f, 12.f, 13.f };
-	//	Ouput_F32vec4(_Test_shuffle);
-	//
-	//#undef Ouput_F32vec4
 
+size_t test_func(size_t i) {
+	return i;
+}
+
+
+
+
+//
+//template<typename _Ret, typename ..._Args>
+//struct has_arguments : public std::bool_constant<true> {
+//};
+
+template<typename _Fn>
+void output_func(_Fn _Func) {
+	std::cout << std::is_floating_point_v<void (*)(int)> << std::endl;
+	std::cout << std::is_function_v<void (*)(int)>;
+	std::cout << std::is_member_function_pointer_v<_Fn> << std::endl;
+	std::cout << clmagic::has_arguments_v<_Fn> << std::endl;
+}
+
+void task_1() {	
+	using namespace::clmagic;
+	dmatrix<3, 3> A1 = {
+		4,  3, 1,
+		1, -2, 3,
+		5,  7, 0
+	};
+	dmatrix<3, 1> B1 = {
+		7,
+		2,
+		1
+	};
+	std::cout << "\n1. = "<< A1 * B1 << std::endl;
+
+	dmatrix<1, 3> A2 = { 1, 2, 3 };
+	dmatrix<3, 1> B2 = { 3, 2, 1 };
+	std::cout << "\n2. = " << A2 * B2 << std::endl;
+
+	dmatrix<3, 1> A3 = { 
+		2,
+		1, 
+		3 };
+	dmatrix<1, 2> B3 = {
+		-1, 2
+	};
+	std::cout << "\n3. = " << A3 * B3 << std::endl;
+
+	dmatrix<2, 4> A4 = {
+		2, 1, 4, 0,
+		1, -1, 3, 4
+	};
+	dmatrix<4, 3> B4 = {
+		1,  3, 1,
+		0, -1, 2,
+		1, -3, 1,
+		4,  0, -2
+	};
+	std::cout << "\n4. = " << A4 * B4 << std::endl;
+}
+
+void task_2() {
+	using namespace::clmagic;
+	dmatrix<3, 3> A = {
+		1,  1,  1,
+		1,  1, -1,
+		1, -1,  1
+	};
+
+	dmatrix<3, 3> B = {
+		 1,  2, 3,
+		-1, -2, 4,
+		 0,  5, 1
+	};
+
+	std::cout << "\n2." << std::endl;
+	std::cout << (A * B * 3 - A * 2) << std::endl;
+	std::cout << transpose(A) * B << std::endl;
+}
+
+void task_3() {
+	using namespace::clmagic;
+	square_matrix<double, 2> A = {
+		1, 2,
+		1, 3
+	};
+	square_matrix<double, 2> B = {
+		1, 0,
+		1, 2
+	};
+
+	std::cout << "\n3." << std::endl;
+	std::cout << "A*B=" << A * B << std::endl;
+	std::cout << "B*A" << B * A << std::endl;
+	std::cout << "(A+B)²=" << pow(A + B, 2) << std::endl;
+	std::cout << "A²+2AB+B²=" << pow(A, 2) +2*A*B + pow(B, 2) << std::endl;
+	std::cout << "(A+B)(A-B)=" << (A + B) * (A - B) << std::endl;
+	std::cout << "A²-B²=" << pow(A, 2) - pow(B, 2) << std::endl;
+}
+
+void task_4() {
+	using namespace::clmagic;
+	dmatrix<3, 3> A = {
+		 2,  1, -3,
+		 1,  2, 10,
+		-3, 10,  2
+	};
+	dmatrix<3, 3> B = {
+		4, 2, 13,
+		4, 7, 6,
+		22, 8, 9
+	};
+
+	std::cout << "\n4." << std::endl;
+	std::cout << B * A * transpose(B) << std::endl;
+	std::cout << transpose(B) * A * B << std::endl;
+}
+
+void task_5() {
 	using namespace::clmagic;
 
-	SIMDVec_<4, float> _A = SIMDVec_<4, float>( 5.f, 0.f, 0.f, 0.f );
-	SIMDVec_<4, float> _B = SIMDVec_<4, float>(5.f, 5.f, 5.f, 1.f);
-	SIMDVec_<4, float> _X = { 1.f, 0.f, 0.f, 1.f };
-	SIMDVec_<4, float> _Y = { 0.f, 1.f, 0.f, 0.f };
-	SIMDVec_<4, float> _Z = { 0.f, 0.f, 1.f, 0.f };
+	std::cout << "\n5." << std::endl;
 
-	auto _Test_ = _mm_set_ps(5.f, 7.f, 10.f, 15.f);
-	SIMDVec_<12, float> _Test_2 = SIMDVec_<12, float>(_Test_);
-	std::cout << _Test_2 << std::endl;
-	std::cout << _Test_2.posfix<9>() << std::endl;
-	std::cout << _Test_2.prefix<12>() << std::endl;
+	dmatrix<2, 2> A = {
+		1, 2,
+		2, 5
+	};
+	std::cout << inverse(A) << std::endl;
 
-	Mat_<4, 4, float> _Mat;
-	for (size_t i = 0; i < 4; i++)
-	{
-		for (size_t j = 0; j < 4; j++)
-		{
-			_Mat[i][j] = float(i) * 4.f + float(j);
+	dmatrix<3, 3> A2 = {
+		1, 2, -1,
+		3, 4, -2,
+		5, -4, 1
+	};
+	std::cout << inverse(A2) << std::endl;
+}
+
+void task_6() {
+	using namespace::clmagic;
+	std::cout << "\n6." << std::endl;
+
+	// AX = B
+	dmatrix<2, 2> A = {
+		2, 5,
+		1, 3
+	};
+	dmatrix<2, 2> B = {
+		4, -6,
+		2,  1
+	};
+	std::cout << inverse(A) * B << std::endl;
+
+	// XA=B
+	dmatrix<3, 3> A1 = {
+		2, 1, -1,
+		2, 1,  0,
+		1, -1, 1
+	};
+	dmatrix<2, 3> B1 = {
+		1, -1, 3,
+		4,  3, 2
+	};
+	std::cout << B1 * inverse(A1) << std::endl;
+
+	// AXB = C
+	dmatrix<2, 2> A2 = {
+		1, 4,
+		-1, 2
+	};
+	dmatrix<2, 2> B2 = {
+		 2, 0, 
+		-1, 1
+	};
+	dmatrix<2, 2> C2 = {
+		3, 1, 
+		0, -1
+	};
+	std::cout << inverse(A2) * C2 * inverse(B2) << std::endl;
+}
+
+void test() {
+	using namespace::clmagic;
+
+	dmatrix<4, 4> A = {
+		1, 1, 1, 1,
+		2, 3, 4, 5,
+		2*2, 3*3, 4*4, 5*5,
+		2*2*2, 3*3*3, 4*4*4, 5*5*5
+	};
+	std::cout << A << std::endl;
+
+	dmatrix<4, 5> Ab = {
+		1, 1, 1, 1, 0,
+		2, 3, 4, 5, 0,
+		2 * 2, 3 * 3, 4 * 4, 5 * 5, 0,
+		2 * 2 * 2, 3 * 3 * 3, 4 * 4 * 4, 5 * 5 * 5, 0
+	};
+	Ab.col(4).assign(std::initializer_list<double>{7.0, 7.0, 7.0, 4.0});
+	std::cout << Ab << std::endl;
+	auto Ab_pos = major_iterator< dmatrix<4, 5>::common_matrix_type>(Ab);
+	while ( matrix_row_transform<dmatrix<4, 5>::common_matrix_type>::solve_down<true>( Ab, Ab_pos) ) {}
+	while (matrix_row_transform<dmatrix<4, 5>::common_matrix_type>::solve_up<true>(Ab, Ab_pos)) {}
+	std::cout << Ab << std::endl;
+	std::cout << std::endl;
+
+	auto L           = dmatrix<4, 4>(1.0);
+	auto _Lu_process = LU<double, 4, normal_vector_tag>();
+	if (_Lu_process(A, L, A)) {
+		std::cout << L << std::endl;
+		std::cout << A << std::endl;
+		std::cout << L * A  << std::endl;
+
+		dmatrix<4, 1> b = {
+			7, 7, 7, 4
+		};
+
+		auto x = _Lu_process(L, A, b);
+		std::cout << x << std::endl;
+	}
+
+	/*std::cout << A << std::endl;
+	dmatrix<4, 4> Ainv = dmatrix < 4, 4>(1.f);
+
+	using AMat4x8 = _Augmented_matrix<double, 4, 4, 4, normal_vector_tag, normal_vector_tag>;
+
+	auto ALU = AMat4x8(A, Ainv);
+	std::cout << ALU << std::endl;
+	auto _Pos = major_iterator<AMat4x8>(ALU);
+
+	while (matrix_row_transform<AMat4x8>::solve_down<true>(ALU, _Pos) ) {
+		std::cout << ALU << std::endl;
+	}
+	while (matrix_row_transform<AMat4x8>::solve_up(ALU, _Pos) ) {
+		std::cout << ALU << std::endl;
+	}*/
+
+
+	/*dmatrix<4, 4> L;
+	dmatrix<4, 4> U;
+	for (size_t i = 0; i != 4; ++i) {
+		for (size_t j = 0; j != 4; ++j) {
+			U.at(i, j) = ALU.at(i, j);
 		}
 	}
-	std::cout << _Mat << std::endl;
-	std::cout << translation_matrix(10.f, 20.f, 0.f) * _X << std::endl;
-	std::cout << _X * translation_matrix(10.f, 20.f, 0.f)<< std::endl;
-
-	Mat_<5, 4> _Test_opeartor_plus;
-	std::cout << (_Test_opeartor_plus += Mat_<5, 6>()) << std::endl;
+	for (size_t i = 0; i != 4; ++i) {
+		for (size_t j = 0; j != 4; ++j) {
+			L.at(i, j) = ALU.at(i, j + 4);
+		}
+	}
+	std::cout << "L:" << L << std::endl;
+	std::cout << "U:" << U << std::endl;
+	std::cout << "LU=" << inverse(L) * U << std::endl;
+	std::cout << L * A << std::endl;*/
 }
 
 int main() {
-	test_simd();
+	//diagonal_matrix_operation();
+	/*task_1();
+	task_2();
+	task_3();
+	task_4();
+	task_5();
+	task_6();*/
+	test();
 
 	std::cin.get();
 	return (0);

@@ -182,10 +182,10 @@ void D3DApp::OnResize()
 
 	// Correction 11/12/2016: SSAO chapter requires an SRV to the depth buffer to read from 
 	// the depth buffer.  Therefore, because we need to create two views to the same resource:
-	//   1. SRV format: DXGI_FORMAT_R24_UNORM_X8_TYPELESS
-	//   2. DSV Format: DXGI_FORMAT_D24_UNORM_S8_UINT
+	//   1. SRV format: DXGI_FORmat_R24_UNORM_X8_TYPELESS
+	//   2. DSV Format: DXGI_FORmat_D24_UNORM_S8_UINT
 	// we need to create the depth buffer resource with a typeless format.  
-	depthStencilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+	depthStencilDesc.Format = DXGI_FORmat_R24G8_TYPELESS;
 
     depthStencilDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
     depthStencilDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
@@ -544,7 +544,7 @@ void D3DApp::FlushCommandQueue()
 	// Wait until the GPU has completed commands up to this fence point.
     if(mFence->GetCompletedValue() < mCurrentFence)
 	{
-		HANDLE eventHandle = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
+		HANDLE eventHandle = CreateEventEx(nullptr, nullptr, false, EVENT_ALL_ACCESS);
 
         // Fire event when GPU hits current fence.  
         ThrowIfFailed(mFence->SetEventOnCompletion(mCurrentFence, eventHandle));
@@ -655,7 +655,7 @@ void D3DApp::LogAdapterOutputs(IDXGIAdapter* adapter)
     }
 }
 
-void D3DApp::LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format)
+void D3DApp::LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORmat format)
 {
     UINT count = 0;
     UINT flags = 0;

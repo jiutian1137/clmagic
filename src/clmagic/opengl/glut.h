@@ -48,9 +48,9 @@ namespace clmagic
 	void gl_set_uniform(GLint _Location, const Vec2i& _Data);
 	void gl_set_uniform(GLint _Location, const Vec3i& _Data);
 	void gl_set_uniform(GLint _Location, const Vec4i& _Data);
-	void gl_set_uniform(GLint _Location, const Mat2& _Data);
-	void gl_set_uniform(GLint _Location, const Mat3& _Data);
-	void gl_set_uniform(GLint _Location, const Mat4& _Data);
+	void gl_set_uniform(GLint _Location, const mat2& _Data);
+	void gl_set_uniform(GLint _Location, const mat3& _Data);
+	void gl_set_uniform(GLint _Location, const mat4& _Data);
 	GLint gl_find_uniform_location(GLuint _Program, const char* _Uname);
 	// </uniform>
 
@@ -114,7 +114,7 @@ namespace clmagic
 	// <inline>
 	void gl_delete_texture(GLuint& _Dst);
 	void gl_create_texture(GLuint& _Dst, void* _Data, size_t _Width, size_t _Height, size_t _Channels, GLenum _Xwrap, GLenum _Ywrap, GLenum _Fltmag, GLenum _Fltmin, _STD initializer_list<GLint> _Swizzles = {});
-	void gl_create_texture(GLuint& _Dst, const cv::Mat& _Src, GLenum _Xwrap, GLenum _Ywrap, GLenum _Fltmag, GLenum _Fltmin);
+	void gl_create_texture(GLuint& _Dst, const cv::mat& _Src, GLenum _Xwrap, GLenum _Ywrap, GLenum _Fltmag, GLenum _Fltmin);
 	void gl_create_texture_dds(GLuint& _Dst, const std::string& _Filename, /* void* _Data, size_t _Width, size_t _Height, unsigned long In_Compressformat, */GLenum _Xwrap, GLenum _Ywrap, GLenum _Fltmag, GLenum _Fltmin);
 	// </inline>
 	// </texture>

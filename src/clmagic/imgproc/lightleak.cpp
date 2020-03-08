@@ -5,12 +5,12 @@ namespace clmagic
 	class _Lightleak_mask
 	{
 	public:
-		_Lightleak_mask(const cv::Mat& _Src, const cv::Mat& _Mask)
+		_Lightleak_mask(const cv::mat& _Src, const cv::mat& _Mask)
 			: _Mysrc(_Src), _Mymask(_Mask)
 			{	// 
 			}
 
-		void operator() (cv::Mat& _Dst) const
+		void operator() (cv::mat& _Dst) const
 			{
 			using namespace::cv;
 
@@ -22,7 +22,7 @@ namespace clmagic
 					);
 				};
 
-			_Dst = Mat(_Mysrc.size(), _Mysrc.type());
+			_Dst = mat(_Mysrc.size(), _Mysrc.type());
 
 			for (int i = 0; i != _Mysrc.rows; ++i)
 				{
@@ -38,24 +38,24 @@ namespace clmagic
 				}
 			}
 
-		void generate(cv::Mat& _Dst) const 
+		void generate(cv::mat& _Dst) const 
 			{
 			(*this)(_Dst);
 			}
 
-		cv::Mat _Mysrc;
-		cv::Mat _Mymask;
+		cv::mat _Mysrc;
+		cv::mat _Mymask;
 	};
 
 
 	void lightleak(cv::InputArray _Src, cv::InputArray _Mask, cv::OutputArray _Dst)
 		{
-		cv::Mat _Lightleakmask;
+		cv::mat _Lightleakmask;
 
-		_Lightleak_mask _Generator(_Src.getMat(), _Mask.getMat());
+		_Lightleak_mask _Generator(_Src.getmat(), _Mask.getmat());
 		_Generator.generate(_Lightleakmask);
 
-		cv::add( _Lightleakmask, _Src.getMat(), _Dst.getMatRef() );
+		cv::add( _Lightleakmask, _Src.getmat(), _Dst.getmatRef() );
 		}
 
 }// namespace clmagic 

@@ -21,7 +21,6 @@
   <ItemGroup>
     <ClInclude Include="..\src\clmagic\math.h" />
     <ClInclude Include="..\src\clmagic\math\calculus.h" />
-    <ClInclude Include="..\src\clmagic\math\clmagic.h" />
     <ClInclude Include="..\src\clmagic\math\complex.h" />
     <ClInclude Include="..\src\clmagic\math\complex\quaternion.inl.h" />
     <ClInclude Include="..\src\clmagic\math\fraction.h" />
@@ -31,14 +30,20 @@
     <ClInclude Include="..\src\clmagic\math\fraction\value_noise.inl.h" />
     <ClInclude Include="..\src\clmagic\math\fraction\Worley.inl.h" />
     <ClInclude Include="..\src\clmagic\math\fraction\Worley_cellular.inl.h" />
-    <ClInclude Include="..\src\clmagic\math\general.h" />
+    <ClInclude Include="..\src\clmagic\math\general\bitset.h" />
+    <ClInclude Include="..\src\clmagic\math\general\clmagic.h" />
+    <ClInclude Include="..\src\clmagic\math\general\general.h" />
+    <ClInclude Include="..\src\clmagic\math\general\simd.h" />
+    <ClInclude Include="..\src\clmagic\math\general\unit.h" />
     <ClInclude Include="..\src\clmagic\math\illumunation.h" />
     <ClInclude Include="..\src\clmagic\math\lapack.h" />
     <ClInclude Include="..\src\clmagic\math\lapack\general.inl.h" />
     <ClInclude Include="..\src\clmagic\math\lapack\intersect.inl.h" />
-    <ClInclude Include="..\src\clmagic\math\lapack\matrix.inl.h" />
+    <ClInclude Include="..\src\clmagic\math\lapack\matrix.h" />
     <ClInclude Include="..\src\clmagic\math\lapack\transform.inl.h" />
-    <ClInclude Include="..\src\clmagic\math\lapack\vector.inl.h" />
+    <ClInclude Include="..\src\clmagic\math\lapack\vector.h" />
+    <ClInclude Include="..\src\clmagic\math\lapack\world_matrix.inl.h" />
+    <ClInclude Include="..\src\clmagic\math\mstring.h" />
     <ClInclude Include="..\src\clmagic\math\other.h" />
     <ClInclude Include="..\src\clmagic\math\other\color_space.inl.h" />
     <ClInclude Include="..\src\clmagic\math\other\rect2d.inl.h" />
@@ -46,8 +51,8 @@
     <ClInclude Include="..\src\clmagic\math\raytracing.h" />
     <ClInclude Include="..\src\clmagic\math\raytracing\intersect.inl.h" />
     <ClInclude Include="..\src\clmagic\math\raytracing\shape.inl.h" />
-    <ClInclude Include="..\src\clmagic\math\real.h" />
-    <ClInclude Include="..\src\clmagic\math\simd.h" />
+    <ClInclude Include="..\src\clmagic\math\real\rational.h" />
+    <ClInclude Include="..\src\clmagic\math\real\real.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

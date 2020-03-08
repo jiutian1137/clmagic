@@ -9,27 +9,29 @@ namespace clmagic
 	/* Copyright @ 2017 Inigo Quilez */
 
 	template<typename _Ty> inline
-		Vec2_<_Ty> g_hash22(Vec2_<_Ty> _X)  // replace this by something better
+	vector2<_Ty> g_hash22(vector2<_Ty> _X)  // replace this by something better
 		{
-		Vec2_<_Ty> k = Vec2(0.3183099f, 0.3678794f);
-		_X = _X * k + Vec2(k.y, k.x);
-		return ( Vec2_<_Ty>(-1) 
-			  + _Ty(2) * fract( _Ty(16) * k * fract( _X.x*_X.y*(_X.x+_X.y) ) ) );
+		auto k = vector2<_Ty>(R(0.3183099), R(0.3678794f));
+		_X = _X * k + vector2<_Ty>(k[1], k[0]);
+		return ( incr(R(2) * fract(R(16) * k * fract( _X[0]*_X[1]*(_X[0]+_X[1]) ) ),
+					  R(-1)) );
 		}
 
 	template<typename _Ty> inline
-		Vec3_<_Ty> g_hash33(Vec3_<_Ty> p) // replace this by something better. really. do
+	vector3<_Ty> g_hash33(vector3<_Ty> p) // replace this by something better. really. do
 		{
-		p = Vec3(dot(p, Vec3(_Ty(127.1), _Ty(311.7), _Ty(74.7))),
-				 dot(p, Vec3(_Ty(269.5), _Ty(183.3), _Ty(246.1))),
-				 dot(p, Vec3(_Ty(113.5), _Ty(271.9), _Ty(124.6))));
+		p = vector3<_Ty>(
+			dot(p, vector3<_Ty>(_Ty(127.1), _Ty(311.7), _Ty(74.7))),
+			dot(p, vector3<_Ty>(_Ty(269.5), _Ty(183.3), _Ty(246.1))),
+			dot(p, vector3<_Ty>(_Ty(113.5), _Ty(271.9), _Ty(124.6))));
 
-		return (Vec3_<_Ty>(-1) + _Ty(2) * fract( sin(p) * _Ty(43758.5453123) ) );
+		return ( incr(R(2) * fract( sin(p) * R(43758.5453123) ), 
+					  R(-1)) );
 		}
 
 
-	template<typename _Ty> inline
-		_Ty gradient2(Vec2_<_Ty> _Pos, _Hash22_func_pointer<_Ty> _Hash)
+	template<typename _Ty, typename _Fn> inline
+	_Ty gradient2(vector2<_Ty> _Pos, _Fn _Hash22)
 		{	// return gradient noise
 		/*
 		(0,0)	  (1,0)
@@ -38,154 +40,179 @@ namespace clmagic
 		|		    |
 		|			|
 		C-----------D
-		(1,0)		(1,1)
+		(0,1)		(1,1)
 		*/
-		Vec2 _Pi = floor(_Pos);
-		Vec2 _Pf = fract(_Pos);
+		const auto _Pi = floor(_Pos);
+		const auto _Pf = fract(_Pos);
 
 		// if <quintic interpolation>
-		Vec2 u = fade(_Pf);
+		const auto u   = fade(_Pf);
 		// else if <cubic interpolation >
-		//vec2 u = s_curve(_Pf);
+		//auto u = s_curve(_Pf);
 
-		Vec2_<_Ty> ga = _Hash(_Pi + Vec2_<_Ty>(0.0f, 0.0f));
-		Vec2_<_Ty> gb = _Hash(_Pi + Vec2_<_Ty>(1.0f, 0.0f));
-		Vec2_<_Ty> gc = _Hash(_Pi + Vec2_<_Ty>(0.0f, 1.0f));
-		Vec2_<_Ty> gd = _Hash(_Pi + Vec2_<_Ty>(1.0f, 1.0f));
+		const auto _00 = vector2<_Ty>(_Ty(0), _Ty(0));
+		const auto _10 = vector2<_Ty>(_Ty(1), _Ty(0));
+		const auto _01 = vector2<_Ty>(_Ty(0), _Ty(1));
+		const auto _11 = vector2<_Ty>(_Ty(1), _Ty(1));
 
-		_Ty _A = dot(ga, _Pf - Vec2_<_Ty>(0.0f, 0.0f));
-		_Ty _B = dot(gb, _Pf - Vec2_<_Ty>(1.0f, 0.0f));
-		_Ty _C = dot(gc, _Pf - Vec2_<_Ty>(0.0f, 1.0f));
-		_Ty _D = dot(gd, _Pf - Vec2_<_Ty>(1.0f, 1.0f));
+		const auto ga  = _Hash22(_Pi + _00);
+		const auto gb  = _Hash22(_Pi + _10);
+		const auto gc  = _Hash22(_Pi + _01);
+		const auto gd  = _Hash22(_Pi + _11);
+
+		const _Ty  _A  = dot2(ga, _Pf - _00);
+		const _Ty  _B  = dot2(gb, _Pf - _10);
+		const _Ty  _C  = dot2(gc, _Pf - _01);
+		const _Ty  _D  = dot2(gd, _Pf - _11);
+
+		_Ty _Value = lerp(lerp(_A, _B, u[0]),
+						  lerp(_C, _D, u[0]),
+						  u[1]);
+
+		return (_Value);
+		}
+
+	template<typename _Ty, typename _Fn> inline
+	vector3<_Ty> gradientd2(vector3<_Ty> _Pos, _Fn _Hash22)
+		{	// return gradient noise (in x) and its derivatives (in yz)
+		const auto _Pi = floor(_Pos);
+		const auto _Pf = fract(_Pos);
+
+		// if <quintic interpolation>
+		const auto u   = fade(_Pf);
+		const auto du  = faded(_Pf);
+		// else if <cubic interpolation >
+		//auto u = s_curve(_Pf);
+		//auto du = s_curved(_Pf);
+		const auto _00 = vector2<_Ty>(_Ty(0), _Ty(0));
+		const auto _10 = vector2<_Ty>(_Ty(1), _Ty(0));
+		const auto _01 = vector2<_Ty>(_Ty(0), _Ty(1));
+		const auto _11 = vector2<_Ty>(_Ty(1), _Ty(1));
+
+		const auto ga  = _Hash22( _Pi + _00);
+		const auto gb  = _Hash22( _Pi + _10);
+		const auto gc  = _Hash22( _Pi + _01);
+		const auto gd  = _Hash22( _Pi + _11);
+
+		const _Ty _A   = dot( ga, _Pf - _00);
+		const _Ty _B   = dot( gb, _Pf - _10);
+		const _Ty _C   = dot( gc, _Pf - _01);
+		const _Ty _D   = dot( gd, _Pf - _11);
 
 		_Ty _Value = lerp(lerp(_A, _B, u.x),
 						  lerp(_C, _D, u.x),
 						  u.y);
+		
+		vector2<_Ty> _Derivatives = ga 
+								+ u[0] * (gb - ga) 
+								+ u[1] * (gc - ga) 
+								+ u[0] * u[1] * (ga - gb - gc + gd)
+								+ du * ( u.shuffle(1, 0) * (_A - _B - _C + _D) + vector2<_Ty>(_B, _C) - vector2<_Ty>(_A) );
 
-		return (_Value);
-		}
-
-	template<typename _Ty> inline
-		Vec3_<_Ty> gradientd2(Vec2_<_Ty> _Pos, _Hash22_func_pointer<_Ty> _Hash)
-		{	// return gradient noise (in x) and its derivatives (in yz)
-		Vec2 _Pi = floor(_Pos);
-		Vec2 _Pf = fract(_Pos);
-
-		// if <quintic interpolation>
-		Vec2 u = fade(_Pf);
-		Vec2 du = faded(_Pf);
-		// else if <cubic interpolation >
-		//vec2 u = s_curve(_Pf);
-		//vec2 du = s_curved(_Pf);
-
-		Vec2_<_Ty> ga = _Hash( _Pi + Vec2_<_Ty>(0.0f, 0.0f) );
-		Vec2_<_Ty> gb = _Hash( _Pi + Vec2_<_Ty>(1.0f, 0.0f) );
-		Vec2_<_Ty> gc = _Hash( _Pi + Vec2_<_Ty>(0.0f, 1.0f) );
-		Vec2_<_Ty> gd = _Hash( _Pi + Vec2_<_Ty>(1.0f, 1.0f) );
-
-		_Ty _A = dot( ga, _Pf - Vec2_<_Ty>(0.0f, 0.0f) );
-		_Ty _B = dot( gb, _Pf - Vec2_<_Ty>(1.0f, 0.0f) );
-		_Ty _C = dot( gc, _Pf - Vec2_<_Ty>(0.0f, 1.0f) );
-		_Ty _D = dot( gd, _Pf - Vec2_<_Ty>(1.0f, 1.0f) );
-
-		float _Value = lerp(lerp(_A, _B, u.x),
-							lerp(_C, _D, u.x),
-							u.y);
-
-		Vec2_<_Ty> _Derivatives = ga 
-								+ u.x * (gb - ga) 
-								+ u.y * (gc - ga) 
-								+ u.x * u.y * (ga - gb - gc + gd)
-								+ du * ( u.V<2>("YX") * (_A - _B - _C + _D)
-									   + Vec2_<_Ty>(_B, _C) - Vec2_<_Ty>(_A) );
-
-		return ( Vec3_<_Ty>(_Value, _Derivatives) );
+		return ( vector3<_Ty>(_Value, _Derivatives[0], _Derivatives[1]) );
 		}
 	
-	template<typename _Ty> inline
-		_Ty gradient3(Vec3_<_Ty> _Pos, _Hash33_func_pointer<_Ty> _Hash)
+	template<typename _Ty, typename _Fn> inline
+	_Ty gradient3(vector3<_Ty> _Pos, _Fn _Hash33)
 		{
-		// grid
-		Vec3_<_Ty> _Pi = floor(_Pos);
-		Vec3_<_Ty> _Pf = fract(_Pos);
+		const auto _Pi  = floor(_Pos);
+		const auto _Pf  = fract(_Pos);
 
 		// if <quintic interpolation>
-		Vec3_<_Ty> u = fade(_Pf);
+		const auto u    = fade(_Pf);
 		// else if <cubic interpolation >
 		//vec3 u = s_curve(_Pf);
 
+		const auto _000 = vector3<_Ty>(_Ty(0), _Ty(0), _Ty(0));
+		const auto _100 = vector3<_Ty>(_Ty(1), _Ty(0), _Ty(0));
+		const auto _010 = vector3<_Ty>(_Ty(0), _Ty(1), _Ty(0));
+		const auto _110 = vector3<_Ty>(_Ty(1), _Ty(1), _Ty(0));
+		const auto _001 = vector3<_Ty>(_Ty(0), _Ty(0), _Ty(1));
+		const auto _101 = vector3<_Ty>(_Ty(1), _Ty(0), _Ty(1));
+		const auto _011 = vector3<_Ty>(_Ty(0), _Ty(1), _Ty(1));
+		const auto _111 = vector3<_Ty>(_Ty(1), _Ty(1), _Ty(1));
+
 		// gradients
-		Vec3_<_Ty> ga = _Hash(_Pi + Vec3_<_Ty>(0.f, 0.f, 0.f));
-		Vec3_<_Ty> gb = _Hash(_Pi + Vec3_<_Ty>(1.f, 0.f, 0.f));
-		Vec3_<_Ty> gc = _Hash(_Pi + Vec3_<_Ty>(0.f, 1.f, 0.f));
-		Vec3_<_Ty> gd = _Hash(_Pi + Vec3_<_Ty>(1.f, 1.f, 0.f));
-		Vec3_<_Ty> ge = _Hash(_Pi + Vec3_<_Ty>(0.f, 0.f, 1.f));
-		Vec3_<_Ty> gf = _Hash(_Pi + Vec3_<_Ty>(1.f, 0.f, 1.f));
-		Vec3_<_Ty> gg = _Hash(_Pi + Vec3_<_Ty>(0.f, 1.f, 1.f));
-		Vec3_<_Ty> gh = _Hash(_Pi + Vec3_<_Ty>(1.f, 1.f, 1.f));
+		const auto ga   = _Hash33(_Pi + _000);
+		const auto gb   = _Hash33(_Pi + _100);
+		const auto gc   = _Hash33(_Pi + _010);
+		const auto gd   = _Hash33(_Pi + _110);
+		const auto ge   = _Hash33(_Pi + _001);
+		const auto gf   = _Hash33(_Pi + _101);
+		const auto gg   = _Hash33(_Pi + _011);
+		const auto gh   = _Hash33(_Pi + _111);
 
 		// projections
-		_Ty _A = dot(ga, _Pf - Vec3_<_Ty>(0.f, 0.f, 0.f));
-		_Ty _B = dot(gb, _Pf - Vec3_<_Ty>(1.f, 0.f, 0.f));
-		_Ty _C = dot(gc, _Pf - Vec3_<_Ty>(0.f, 1.f, 0.f));
-		_Ty _D = dot(gd, _Pf - Vec3_<_Ty>(1.f, 1.f, 0.f));
-		_Ty _E = dot(ge, _Pf - Vec3_<_Ty>(0.f, 0.f, 1.f));
-		_Ty _F = dot(gf, _Pf - Vec3_<_Ty>(1.f, 0.f, 1.f));
-		_Ty _G = dot(gg, _Pf - Vec3_<_Ty>(0.f, 1.f, 1.f));
-		_Ty _H = dot(gh, _Pf - Vec3_<_Ty>(1.f, 1.f, 1.f));
+		const _Ty  _A   = dot(ga, _Pf - _000);
+		const _Ty  _B   = dot(gb, _Pf - _100);
+		const _Ty  _C   = dot(gc, _Pf - _010);
+		const _Ty  _D   = dot(gd, _Pf - _110);
+		const _Ty  _E   = dot(ge, _Pf - _001);
+		const _Ty  _F   = dot(gf, _Pf - _101);
+		const _Ty  _G   = dot(gg, _Pf - _011);
+		const _Ty  _H   = dot(gh, _Pf - _111);
 
-		_Ty _Value = lerp(lerp(lerp(_A, _B, u.x),
-							   lerp(_C, _D, u.x),
-							   u.y),
-						  lerp(lerp(_E, _F, u.x),
-							   lerp(_G, _H, u.x),
-							   u.y),
-						  u.z);
+		_Ty _Value = lerp(lerp(lerp(_A, _B, u[0]),
+							   lerp(_C, _D, u[0]),
+							   u[1]),
+						  lerp(lerp(_E, _F, u[0]),
+							   lerp(_G, _H, u[0]),
+							   u[1]),
+						  u[2]);
 		return (_Value);
 	}
 
-	template<typename _Ty> inline
-		Vec4_<_Ty> gradientd3(Vec3_<_Ty> _Pos, _Hash33_func_pointer<_Ty> _Hash)
+	template<typename _Ty, typename _Fn> inline
+	vector4<_Ty> gradientd3(vector3<_Ty> _Pos, _Fn _Hash33)
 		{
 		// grid
-		Vec3_<_Ty> _Pi = floor(_Pos);
-		Vec3_<_Ty> _Pf = fract(_Pos);
+		const auto _Pi  = floor(_Pos);
+		const auto _Pf  = fract(_Pos);
 
 		// if <quintic interpolation>
-		Vec3_<_Ty> u = fade(_Pf);
-		Vec3_<_Ty> du = faded(_Pf);
+		const auto u    = fade(_Pf);
+		const auto du   = faded(_Pf);
 		// else if <cubic interpolation >
 		//vec3 u = s_curve(_Pf);
 		//vec3 du = s_curved(_Pf);
 
+		const auto _000 = vector3<_Ty>(_Ty(0), _Ty(0), _Ty(0));
+		const auto _100 = vector3<_Ty>(_Ty(1), _Ty(0), _Ty(0));
+		const auto _010 = vector3<_Ty>(_Ty(0), _Ty(1), _Ty(0));
+		const auto _110 = vector3<_Ty>(_Ty(1), _Ty(1), _Ty(0));
+		const auto _001 = vector3<_Ty>(_Ty(0), _Ty(0), _Ty(1));
+		const auto _101 = vector3<_Ty>(_Ty(1), _Ty(0), _Ty(1));
+		const auto _011 = vector3<_Ty>(_Ty(0), _Ty(1), _Ty(1));
+		const auto _111 = vector3<_Ty>(_Ty(1), _Ty(1), _Ty(1));
+
 		// gradients
-		Vec3_<_Ty> ga = _Hash(_Pi + Vec3_<_Ty>(0.f, 0.f, 0.f));
-		Vec3_<_Ty> gb = _Hash(_Pi + Vec3_<_Ty>(1.f, 0.f, 0.f));
-		Vec3_<_Ty> gc = _Hash(_Pi + Vec3_<_Ty>(0.f, 1.f, 0.f));
-		Vec3_<_Ty> gd = _Hash(_Pi + Vec3_<_Ty>(1.f, 1.f, 0.f));
-		Vec3_<_Ty> ge = _Hash(_Pi + Vec3_<_Ty>(0.f, 0.f, 1.f));
-		Vec3_<_Ty> gf = _Hash(_Pi + Vec3_<_Ty>(1.f, 0.f, 1.f));
-		Vec3_<_Ty> gg = _Hash(_Pi + Vec3_<_Ty>(0.f, 1.f, 1.f));
-		Vec3_<_Ty> gh = _Hash(_Pi + Vec3_<_Ty>(1.f, 1.f, 1.f));
+		const auto ga   = _Hash33(_Pi + _000);
+		const auto gb   = _Hash33(_Pi + _100);
+		const auto gc   = _Hash33(_Pi + _010);
+		const auto gd   = _Hash33(_Pi + _110);
+		const auto ge   = _Hash33(_Pi + _001);
+		const auto gf   = _Hash33(_Pi + _101);
+		const auto gg   = _Hash33(_Pi + _011);
+		const auto gh   = _Hash33(_Pi + _111);
 
 		// projections
-		_Ty _A = dot(ga, _Pf - Vec3_<_Ty>(0.f, 0.f, 0.f));
-		_Ty _B = dot(gb, _Pf - Vec3_<_Ty>(1.f, 0.f, 0.f));
-		_Ty _C = dot(gc, _Pf - Vec3_<_Ty>(0.f, 1.f, 0.f));
-		_Ty _D = dot(gd, _Pf - Vec3_<_Ty>(1.f, 1.f, 0.f));
-		_Ty _E = dot(ge, _Pf - Vec3_<_Ty>(0.f, 0.f, 1.f));
-		_Ty _F = dot(gf, _Pf - Vec3_<_Ty>(1.f, 0.f, 1.f));
-		_Ty _G = dot(gg, _Pf - Vec3_<_Ty>(0.f, 1.f, 1.f));
-		_Ty _H = dot(gh, _Pf - Vec3_<_Ty>(1.f, 1.f, 1.f));
+		const _Ty  _A   = dot(ga, _Pf - _000);
+		const _Ty  _B   = dot(gb, _Pf - _100);
+		const _Ty  _C   = dot(gc, _Pf - _010);
+		const _Ty  _D   = dot(gd, _Pf - _110);
+		const _Ty  _E   = dot(ge, _Pf - _001);
+		const _Ty  _F   = dot(gf, _Pf - _101);
+		const _Ty  _G   = dot(gg, _Pf - _011);
+		const _Ty  _H   = dot(gh, _Pf - _111);
 
-		_Ty _K1 = _A;
-		_Ty _K2 = _B - _A;
-		_Ty _K3 = _C - _A;
-		_Ty _K4 = _E - _A;
-		_Ty _K5 = _A - _B - _C + _D;
-		_Ty _K6 = _A - _C - _E + _G;
-		_Ty _K7 = _A - _B - _E + _F;
-		_Ty _K8 = -_A + _B + _C - _D + _E - _F - _G + _H;
+		const _Ty  _K1  = _A;
+		const _Ty  _K2  = _B - _A;
+		const _Ty  _K3  = _C - _A;
+		const _Ty  _K4  = _E - _A;
+		const _Ty  _K5  = _A - _B - _C + _D;
+		const _Ty  _K6  = _A - _C - _E + _G;
+		const _Ty  _K7  = _A - _B - _E + _F;
+		const _Ty  _K8  = -_A + _B + _C - _D + _E - _F - _G + _H;
 
 		_Ty _Value = _K1
 				   + _K2 * u.x
@@ -196,7 +223,7 @@ namespace clmagic
 				   + _K7 * u.z * u.x
 				   + _K8 * u.x * u.y * u.z;
 
-		Vec3_<_Ty> _Derivatives = ga
+		vector3<_Ty> _Derivatives = ga
 								+ u.x * (gb - ga)
 								+ u.y * (gc - ga)
 								+ u.z * (ge - ga)
@@ -204,12 +231,12 @@ namespace clmagic
 								+ u.y * u.z * (ga - gc - ge + gg)
 								+ u.z * u.x * (ga - gb - ge + gf)
 								+ u.x * u.y * u.z * (-ga + gb + gc - gd + ge - gf - gg + gh)
-								+ du * (Vec3_<_Ty>(_K2, _K3, _K4)
-									  + Vec3_<_Ty>(_K5, _K6, _K7) * u.V<3>("yzx")
-									  + Vec3_<_Ty>(_K7, _K5, _K6) * u.V<3>("zxy")
-									  + _K8 * u.V<3>("yzx") * u.V<3>("zxy"));
+								+ du * (vector3<_Ty>(_K2, _K3, _K4)
+									  + vector3<_Ty>(_K5, _K6, _K7) * u.shuffle(1, 2, 0)
+									  + vector3<_Ty>(_K7, _K5, _K6) * u.shuffle(2, 0, 1)
+									  + _K8 * u.shuffle(1, 2, 0) * u.shuffle(2, 0, 1));
 
-		return ( Vec4_<_Ty>(_Value, _Derivatives) );
+		return ( vector4<_Ty>(_Value, _Derivatives[0], _Derivatives[1], _Derivatives[2]) );
 		}
 
 }// namespace clmagic

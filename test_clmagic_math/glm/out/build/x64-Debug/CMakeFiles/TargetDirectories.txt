@@ -1,0 +1,2 @@
+D:/cplusplus/clmagic/test_clmagic_math/glm/out/build/x64-Debug/CMakeFiles/edit_cache.dir
+D:/cplusplus/clmagic/test_clmagic_math/glm/out/build/x64-Debug/CMakeFiles/rebuild_cache.dir

@@ -1,7 +1,7 @@
 #pragma once
 #ifndef clmagic_math_CALCULUS_h_
 #define clmagic_math_CALCULUS_h_
-#include "general.h"
+#include "general/general.h"
 
 namespace clmagic {
 	template<typename _Fnd, typename _Fnd2, typename _Ty>
@@ -69,10 +69,10 @@ namespace clmagic {
 						return (_Ty(0));// (v^0)(dx/dy) = 0
 					}
 				}
-				return ((_Ty)factorial(x, x - n) * (_Ty)pow(val, x - n));
+				return ((_Ty)factorial(x, x - n) * (_Ty)pow(_Myval, x - n));
 			}
 
-			_Ty val;
+			_Ty _Myval;
 		};
 }// namespace clmagic
 

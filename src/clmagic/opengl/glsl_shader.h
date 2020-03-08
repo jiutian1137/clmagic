@@ -33,9 +33,9 @@ namespace clmagic
 	//	void set_uniform_data(const std::string& _Uname, void* _Data, size_t _Size);
 	//	void set_uniform_data(const std::string& _Uname, const vec3& _Vec3);
 	//	void set_uniform_data(const std::string& _Uname, const vec4& _Vec4);
-	//	void set_uniform_data(const std::string& _Uname, const mat2& _Mat2);
-	//	void set_uniform_data(const std::string& _Uname, const mat4& _Mat4);
-	//	void set_uniform_data(const std::string& _Uname, const mat_<3, 4, float>& _Mat3x4);
+	//	void set_uniform_data(const std::string& _Uname, const mat2& _mat2);
+	//	void set_uniform_data(const std::string& _Uname, const mat4& _mat4);
+	//	void set_uniform_data(const std::string& _Uname, const mat_<3, 4, float>& _mat3x4);
 	//	void set_uniform_data(const uniform& _Uniform);
 	//	void set_uniform_data(const visualshader& _Sender);
 

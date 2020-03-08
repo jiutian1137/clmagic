@@ -80,7 +80,7 @@ namespace clmagic {
 			_Mytmp.release();
 		}
 
-		cv::Mat _Mytmp;
+		cv::mat _Mytmp;
 		std::string _Myfilename;
 	};
 
@@ -207,14 +207,14 @@ namespace clmagic {
 		}
 
 		void initializer(std::string _Url, size_t _Width, size_t _Height) {
-			_Mytex = cv::Mat(_Height, _Width, CV_32FC4);
+			_Mytex = cv::mat(_Height, _Width, CV_32FC4);
 			_Myitems.clear();
 			_Myurl = _Url;
 		}
 		
-		cv::Mat generate(cv::Rect _Range);
+		cv::mat generate(cv::Rect _Range);
 
-		cv::Mat refresh() {
+		cv::mat refresh() {
 			return (generate(cv::Rect()));
 		}
 
@@ -229,7 +229,7 @@ namespace clmagic {
 
 		std::vector<
 			std::shared_ptr<ui_item_basic> > _Myitems;
-		cv::Mat _Mytex;
+		cv::mat _Mytex;
 		std::string _Myurl;
 	};
 }// namespace clmagic

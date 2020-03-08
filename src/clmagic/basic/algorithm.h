@@ -39,14 +39,14 @@ namespace clmagic {
 			return (_Cont);
 		}
 
-		for (size_t i = 0; i != _Count - _M; /* empty */) {
+		/* We use size_t counter, because last iterator is invalide when insert into _Cont */
+		for (size_t i = 0; i < _Count - _M; /* empty */) {
 			if (std::equal(_Old_first, _Old_last, _First)) {
 				_First = _Cont.erase(_First, std::next(_First, _M));
 				_First = _Cont.insert(_First, _New_first, _New_last);
 				std::advance(_First, _P);
 				i += _M;
-			}
-			else {// no modify
+			} else {// no modify
 				++i;
 				++_First;
 			}
@@ -82,7 +82,7 @@ namespace clmagic {
 	_Container replace_copy(const _Container& _Cont, _InIt _First, _InIt _Last, _InIt2 _Old_first, _InIt2 _Old_last, _InIt3 _New_first, _InIt3 _New_last) {
 		auto _Clone = _Cont;
 		auto _Off_first = static_cast<size_t>(std::distance(_Cont.begin(), decltype(_Cont.begin())(_First)));
-		auto _Off_last = static_cast<size_t>(std::distance(decltype(_Cont.begin())(_Last), _Cont.end()));
+		auto _Off_last  = static_cast<size_t>(std::distance(decltype(_Cont.begin())(_Last), _Cont.end()));
 		replace(_Clone, std::next(_Clone.begin(), _Off_first), std::prev(_Clone.end(), _Off_last), _Old_first, _Old_last, _New_first, _New_last);
 		return (_Clone);
 	}

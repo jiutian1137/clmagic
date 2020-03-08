@@ -161,21 +161,21 @@ namespace clmagic
 		}
 
 	inline void
-		glsl_shader::uniform_set(const std::string& _Uname, const Mat2& _Data)
+		glsl_shader::uniform_set(const std::string& _Uname, const mat2& _Data)
 		{
-		_Gpu_operation([&]() { glUniformMatrix2fv(glGetUniformLocation(_Myprog, _Uname.c_str()), 1, GL_FALSE, static_cast<const float*>(_Data)); });
+		_Gpu_operation([&]() { glUniformmatrix2fv(glGetUniformLocation(_Myprog, _Uname.c_str()), 1, GL_FALSE, static_cast<const float*>(_Data)); });
 		}
 
 	inline void
-		glsl_shader::uniform_set(const std::string& _Uname, const Mat4& _Data)
+		glsl_shader::uniform_set(const std::string& _Uname, const mat4& _Data)
 		{
-		_Gpu_operation([&]() { glUniformMatrix4fv(glGetUniformLocation(_Myprog, _Uname.c_str()), 1, GL_FALSE, static_cast<const float*>(_Data)); });
+		_Gpu_operation([&]() { glUniformmatrix4fv(glGetUniformLocation(_Myprog, _Uname.c_str()), 1, GL_FALSE, static_cast<const float*>(_Data)); });
 		}
 
 	inline void 
-		glsl_shader::uniform_set(const std::string& _Uname, const Mat3x4& _Data)
+		glsl_shader::uniform_set(const std::string& _Uname, const mat3x4& _Data)
 		{
-		_Gpu_operation([&]() { glUniformMatrix3x4fv(glGetUniformLocation(_Myprog, _Uname.c_str()), 1, GL_FALSE, static_cast<const float*>(_Data)); });
+		_Gpu_operation([&]() { glUniformmatrix3x4fv(glGetUniformLocation(_Myprog, _Uname.c_str()), 1, GL_FALSE, static_cast<const float*>(_Data)); });
 		}
 
 	inline shader_info&

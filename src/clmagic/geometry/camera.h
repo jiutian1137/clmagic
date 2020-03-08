@@ -47,9 +47,9 @@ namespace clmagic
 		void eyepos_goto(float _Px, float _Py, float _Pz);
 		
 		const Vec3& eyepos()				 const { return (_Myeye); }
-		const Mat4& matrix_view()			 const { return (_Myview); }
-		const Mat4& matrix_projection()		 const { return (_Myproj); }
-		Mat4	    matrix_view_projection() const { return (_Myview * _Myproj); }
+		const mat4& matrix_view()			 const { return (_Myview); }
+		const mat4& matrix_projection()		 const { return (_Myproj); }
+		mat4	    matrix_view_projection() const { return (_Myview * _Myproj); }
 
 		std::string& name() { return (_Myname); }
 		Vec3& eyepos() { return (_Myeye); }
@@ -65,8 +65,8 @@ namespace clmagic
 		CAMERA_MOVE  _Mymv;
 		CAMERA_STATE _Mystate;
 		Vec3 _Myeye;
-		Mat4 _Myview;
-		Mat4 _Myproj;
+		mat4 _Myview;
+		mat4 _Myproj;
 	};
 
 
@@ -95,7 +95,7 @@ namespace clmagic
 		inline const Vec3& frontvector() const { return (v3_Myfront); }
 		inline const Vec3& upvector()    const { return (v3_Myup);	  }
 		inline const Vec3& rightvector() const { return (v3_Myright); }
-		inline const Mat4& projmatrix_flipped() const { return (m4_Myprojflip); }
+		inline const mat4& projmatrix_flipped() const { return (m4_Myprojflip); }
 		inline float fov()		 const { return (f_Myfov);    }
 		inline float width()	 const { return (f_Mywidth);  }
 		inline float height()	 const { return (f_Myheight); }
@@ -106,7 +106,7 @@ namespace clmagic
 		Vec3 v3_Myfront;
 		Vec3 v3_Myup;
 		Vec3 v3_Myright;
-		Mat4 m4_Myprojflip;
+		mat4 m4_Myprojflip;
 		float f_Myfov;
 		float f_Mywidth;
 		float f_Myheight;

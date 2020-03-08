@@ -86,9 +86,9 @@ namespace clmagic
 	//			switch (_Itedesc->second.type)
 	//				{
 	//				case UNIFORM_TYPE::UF_VEC4F: glUniform4fv(_Itedesc->second.location, 1, (const float*)(_Pdata + _Itedesc->second.index)); break;
-	//				case UNIFORM_TYPE::UF_MAT2: glUniformMatrix2fv(_Itedesc->second.location, 1, false, (const float*)(_Pdata + _Itedesc->second.index)); break;
-	//				case UNIFORM_TYPE::UF_MAT4: glUniformMatrix4fv(_Itedesc->second.location, 1, false, (const float*)(_Pdata + _Itedesc->second.index)); break;
-	//				case UNIFORM_TYPE::UF_MAT3X4: glUniformMatrix3x4fv(_Itedesc->second.location, 1, false, (const float*)(_Pdata + _Itedesc->second.index)); break;
+	//				case UNIFORM_TYPE::UF_mat2: glUniformmatrix2fv(_Itedesc->second.location, 1, false, (const float*)(_Pdata + _Itedesc->second.index)); break;
+	//				case UNIFORM_TYPE::UF_mat4: glUniformmatrix4fv(_Itedesc->second.location, 1, false, (const float*)(_Pdata + _Itedesc->second.index)); break;
+	//				case UNIFORM_TYPE::UF_mat3X4: glUniformmatrix3x4fv(_Itedesc->second.location, 1, false, (const float*)(_Pdata + _Itedesc->second.index)); break;
 	//				case UNIFORM_TYPE::UF_SAMPLER2D: break;
 	//				default:
 	//					break;
@@ -129,9 +129,9 @@ namespace clmagic
 	//	set_uniform_data(_Identifier, const_cast<mat4*>(&_Newdata), sizeof(_Newdata));
 	//	}
 
-	//void glslshader::set_uniform_data(const std::string& _Identifier, const mat_<3, 4, float>& _Mat3x4)
+	//void glslshader::set_uniform_data(const std::string& _Identifier, const mat_<3, 4, float>& _mat3x4)
 	//	{
-	//	set_uniform_data(_Identifier, const_cast< mat_<3, 4, float>* >(&_Mat3x4), sizeof(_Mat3x4) );
+	//	set_uniform_data(_Identifier, const_cast< mat_<3, 4, float>* >(&_mat3x4), sizeof(_mat3x4) );
 	//	}
 
 	//void glslshader::set_uniform_data(const uniform& _Uniform)
@@ -229,9 +229,9 @@ namespace clmagic
 	//			switch (_Udesc.type)
 	//				{
 	//				case UNIFORM_TYPE::UF_VEC4F: _Udesc.step = 1; break;
-	//				case UNIFORM_TYPE::UF_MAT2: _Udesc.step = 1; break;
-	//				case UNIFORM_TYPE::UF_MAT3X4: _Udesc.step = 3; break;
-	//				case UNIFORM_TYPE::UF_MAT4: _Udesc.step = 4; break;
+	//				case UNIFORM_TYPE::UF_mat2: _Udesc.step = 1; break;
+	//				case UNIFORM_TYPE::UF_mat3X4: _Udesc.step = 3; break;
+	//				case UNIFORM_TYPE::UF_mat4: _Udesc.step = 4; break;
 	//				case UNIFORM_TYPE::UF_SAMPLER2D: _Udesc.step = 0; break;
 	//				default: break;
 	//				}

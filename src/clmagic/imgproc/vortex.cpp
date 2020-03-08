@@ -29,9 +29,9 @@ namespace clmagic
 
 		this is sin(log(x)) function
 		*/
-		void operator() (cv::Mat& _Remap) const
+		void operator() (cv::mat& _Remap) const
 			{
-			_Remap = cv::Mat(_Mysize, CV_32FC2);
+			_Remap = cv::mat(_Mysize, CV_32FC2);
 
 			for (int i = 0; i != _Mysize.height; ++i)
 				{
@@ -74,7 +74,7 @@ namespace clmagic
 				}
 			}
 
-		void generate(cv::Mat& _Remap) const
+		void generate(cv::mat& _Remap) const
 			{
 			(*this)(_Remap);
 			}
@@ -92,9 +92,9 @@ namespace clmagic
 
 		if ( _Angle == 0 ) 
 			{	// no modify
-			if ( _Dst.getMat().data != _Src.getMat().data ) 
+			if ( _Dst.getmat().data != _Src.getmat().data ) 
 				{
-				_Dst.getMatRef() = _Src.getMat().clone();
+				_Dst.getmatRef() = _Src.getmat().clone();
 				}
 			return;
 			}
@@ -109,12 +109,12 @@ namespace clmagic
 			_Anchor = _Src.size() / 2;
 			}
 
-		cv::Mat _Mapping;
+		cv::mat _Mapping;
 
 		_Vortex_map _Generator( _Src.size(), float(_Angle) * 3.14f / 180.0f + 1.57f, float(_Radius), _Anchor );
 		_Generator.generate(_Mapping);
 		flip(_Mapping, _Mapping, 1);
 
-		cv::remap( _Src, _Dst, _Mapping, cv::Mat(), INTER_LINEAR, BORDER_REPLICATE);
+		cv::remap( _Src, _Dst, _Mapping, cv::mat(), INTER_LINEAR, BORDER_REPLICATE);
 		}
 }// namespace clmagic

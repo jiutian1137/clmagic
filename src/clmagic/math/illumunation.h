@@ -9,10 +9,10 @@ namespace clmagic
 		T attenuation(_in(T) _Dis, _in(T) _Falloffstart, _in(T) _Falloffend);
 
 	template<typename T> 
-		Vector3_<T> sun_direction(_in(T) _Time);
+		vector3<T> sun_direction(_in(T) _Time);
 
 	template<typename T> 
-		T sun_amount(_in(Vector3_<T>) _Eyedir, _in(T) _Time);
+		T sun_amount(_in(vector3<T>) _Eyedir, _in(T) _Time);
 	
 	/*
 	used to cloud illumunation
@@ -22,7 +22,7 @@ namespace clmagic
 		@_g as eccentricity, example:0.2
 	*/
 	template<typename T>
-		T HenyeyGreenstein(_in(Vector3_<T>) _Tolight, _in(Vector3_<T>) _Toeye, _in(T) g);
+		T HenyeyGreenstein(_in(vector3<T>) _Tolight, _in(vector3<T>) _Toeye, _in(T) g);
 		
 	/*
 	used to illumunation
@@ -31,7 +31,7 @@ namespace clmagic
 		@_N as object normal vector, require normalize vector
 	*/
 	template<typename T>
-		T Lambert_CosineLaw(_in(Vector3_<T>) L, _in(Vector3_<T>) N);
+		T Lambert_CosineLaw(_in(vector3<T>) L, _in(vector3<T>) N);
 
 	/*
 	used to BPR render 
@@ -41,7 +41,7 @@ namespace clmagic
 		@_L as to light vector, require normalize vector
 	*/
 	template<typename T>
-		Vector3_<T> Schlick_Fresnel(_in(Vector3_<T>) Rf, _in(Vector3_<T>) N, _in(Vector3_<T>) L);
+		vector3<T> Schlick_Fresnel(_in(vector3<T>) Rf, _in(vector3<T>) N, _in(vector3<T>) L);
 
 	/*
 	used to BPR render
@@ -53,22 +53,36 @@ namespace clmagic
 		@_Toeye   as to eye vector,   require normalize vector
 	*/
 	template<typename T>
-		Vector3_<T> BlinnPhong_specalbedo(
-			_in(Vector3_<T>) _Obj_Rf,
-			_in(Vector3_<T>) _Obj_N,
+		vector3<T> BlinnPhong_specalbedo(
+			_in(vector3<T>) _Obj_Rf,
+			_in(vector3<T>) _Obj_N,
 			_in(T)		     _Obj_Shininess,
-			_in(Vector3_<T>) _Tolight,
-			_in(Vector3_<T>) _Toeye);
+			_in(vector3<T>) _Tolight,
+			_in(vector3<T>) _Toeye);
 
 	/*
 	used to BPR render
 		@_Eqaltion: _Lstrenth * ( _Objdiffuse + BlinnPhong_specalbedo(_Objr0, _Objnormal, _Objroughness, _Tolight, _Toeye) )
 	*/
 	template<typename T>
-		Vector3_<T> BlinnPhong(
-			_in(Vector3_<T>) _Lstrenth,
-			_in(Vector3_<T>) _Objr0, _in(Vector3_<T>) _Objnormal, _in(T) _Objroughness, _in(Vector3_<T>) _Objdiffuse,
-			_in(Vector3_<T>) _Tolight, _in(Vector3_<T>) _Toeye);
+		vector3<T> BlinnPhong(
+			_in(vector3<T>) _Lstrenth,
+			_in(vector3<T>) _Objr0, _in(vector3<T>) _Objnormal, _in(T) _Objroughness, _in(vector3<T>) _Objdiffuse,
+			_in(vector3<T>) _Tolight, _in(vector3<T>) _Toeye);
+
+	template<typename _Ty>
+	_Ty hdr(_in(_Ty) L, _in(_Ty) white) {
+		auto r1 = static_cast<_Ty>(1);
+		return ( L + L*L/(white*white)
+			 /*-----------------------*/
+			  / ( L + r1 )
+			);
+		/*
+		L + L^2 / white^2
+		---------------------
+		   L + 1
+		*/
+	}
 
 }// namespace clmagic 
 

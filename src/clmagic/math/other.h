@@ -28,13 +28,13 @@ namespace clmagic
 			{ /*empty*/ }
 
 		template<typename T>
-		constexpr ColorRGB( _in(Vector3_<T>) _Linearcolor )
+		constexpr ColorRGB( _in(vector3<T>) _Linearcolor )
 			: red(  static_cast<unsigned char>(_Linearcolor[0] * 255.f) ),
 			  green(static_cast<unsigned char>(_Linearcolor[1] * 255.f) ),
 			  blue( static_cast<unsigned char>(_Linearcolor[2] * 255.f) )
 			{ /*empty*/ }
 
-		operator Vector3_<real_t>() const;
+		operator vector3<real_t>() const;
 		explicit operator std::string() const;
 
 		std::string to_hexstring() const;
@@ -47,15 +47,14 @@ namespace clmagic
 	};
 
 	template<typename T> constexpr
-		Vec_<3, T> constexpr_to_vec_3(_in(ColorRGB) _Rgb)
-		{
-		const auto _Linearcolor = Vec_<3, T>(
-			static_cast<T>(_Rgb.red)   * cvtfLinearcolor,
-			static_cast<T>(_Rgb.green) * cvtfLinearcolor,
-			static_cast<T>(_Rgb.blue)  * cvtfLinearcolor
-			);
+	vec_<T, 3> constexpr_to_vec_3(_in(ColorRGB) _Rgb) {
+		const auto _Linearcolor = vec_<T, 3>{
+			(T)_Rgb.red * (T)(1.0 / 255.0),
+			(T)_Rgb.green * (T)(1.0 / 255.0),
+			(T)_Rgb.blue * (T)(1.0 / 255.0)
+		};
 		return ( _Linearcolor );
-		}
+	}
 
 	constexpr ColorRGB cRGB_RED = ColorRGB(255, 0, 0);
 	constexpr ColorRGB cRGB_GREEN = ColorRGB(0, 255, 0);
@@ -100,7 +99,7 @@ namespace clmagic
 			value = _Max;
 			}
 
-		operator Vector3_<real_t>() const;
+		operator vector3<real_t>() const;
 		explicit operator std::string() const;
 
 		union
@@ -133,13 +132,8 @@ namespace clmagic
 		// lb = pos - size * uv
 		//
 	public:
-#if defined(clmagic_using_SIMDstructure)
-		using position_type = SIMDVec_<2, T>;
-		using region_type   = SIMDVec_<2, T>;
-#else
-		using position_type = Vec_<2, T>;
-		using region_type   = Vec_<2, T>;
-#endif
+		using position_type = vec_<T, 2>;
+		using region_type   = vec_<T, 2>;
 
 		static position_type rectcoords_cast(RECT_COORD In_Coord);
 		static std::string to_string(RECT_COORD _Rectcoord);
@@ -158,14 +152,14 @@ namespace clmagic
 		region_type   scale_step(T _sX, T _sY);
 		region_type   scale_rate(T _sX, T _sY);
 
-		template<typename _Ty = float> Vector2_<_Ty> get_pos(const position_type& _Uv) const;
-		template<typename _Ty = float> Vector2_<_Ty> get_pos(T _U, T _V) const;
+		template<typename _Ty = float> vector2<_Ty> get_pos(const position_type& _Uv) const;
+		template<typename _Ty = float> vector2<_Ty> get_pos(T _U, T _V) const;
 
-		template<typename _Ty = float> Vector2_<_Ty> leftbottom() const { return Vector2_<_Ty>((_Ty)_Mypos[0], (_Ty)_Mypos[1]); }
-		template<typename _Ty = float> Vector2_<_Ty> lefttop()    const { return get_pos<_Ty>(T(0), T(1)); }
-		template<typename _Ty = float> Vector2_<_Ty> righttop()   const { return get_pos<_Ty>(T(1), T(1)); }
-		template<typename _Ty = float> Vector2_<_Ty> rightbottom() const{ return get_pos<_Ty>(T(1), T(0)); }
-		template<typename _Ty = float> Vector2_<_Ty> center()     const { return get_pos<_Ty>(T(0.5), T(0.5)); }
+		template<typename _Ty = float> vector2<_Ty> leftbottom() const { return vector2<_Ty>((_Ty)_Mypos[0], (_Ty)_Mypos[1]); }
+		template<typename _Ty = float> vector2<_Ty> lefttop()    const { return get_pos<_Ty>(T(0), T(1)); }
+		template<typename _Ty = float> vector2<_Ty> righttop()   const { return get_pos<_Ty>(T(1), T(1)); }
+		template<typename _Ty = float> vector2<_Ty> rightbottom() const{ return get_pos<_Ty>(T(1), T(0)); }
+		template<typename _Ty = float> vector2<_Ty> center()     const { return get_pos<_Ty>(T(0.5), T(0.5)); }
 		template<typename _Ty = float> _Ty left() const   { return static_cast<_Ty>(_Mypos[0]); }
 		template<typename _Ty = float> _Ty bottom() const { return static_cast<_Ty>(_Mypos[1]); }
 		template<typename _Ty = float> _Ty right() const  { return static_cast<_Ty>(_Mypos[0] + _Mysize[0]); }

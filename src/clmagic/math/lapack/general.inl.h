@@ -1,147 +1,283 @@
+﻿//--------------------------------------------------------------------------------------
+// Copyright (c) 2019 LongJiangnan
+// All Rights Reserved
+//--------------------------------------------------------------------------------------
 #pragma once
-#ifndef __CLMAGIC_CORE_GEOMETRY_MATH_LAPACK___GENERAL___H__
-#define __CLMAGIC_CORE_GEOMETRY_MATH_LAPACK___GENERAL___H__
+#ifndef clmagic_math_lapack_GENERAL_inl_h_
+#define clmagic_math_lapack_GENERAL_inl_h_
 #include "../lapack.h"
 
-namespace clmagic 
-{
-	// < compare >
-	template<typename _Ty, typename _Fn> inline
-		void _Compare_vector_vector(/*out*/bool* _Pdst, /*in*/const _Ty* _Plhs, /*in*/const _Ty* _Prhs, 
-			size_t _Size, _Fn* _Comparetor) 
-		{
-		while (_Size--) { _Pdst[_Size] = _Comparetor(_Plhs[_Size], _Prhs[_Size]); }
-		}
-
-	template<typename _Ty, typename _Fn> inline
-		bool _Compare_vector_vector(/*in*/const _Ty* _Plhs, /*in*/const _Ty* _Prhs,
-			size_t _Size, _Fn* _Comparetor) 
-		{
-		while ( _Size-- ) 
-			{ 
-			if ( !_Comparetor( _Plhs[_Size], _Prhs[_Size] ) ) 
-				{
-				return ( false );
-				}	
-			}
-		return ( true );
-		}
-	// </ compare >
-	
-
+namespace clmagic {
 	// < mul matrix >
 	template<typename _Ty> inline
-		void _Mul_matrix( /*out*/_Ty* _Pdst, /*in*/const _Ty* _Plhs, size_t _M, size_t _N, /*in*/const _Ty* _Prhs, size_t _P) 
-		{	// [m, p]
-		auto _Dst = [_Pdst, _P](size_t _Row, size_t _Col) ->_Ty&	   { return (_Pdst[_Row * _P + _Col]); };// mat mxp
-		auto _Lhs = [_Plhs, _N](size_t _Row, size_t _Col) ->const _Ty& { return (_Plhs[_Row * _N + _Col]); };// mat_mxn
-		auto _Rhs = [_Prhs, _P](size_t _Row, size_t _Col) ->const _Ty& { return (_Prhs[_Row * _P + _Col]); };// mat_nxp
-		
-		for (size_t i = 0; i < _M; ++i)
-			{
-			for (size_t j = 0; j < _P; ++j)
-				{
-				_Ty _Val = static_cast<_Ty>(0);
-				for (size_t k = 0; k < _N; ++k)
-					{
-					_Val += _Lhs(i, k) * _Rhs(k, j);
-					}
-				_Dst(i, j) = _Val;
-				}
-			}
-		}
-
-	template<> inline
-		void _Mul_matrix<float>( /*out*/float* _Pdst, /*in*/const float* _Plhs, size_t _M, size_t _N, /*in*/const float* _Prhs, size_t _P)
-		{	// [m, p]
-#if defined(CLMAGIC_USING_MKL)
+	void matrix_mul( /*in*/const _Ty* _SrcMxN, /*in*/const _Ty* _SrcNxP, size_t M, size_t N, size_t P, /*out*/_Ty* _DstMxP ) {
+#if defined(clmagic_using_MKL)
 		cblas_sgemm(
-			CBLAS_LAYOUT::CblasRowMajor, 
-			CBLAS_TRANSPOSE::CblasNoTrans, 
-			CBLAS_TRANSPOSE::CblasNoTrans, 
-			int(_M), int(_N), int(_P), 
-			1.f, _Plhs, int(_N), 
-			_Prhs, int(_N), 1.f, 
+			CBLAS_LAYOUT::CblasRowMajor,
+			CBLAS_TRANSPOSE::CblasNoTrans,
+			CBLAS_TRANSPOSE::CblasNoTrans,
+			int(_M), int(_N), int(_P),
+			1.f, _Plhs, int(_N),
+			_Prhs, int(_N), 1.f,
 			_Pdst, int(_P)
-			);
+		);
 #else
-		auto _Dst = [_Pdst, _P](size_t _Row, size_t _Col) ->float&		 { return (_Pdst[_Row * _P + _Col]); };// mat mxp
-		auto _Lhs = [_Plhs, _N](size_t _Row, size_t _Col) ->const float& { return (_Plhs[_Row * _N + _Col]); };// mat_mxn
-		auto _Rhs = [_Prhs, _P](size_t _Row, size_t _Col) ->const float& { return (_Prhs[_Row * _P + _Col]); };// mat_nxp
+		auto A = [_SrcMxN, N](size_t _Row, size_t _Col) ->const _Ty& { return (_SrcMxN[_Row * N + _Col]); };// matMxN
+		auto B = [_SrcNxP, P](size_t _Row, size_t _Col) ->const _Ty& { return (_SrcNxP[_Row * P + _Col]); };// matNxP
+		auto C = [_DstMxP, P](size_t _Row, size_t _Col) ->      _Ty& { return (_DstMxP[_Row * P + _Col]); };// matMxP
 
-		for (size_t i = 0; i < _M; ++i)
-			{
-			for (size_t j = 0; j < _P; ++j)
-				{
-				float _Val = 0.f;
-				for (size_t k = 0; k < _N; ++k)
-					{
-					_Val += _Lhs(i, k) * _Rhs(k, j);
-					}
-				_Dst(i, j) = _Val;
+		/* ∑(k=0,N)(Aik * Bkj), 
+		i in [0, M)
+		j in [0, P)
+		*/
+		for (size_t i = 0; i < M; ++i) {
+			for (size_t j = 0; j < P; ++j) {
+				C(i, j) = A(i, 0) * B(0, j);
+				for (size_t k = 1; k < N; ++k) {
+					C(i, j) += A(i, k) * B(k, j);
 				}
 			}
-#endif
 		}
+#endif
+	}
 	// </ mul matrix>
 
-	template<typename _Ty> inline
-		int _Lu( /*out*/ _Ty* _Pdst, /*inout*/_Ty* _Plhs, size_t _M, size_t _N) 
-		{
-		size_t i, j, k;
-		int _Result = 1;
-		
-		auto _Dst = [_Pdst, _N](size_t _Row, size_t _Col) ->_Ty& { return (_Pdst[_Row * _N + _Col]); };
-		auto _Lhs = [ _Plhs, _N ]( size_t _Row, size_t _Col ) ->_Ty& { return ( _Plhs[_Row * _N + _Col] ); };
-
-		for ( i = 0; i < _M; ++i ) 
-			{	
-			// 1. major pos
-			k = i;
-			for ( j = i + 1; j < _M; ++j )
-				if ( abs(_Lhs(j, i)) > abs(_Lhs(k, i)) )
-					k = j;
-
-			// 2. swap major
-			if ( k != i ) 
-				{
-				for ( j = i; j < _M; ++j ) 
-					std::swap( _Lhs(i, j), _Lhs(k, j) );
-				for ( j = 0; j < _N; ++j ) 
-					std::swap( _Dst(i, j), _Dst(k, j) );
-				_Result = -_Result;
-				}
-
-			// 3. elimination
-			_Ty _Tmp = _Ty(-1) / _Lhs(i, i);
-			for ( j = i + 1; j < _M; ++j ) 
-				{
-				_Ty _Alpha = _Lhs(j, i) * _Tmp;
-
-				for ( k = i + 1; k < _M; ++k ) 
-					_Lhs(j, k) += _Alpha * _Lhs(i, k);
-
-				for ( k = 0; k < _N; ++k ) 
-					_Dst(j, k) += _Alpha * _Dst(i, k);
-				}
+	template<typename _Ty>
+	size_t min_major(const matrix_slice<_Ty>& A, size_t k) {
+		assert(k < A.cols());
+		for (size_t i = k + 1; i < A.rows(); ++i) {
+			if ( abs(abs(A.at(i, k)) - _Ty(1)) < abs(abs(A.at(k, k)) - _Ty(1)) ) {
+				k = i;
 			}
-
-
-		// final
-		for (i = _M - 1; i != -1; --i) 
-			{	
-			for (j = 0; j < _N; ++j) 
-				{
-				_Ty _Tmp = _Dst(i, j);
-				for ( k = i + 1; k < _M; ++k ) 
-					_Tmp -= _Lhs(i, k) * _Dst(k, j);
-
-				_Dst(i, j) = _Tmp / _Lhs(i, i);
-				}
-			}
-
-		return ( _Result );
 		}
+		return ( k );
+	}
+
+	/* Please clear to ZERO before */
+	template<typename _Ty>
+	size_t find_row_major(matrix_slice<_Ty> A, size_t k) {
+		assert(k < A.rows() && k < A.cols());
+		for (size_t i = k; i < A.rows(); ++i) {
+			if ( A[i][k/*solid*/] != _Ty(0) ) {
+				return ( i );
+			}
+		}
+		return ( std::string::npos );
+	}
+
+	template<typename _Ty>
+	size_t find_col_major(matrix_slice<_Ty> A, size_t k) {
+		assert(k < A.rows() && k < A.cols());
+		for (size_t j = k; j < A.cols(); ++j) {
+			if ( A[k/*solid*/][j] != _Ty(0) ) {
+				return ( j );
+			}
+		}
+		return ( std::string::npos );
+	}
+
+	template<typename _Ty>
+	void swap_row(matrix_slice<_Ty> A, size_t i, size_t r) {
+		assert(i < A.rows() && r < A.rows());
+		for (size_t j = 0; j != A.cols(); ++j) {
+			std::swap(A.at(i, j), A.at(r, j));
+		}
+	}
+
+	template<typename _Ty>
+	void swap_col(matrix_slice<_Ty> A, size_t j, size_t r) {
+		assert(j < A.cols() && r < A.cols());
+		for (size_t i = 0; i != A.rows(); ++i) {
+			std::swap(A.at(i, j), A.at(i, r));
+		}
+	}
+
+	template<typename _Ty>
+	void scale_matrix(matrix_slice<_Ty> A, _Ty u) {
+		for (size_t i = 0; i != A.rows(); ++i) {
+			for (size_t j = 0; j != A.cols(); ++j) {
+				A[i][j] *= u;
+			}
+		}
+	}
+
+	template<typename _Ty>
+	void scale_row(matrix_slice<_Ty> A, size_t i, _Ty alpha, size_t j = 0) {
+		assert(i < A.rows() && j < A.cols());
+		for (; j < A.cols(); ++j) {
+			A.at(i, j) *= alpha;
+		}
+	}
+
+	template<typename _Ty>
+	void scale_col(matrix_slice<_Ty> A, size_t j, _Ty alpha, size_t i = 0) {
+		assert(i < A.rows() && j < A.cols());
+		for (; i < A.rows(); ++i) {
+			A.at(i, j) *= alpha;
+		}
+	}
+
+	template<typename _Ty>
+	void elimination(matrix_slice<_Ty> A, size_t i, size_t k, _Ty alpha, size_t j = 0) {
+		assert(k < A.rows() && k < A.cols());
+		for (; j < A.cols(); ++j) {
+			A.at(i, j) += alpha * A.at(k, j);
+		}
+	}
+
+	template<typename _Ty> inline
+	bool Lu(matrix_slice<_Ty> A) {
+		_Ty t = _Ty(R(1));
+		size_t N = minval(A.rows(), A.cols());
+		
+		/* c * !N */
+		for (size_t k = 0; k != N; ++k) {
+			size_t mj = find_row_major(A, k);
+			if (mj != std::string::npos) {
+				if (mj != k) {
+					swap_row(A, k, mj);
+					t = -t;
+				}
+			} else {
+				mj = find_col_major(A, k);
+				if (mj != std::string::npos) {
+					swap_col(A, k, mj);
+					t = -t;
+				} else {
+					continue;
+				}
+			}
+
+			if ( A[k][k] != _Ty(1)) { /* 1 = x*Aij, x = 1/Aij */
+				scale_row(A, k, _Ty(1) / A[k][k], k);
+			}
+
+			for (size_t i = k + 1; i != A.rows(); ++i) {
+				elimination(A, i, k, -A[i][k], k);
+			}
+		}
+
+		/* c * !N */
+		for (size_t k = N - 1; k != -1; --k) {
+			for (size_t i = k - 1; i != -1; --i) {
+				elimination(A, i, k, -A[i][k], k);
+			}
+		}
+
+		/*
+		①:
+		[ 1 0 0 ] x0
+		[ 0 1 0 ] x1
+		[ 0 0 1 ] x2
+		good solve
+
+		②:
+		[ 1 0 0  0 ]
+		[ 0 1 0  12]
+		[ 0 0 1 -29]
+		[ 0 0 0  1 final]
+		[ 0 0 0  0 ] error row
+		if is not Homogeneous matrix, no solution
+
+		[ 1 0 0 ] [ 1 0 0 ]
+		[ 0 0 0 ] [ 0 1 0 ]
+		[ 0 0 1 ] [ 0 0 0 ]
+		no solution
+		*/
+		if ( A.rows() < A.cols() ) {
+			return (false);
+		} else {
+			for (size_t i = 0; i != N; ++i) {
+				if (A[i][i] == _Ty(0)) {
+					return (false);
+				}
+			}
+		}
+		return ( true );
+	}
+
+	template<typename _Ty> inline
+	bool Lu(/*inout*/_Ty* pA, size_t M, size_t N) {
+		return Lu(matrix_slice<_Ty>(pA, M, N));
+	}
+
+	template<typename _Ty> inline
+	bool Lu(matrix_slice<_Ty> A, matrix_slice<_Ty> Ainv) {
+		_Ty t = _Ty(R(1));
+		size_t N = minval(A.rows(), A.cols());
+
+		/* c * !N */
+		for (size_t k = 0; k != N; ++k) {
+			size_t mj = find_row_major(A, k);
+			if (mj != std::string::npos) {
+				if (mj != k) {
+					swap_row(A, k, mj);
+					swap_row(Ainv, k, mj);
+					t = -t;
+				}
+			} else {
+				mj = find_col_major(A, k);
+				if (mj != std::string::npos) {
+					swap_col(A, k, mj);
+					swap_col(Ainv, k, mj);
+					t = -t;
+				} else {
+					continue;
+				}
+			}
+
+			if (A[k][k] != _Ty(1)) { /* 1 = x*Aij, x = 1/Aij */
+				_Ty alpha = _Ty(R(1)) / A[k][k];
+				scale_row(A, k, alpha, k);
+				scale_row(Ainv, k, alpha, k);
+			}
+
+			for (size_t i = k + 1; i != A.rows(); ++i) {
+				_Ty alpha = -A[i][k];
+				elimination(A, i, k, alpha, k);
+				elimination(Ainv, i, k, alpha, k);
+			}
+		}
+
+		/* c * !N */
+		for (size_t k = N - 1; k != -1; --k) {
+			for (size_t i = k - 1; i != -1; --i) {
+				_Ty alpha = -A[i][k];
+				elimination( A  , i, k, alpha, k);
+				elimination(Ainv, i, k, alpha, 0/*inv matrix index*/);
+			}
+		}
+
+		if (A.rows() < A.cols()) {
+			return (false);
+		} else {
+			for (size_t i = 0; i != N; ++i) {
+				if (A[i][i] == _Ty(0)) {
+					return (false);
+				}
+			}
+		}
+		return (true);
+	}
+
+	template<typename _Ty> inline
+	bool Lu(/*inout*/_Ty* pA, size_t M, size_t N, _Ty* pAinv) {
+		/* 
+		@_Result:
+		       A       Ainv
+		    [ a b c | 1 0 0 ]
+			[ d e f | 0 1 0 ]
+			[ g h i | 0 0 1 ]
+			       ↓
+			[ 1 0 0 | a b c ]
+			[ 0 1 0 | d e f ]
+			[ 0 0 1 | g h i ]
+			   A       Ainv
+		@_Describ:
+			two matrix combine to one matrix, and solve
+		*/
+		return Lu(matrix_slice<_Ty>(pA, M, N), matrix_slice<_Ty>(pAinv, M, N));
+	}
 
 }// namespace clmagic
 

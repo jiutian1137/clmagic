@@ -25,8 +25,8 @@ namespace clmagic
 		_Mymv(_Movemode),
 		_Mystate(CAMERA_STATE::MOVED),
 		_Myeye(_EyePos),
-		_Myview(Mat4::identity()),
-		_Myproj(Mat4::identity())
+		_Myview(mat4::identity()),
+		_Myproj(mat4::identity())
 		{	// ...
 		}
 

@@ -36,7 +36,7 @@ namespace clmagic
 		}
 
 	// < QuadGeometry >
-	QuadGeometry::QuadGeometry(Vec3 _P0, Vec3 _P1, Vec3 _P2, Vec3 _P3, _in(MatrixTransform) _Transform, Vec2_<size_t> _Subdivide)
+	QuadGeometry::QuadGeometry(Vec3 _P0, Vec3 _P1, Vec3 _P2, Vec3 _P3, _in(matrixTransform) _Transform, Vec2_<size_t> _Subdivide)
 		{
 		/*
 		_P3-----_P2	    _P3------_P2
@@ -387,7 +387,7 @@ namespace clmagic
 	// </ CubeGeometry >
 
 	// < SphereGeometry >
-	SphereGeometry::SphereGeometry(float _Radius, size_t _Slicecount, size_t _Stackcount, _in(MatrixTransform) _Transform)
+	SphereGeometry::SphereGeometry(float _Radius, size_t _Slicecount, size_t _Stackcount, _in(matrixTransform) _Transform)
 		{
 		using std::sin;
 		using std::cos;
@@ -511,7 +511,7 @@ namespace clmagic
 	// </ SphereGeometry >
 
 	// < DiskGeometry >
-	DiskGeometry::DiskGeometry(size_t _Subdivide, _in(MatrixTransform) _InnerT, _in(MatrixTransform) _OuterT)
+	DiskGeometry::DiskGeometry(size_t _Subdivide, _in(matrixTransform) _InnerT, _in(matrixTransform) _OuterT)
 		{
 		/*
 			

@@ -219,9 +219,9 @@ namespace clmagic
 //		PLATFORM_SHADER void uniform_set(const std::string& _Uname, const Vec2& _Data);
 //		PLATFORM_SHADER void uniform_set(const std::string& _Uname, const Vec3& _Data);
 //		PLATFORM_SHADER void uniform_set(const std::string& _Uname, const Vec4& _Data);
-//		PLATFORM_SHADER void uniform_set(const std::string& _Uname, const Mat2& _Data);
-//		PLATFORM_SHADER void uniform_set(const std::string& _Uname, const Mat4& _Data);
-//		PLATFORM_SHADER void uniform_set(const std::string& _Uname, const Mat3x4& _Data);
+//		PLATFORM_SHADER void uniform_set(const std::string& _Uname, const mat2& _Data);
+//		PLATFORM_SHADER void uniform_set(const std::string& _Uname, const mat4& _Data);
+//		PLATFORM_SHADER void uniform_set(const std::string& _Uname, const mat3x4& _Data);
 //
 //		PLATFORM_SHADER shader_info& find_shader(GLenum _Type);
 //		PLATFORM_SHADER shader_info& vertex_shader();

@@ -15,7 +15,7 @@
 #pragma once
 
 #include <cstdint>
-#include <DirectXMath.h>
+#include <DirectXmath.h>
 #include <vector>
 
 class GeometryGenerator

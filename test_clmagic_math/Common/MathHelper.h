@@ -1,5 +1,5 @@
 //***************************************************************************************
-// MathHelper.h by Frank Luna (C) 2011 All Rights Reserved.
+// mathHelper.h by Frank Luna (C) 2011 All Rights Reserved.
 //
 // Helper math class.
 //***************************************************************************************
@@ -7,10 +7,10 @@
 #pragma once
 
 #include <Windows.h>
-#include <DirectXMath.h>
+#include <DirectXmath.h>
 #include <cstdint>
 
-class MathHelper
+class mathHelper
 {
 public:
 	// Returns random float in [0, 1).
@@ -66,16 +66,16 @@ public:
 			1.0f);
 	}
 
-    static DirectX::XMMATRIX InverseTranspose(DirectX::CXMMATRIX M)
+    static DirectX::XMmatRIX InverseTranspose(DirectX::CXMmatRIX M)
 	{
 		// Inverse-transpose is just applied to normals.  So zero out 
 		// translation row so that it doesn't get into our inverse-transpose
 		// calculation--we don't want the inverse-transpose of the translation.
-        DirectX::XMMATRIX A = M;
+        DirectX::XMmatRIX A = M;
         A.r[3] = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 
-        DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(A);
-        return DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(&det, A));
+        DirectX::XMVECTOR det = DirectX::XMmatrixDeterminant(A);
+        return DirectX::XMmatrixTranspose(DirectX::XMmatrixInverse(&det, A));
 	}
 
     static DirectX::XMFLOAT4X4 Identity4x4()

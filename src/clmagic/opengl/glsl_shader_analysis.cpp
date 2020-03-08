@@ -8,28 +8,28 @@ namespace clmagic
 	public:
 		std::vector<std::string> operator() (const std::string& _Content) 
 			{
-			std::string _Match_anyhead = "(^|(\\s+)|(?=[;])|(?=[}])|(?=[)])|[=])";
-			std::string _Match_anytill = "($|(?=\\s+)|(?=[;])|(?=[{])|(?=[(]))";
-			std::string _Stmt = "(" + _Match_anyhead + "(layout[(].+[)])" + ")"
+			std::string _match_anyhead = "(^|(\\s+)|(?=[;])|(?=[}])|(?=[)])|[=])";
+			std::string _match_anytill = "($|(?=\\s+)|(?=[;])|(?=[{])|(?=[(]))";
+			std::string _Stmt = "(" + _match_anyhead + "(layout[(].+[)])" + ")"
 							 + "|(" + "(^|(\\s*)[{].+[}])" + ")" /*code block*/
 							 + "|(" + "(^|(\\s*)[(].+[)])" + ")" /* */
 							 + "|(" + "([=](.+)(?=[;]))" + ")"
-						 	 + "|(" + _Match_anyhead + "(\\w+)" + _Match_anytill + ")";
+						 	 + "|(" + _match_anyhead + "(\\w+)" + _match_anytill + ")";
 			auto _Re = std::regex(_Stmt);
 
 			auto _First = std::regex_token_iterator<std::string::const_iterator>(_Content.begin(), _Content.end(), _Re);
 			auto _Last = std::regex_token_iterator<std::string::const_iterator>();
 
 			_Re = std::regex(".*\\w.*");
-			std::smatch _Match_result;
+			std::smatch _match_result;
 			std::vector<std::string> _Result;
 
 			while (_First != _Last)
 				{
 				const std::string& _Tmp = *_First;
-				if (std::regex_match(_Tmp, _Match_result, _Re))
+				if (std::regex_match(_Tmp, _match_result, _Re))
 					{
-					_Result.push_back(_Match_result[0]);
+					_Result.push_back(_match_result[0]);
 					}
 				++_First;
 				}
@@ -586,10 +586,10 @@ namespace clmagic
 																				|| _Tempstr == clmagic::glslshader_interpreter::Keyword_Vec2
 																				|| _Tempstr == clmagic::glslshader_interpreter::Keyword_Vec3
 																				|| _Tempstr == clmagic::glslshader_interpreter::Keyword_Vec4))
-				|| (_Tempstr[0] == clmagic::glslshader_interpreter::Keyword_Mat2[0] && (_Tempstr == clmagic::glslshader_interpreter::Keyword_Mat2
-																				|| _Tempstr == clmagic::glslshader_interpreter::Keyword_Mat3
-																				|| _Tempstr == clmagic::glslshader_interpreter::Keyword_Mat4
-																				|| _Tempstr == clmagic::glslshader_interpreter::Keyword_Mat3x4)))
+				|| (_Tempstr[0] == clmagic::glslshader_interpreter::Keyword_mat2[0] && (_Tempstr == clmagic::glslshader_interpreter::Keyword_mat2
+																				|| _Tempstr == clmagic::glslshader_interpreter::Keyword_mat3
+																				|| _Tempstr == clmagic::glslshader_interpreter::Keyword_mat4
+																				|| _Tempstr == clmagic::glslshader_interpreter::Keyword_mat3x4)))
 				{
 				std::string _Type;
 				std::string _Identifier;

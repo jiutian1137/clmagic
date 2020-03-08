@@ -68,15 +68,15 @@ namespace clmagic
 		UF_VEC3I,
 		UF_VEC4F,
 		UF_VEC4I,
-		UF_MAT2,
-		UF_MAT2X3,
-		UF_MAT2X4,
-		UF_MAT3,
-		UF_MAT3X2,
-		UF_MAT3X4,
-		UF_MAT4,
-		UF_MAT4X2,
-		UF_MAT4X3
+		UF_mat2,
+		UF_mat2X3,
+		UF_mat2X4,
+		UF_mat3,
+		UF_mat3X2,
+		UF_mat3X4,
+		UF_mat4,
+		UF_mat4X2,
+		UF_mat4X3
 	};
 
 	struct blend_param

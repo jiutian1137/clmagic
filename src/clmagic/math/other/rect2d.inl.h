@@ -1,6 +1,6 @@
 #pragma once
-#ifndef __CLMAGIC_CORE_GEOMETRY_MATH_OTHER___RECT2D___H__
-#define __CLMAGIC_CORE_GEOMETRY_MATH_OTHER___RECT2D___H__
+#ifndef __CLMAGIC_CORE_GEOMETRY_matH_OTHER___RECT2D___H__
+#define __CLMAGIC_CORE_GEOMETRY_matH_OTHER___RECT2D___H__
 
 namespace clmagic 
 {
@@ -43,8 +43,8 @@ namespace clmagic
 			//	lb------+-------rb 1.0,0.0
 			//0.0,0.0(_Mypos)
 			//
-			Vector2_<T> _Local = _Point - _Mypos;
-			Vector2_<T> _Uv = _Local / _Mysize;
+			vector2<T> _Local = _Point - _Mypos;
+			vector2<T> _Uv = _Local / _Mysize;
 
 			if (_Uv[0] > T(0) && _Uv[0] < T(1) && _Uv[1] > T(0) && _Uv[1] < T(1)) {
 				if (_Uv[0] >= 0.5f) {// { 1, 4 }
@@ -67,14 +67,14 @@ namespace clmagic
 
 	template<typename T> inline
 		bool rect2d<T>::intersect(const position_type& _Point, _out(Hit_<T>) _Result) const {
-			Vector2_<T> _Local = _Point - _Mypos;
-			Vector2_<T> _Uv = _Local / _Mysize;
+			vector2<T> _Local = _Point - _Mypos;
+			vector2<T> _Uv = _Local / _Mysize;
 
 			if (_Uv[0] > T(0) && _Uv[0] < T(1) && _Uv[1] > T(0) && _Uv[1] < T(1)) {
-				_Result._Myresult = ShapeType::ePLANE;
+				_Result._Myresult = eShapeType::ePLANE;
 				_Result._Myt      = T(0);
 				_Result._Myorigin = Hit_<T>::position_type(_Point, T(0));
-				_Result._Mynormal = cZ;
+				_Result._Mynormal = unit_vector<T>(0.f, 0.f, 1.f);
 				_Result._Myuv     = _Uv;
 				return ( true );
 			}
@@ -84,7 +84,7 @@ namespace clmagic
 
 	template<typename T> inline 
 		typename rect2d<T>::position_type rect2d<T>::translate(T _dX, T _dY) {
-			Vector2_<T> _Oldpos = _Mypos;
+			vector2<T> _Oldpos = _Mypos;
 			_Mypos = _Mypos + Vec2(_dX, _dY);
 			return (_Oldpos);
 		}
@@ -103,13 +103,13 @@ namespace clmagic
 		}
 
 	template<typename T> template< typename _Ty > inline
-		Vector2_< _Ty > rect2d<T>::get_pos(const position_type& _Uv) const {
+		vector2< _Ty > rect2d<T>::get_pos(const position_type& _Uv) const {
 			auto _Pos = _Mypos + _Mysize * _Uv;
-			return Vector2_<_Ty>(static_cast<_Ty>(_Pos[0]), static_cast<_Ty>(_Pos[1]));
+			return vector2<_Ty>(static_cast<_Ty>(_Pos[0]), static_cast<_Ty>(_Pos[1]));
 		}
 
 	template<typename T> template<typename _Ty> inline
-		Vector2_< _Ty > rect2d<T>::get_pos(T _U, T _V) const { 
+		vector2< _Ty > rect2d<T>::get_pos(T _U, T _V) const { 
 			return get_pos<_Ty>( position_type(_U, _V) );
 		}
 

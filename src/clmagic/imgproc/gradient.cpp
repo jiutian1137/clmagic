@@ -12,13 +12,13 @@ namespace clmagic
 			{
 			}
 
-		void operator() (cv::Mat& _Dst) const
+		void operator() (cv::mat& _Dst) const
 			{
 			using namespace::cv;
 
 			float _Radius = float(sqrt(pow(_Myksize.width / 2, 2) + pow(_Myksize.height / 2, 2)));
-			Mat _X(_Mysize, CV_32F);
-			Mat _Y(_Mysize, CV_32F);
+			mat _X(_Mysize, CV_32F);
+			mat _Y(_Mysize, CV_32F);
 			for (int i = 0; i != _X.rows; ++i)
 				{
 				for (int j = 0; j != _X.cols; ++j)
@@ -27,7 +27,7 @@ namespace clmagic
 					_Y.at<float>(i, j) = float(i - _Myanchor.y);
 					}
 				}
-			Mat _Magnitude;
+			mat _Magnitude;
 			magnitude(_X, _Y, _Magnitude);
 			for (int i = 0; i != _X.rows; ++i) {
 				for (int j = 0; j != _X.cols; ++j) {
@@ -51,7 +51,7 @@ namespace clmagic
 			//const int _8step = 8;
 			//const int _4step = 4;
 
-			//_Dst = Mat(_Mysize, CV_32F);
+			//_Dst = mat(_Mysize, CV_32F);
 
 			//__m128i _Ksize128_w = _mm_set1_epi32(_Myksize.width);
 			//__m128i _Ksize128_h = _mm_set1_epi32(_Myksize.height);
@@ -108,7 +108,7 @@ namespace clmagic
 			//	}
 			}
 
-		void generate(cv::Mat& _Dst) const
+		void generate(cv::mat& _Dst) const
 			{
 			(*this)(_Dst);
 			}
@@ -122,14 +122,14 @@ namespace clmagic
 	class gradient_rgb 
 	{
 	public:
-		gradient_rgb(const cv::Mat& _Mask, const std::map<float, cv::Vec3b>& _Colors)
+		gradient_rgb(const cv::mat& _Mask, const std::map<float, cv::Vec3b>& _Colors)
 			: _Mymask(_Mask), _Mycolors(_Colors)
 			{
 			}
 
-		void operator() (cv::Mat& _Dst) 
+		void operator() (cv::mat& _Dst) 
 			{
-			_Dst = cv::Mat(_Mymask.size(), CV_8UC3);
+			_Dst = cv::mat(_Mymask.size(), CV_8UC3);
 
 			__m128 _One128 = _mm_set1_ps(1.0f);
 
@@ -171,7 +171,7 @@ namespace clmagic
 				}
 			}
 
-		const cv::Mat& _Mymask;
+		const cv::mat& _Mymask;
 		const std::map<float, cv::Vec3b>& _Mycolors;
 	};
 
@@ -188,7 +188,7 @@ namespace clmagic
 			_Anchor = _Dstsize / 2;
 			}
 
-		cv::Mat _Mask;
+		cv::mat _Mask;
 		auto _Gradgenerator = gradient_mask(_Dstsize, _Ksize, _Anchor);
 		_Gradgenerator.generate( _Mask );
 
@@ -202,7 +202,7 @@ namespace clmagic
 			}
 
 		auto _Rgbproc = gradient_rgb(_Mask, _Colors);
-		_Rgbproc(_Dst.getMatRef());
+		_Rgbproc(_Dst.getmatRef());
 		}
 
 }// namespace clmagic

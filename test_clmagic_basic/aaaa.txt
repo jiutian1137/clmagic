@@ -1,2 +1,71 @@
-abasdasdasdasdasdasdas
-abasdasdasdasdasdasdasLongjiangNanLongjiangNan
+template<>
+	struct simd_traits<float> {
+		using scalar_type   = float;
+		using vector_type   = __m128;
+
+		constexpr static auto scalar_align = static_cast<size_t>(4);
+
+		static vector_type set1(_Ty _All) { return _mm_set1_ps(_All); }
+		static vector_type set (_Ty x0, _Ty x1, _Ty x2, _Ty x3) { return _mm_set_ps(x3, x2, x1, x0); }
+		static scalar_type get (vector_type A, size_t i){ return _mm_get_ps(A, i); }
+		static scalar_type sum (vector_type A) { return _mm_sum_ps(A); }
+
+		_SIMD_TRAITS_LOAD(load, _mm_load_ps)
+		_SIMD_TRAITS_LOAD(loadu, _mm_loadu_ps)
+
+		_SIMD_TRAITS_2ND(bit_and, _mm_and_ps)
+		_SIMD_TRAITS_2ND(bit_or,  _mm_or_ps)
+		_SIMD_TRAITS_2ND(bit_xor, _mm_xor_ps)
+		_SIMD_TRAITS_2ND(add, _mm_add_ps)
+		_SIMD_TRAITS_2ND(sub, _mm_sub_ps)
+		_SIMD_TRAITS_2ND(mul, _mm_mul_ps)
+		_SIMD_TRAITS_2ND(div, _mm_div_ps)
+		//_SIMD_TRAITS_TWO(mod, _mm_fmod_ps)
+		_SIMD_TRAITS_2ND(mod, _mm_fmod_ps_fast)
+		_SIMD_TRAITS_2ND(pow, _mm_pow_ps)
+		_SIMD_TRAITS_2ND(vmin, _mm_min_ps)
+		_SIMD_TRAITS_2ND(vmax, _mm_max_ps)
+		_SIMD_TRAITS_2ND(cross3, _mm_cross3_ps)
+		
+		_SIMD_TRAITS_1ST(abs,   _mm_abs_ps)
+		_SIMD_TRAITS_1ST(floor, _mm_floor_ps)
+		_SIMD_TRAITS_1ST(ceil,  _mm_ceil_ps)
+		_SIMD_TRAITS_1ST(trunc, _mm_trunc_ps)
+		_SIMD_TRAITS_1ST(round, _mm_round_ps)
+
+		_SIMD_TRAITS_1ST(sqrt, _mm_sqrt_ps)
+		_SIMD_TRAITS_1ST(cbrt, _mm_cbrt_ps)
+		_SIMD_TRAITS_1ST(invsqrt, _mm_invsqrt_ps)// 1/sqrt(x)
+		_SIMD_TRAITS_1ST(invcbrt, _mm_invcbrt_ps)
+		_SIMD_TRAITS_1ST(exp, _mm_exp_ps)
+		_SIMD_TRAITS_1ST(exp2, _mm_exp2_ps)
+		_SIMD_TRAITS_1ST(exp10, _mm_exp10_ps)
+		_SIMD_TRAITS_1ST(log, _mm_log_ps)
+		_SIMD_TRAITS_1ST(log2, _mm_log2_ps)
+		_SIMD_TRAITS_1ST(log10, _mm_log10_ps)
+
+		_SIMD_TRAITS_1ST(log1p, _mm_log1p_ps)// logE(x+1)
+		_SIMD_TRAITS_1ST(expm1, _mm_expm1_ps)// exp(x)+1
+		_SIMD_TRAITS_1ST(erf, _mm_erf_ps)
+		_SIMD_TRAITS_1ST(erfc, _mm_erfc_ps)
+		_SIMD_TRAITS_1ST(erfinv, _mm_erfinv_ps)
+		_SIMD_TRAITS_1ST(erfcinv, _mm_erfcinv_ps)
+
+		_SIMD_TRAITS_2ND(hypot, _mm_hypot_ps)
+		_SIMD_TRAITS_1ST(sin, _mm_sin_ps)
+		_SIMD_TRAITS_1ST(cos, _mm_cos_ps)
+		_SIMD_TRAITS_1ST(tan, _mm_tan_ps)
+		_SIMD_TRAITS_1ST(asin, _mm_asin_ps)
+		_SIMD_TRAITS_1ST(acos, _mm_acos_ps)
+		_SIMD_TRAITS_1ST(atan, _mm_atan_ps)
+		_SIMD_TRAITS_2ND(atan2, _mm_atan2_ps)
+		_SIMD_TRAITS_1ST(sinh, _mm_sin_ps)
+		_SIMD_TRAITS_1ST(cosh, _mm_cos_ps)
+		_SIMD_TRAITS_1ST(tanh, _mm_tan_ps)
+		_SIMD_TRAITS_1ST(asinh, _mm_sin_ps)
+		_SIMD_TRAITS_1ST(acosh, _mm_cos_ps)
+		_SIMD_TRAITS_1ST(atanh, _mm_tan_ps)
+		static vector_type sincos(vector_type* C, vector_type V) { return _mm_sincos_ps(C, V); }
+
+		static std::string to_string(vector_type _A) { return _mm_to_string_ps(_A); }
+	};

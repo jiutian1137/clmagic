@@ -11,7 +11,7 @@
 #include <dxgi1_4.h>
 #include <d3d12.h>
 #include <D3Dcompiler.h>
-#include <DirectXMath.h>
+#include <DirectXmath.h>
 #include <DirectXPackedVector.h>
 #include <DirectXColors.h>
 #include <DirectXCollision.h>
@@ -27,7 +27,7 @@
 #include <cassert>
 #include "d3dx12.h"
 #include "DDSTextureLoader.h"
-#include "MathHelper.h"
+#include "mathHelper.h"
 
 extern const int gNumFrameResources;
 
@@ -176,7 +176,7 @@ struct MeshGeometry
     // Data about the buffers.
 	UINT VertexByteStride = 0;
 	UINT VertexBufferByteSize = 0;
-	DXGI_FORMAT IndexFormat = DXGI_FORMAT_R16_UINT;
+	DXGI_FORmat IndexFormat = DXGI_FORmat_R16_UINT;
 	UINT IndexBufferByteSize = 0;
 
 	// A MeshGeometry may store multiple geometries in one vertex/index buffer.
@@ -224,25 +224,25 @@ struct Light
 
 #define MaxLights 16
 
-struct MaterialConstants
+struct materialConstants
 {
 	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
 	DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
 	float Roughness = 0.25f;
 
 	// Used in texture mapping.
-	DirectX::XMFLOAT4X4 MatTransform = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 matTransform = mathHelper::Identity4x4();
 };
 
 // Simple struct to represent a material for our demos.  A production 3D engine
-// would likely create a class hierarchy of Materials.
-struct Material
+// would likely create a class hierarchy of materials.
+struct material
 {
 	// Unique material name for lookup.
 	std::string Name;
 
 	// Index into constant buffer corresponding to this material.
-	int MatCBIndex = -1;
+	int matCBIndex = -1;
 
 	// Index into SRV heap for diffuse texture.
 	int DiffuseSrvHeapIndex = -1;
@@ -256,11 +256,11 @@ struct Material
 	// NumFramesDirty = gNumFrameResources so that each frame resource gets the update.
 	int NumFramesDirty = gNumFrameResources;
 
-	// Material constant buffer data used for shading.
+	// material constant buffer data used for shading.
 	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
 	DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
 	float Roughness = .25f;
-	DirectX::XMFLOAT4X4 MatTransform = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 matTransform = mathHelper::Identity4x4();
 };
 
 struct Texture

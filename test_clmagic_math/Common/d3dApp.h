@@ -70,7 +70,7 @@ protected:
 
     void LogAdapters();
     void LogAdapterOutputs(IDXGIAdapter* adapter);
-    void LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format);
+    void LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORmat format);
 
 protected:
 
@@ -120,8 +120,8 @@ protected:
 	// Derived class should set these in derived constructor to customize starting values.
 	std::string mMainWndCaption = "d3d App";
 	D3D_DRIVER_TYPE md3dDriverType = D3D_DRIVER_TYPE_HARDWARE;
-    DXGI_FORMAT mBackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-    DXGI_FORMAT mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    DXGI_FORmat mBackBufferFormat = DXGI_FORmat_R8G8B8A8_UNORM;
+    DXGI_FORmat mDepthStencilFormat = DXGI_FORmat_D24_UNORM_S8_UINT;
 	int mClientWidth = 800;
 	int mClientHeight = 600;
 };

@@ -1,0 +1,95 @@
+inline float  cos(float _X) {
+                return ( ::cosf(_X) );
+        }
+
+        inline double cos(double _X) {
+                return ( ::cos(_X) );
+        }
+
+        inline float  tan(float _X) {
+                return ( ::tanf(_X) );
+        }
+
+        inline double tan(double _X) {
+                return ( ::tan(_X) );
+        }
+
+        inline float  asin(float _X) {
+                return ( ::asinf(_X) );
+        }
+
+        inline double asin(double _X) {
+                return ( ::asin(_X) );
+        }
+
+        inline float  acos(float _X) {
+                return ( ::acosf(_X));
+        }
+
+        inline double acos(double _X) {
+                return ( ::acos(_X) );
+        }
+
+        inline float  atan(float _X) {
+                return ( ::atanf(_X) );
+        }
+
+        inline double atan(double _X) {
+                return ( ::atan(_X) );
+        }
+
+        inline float  atan2(float y, float _X) {
+                return ( ::atan2f(y, _X) );
+        }
+
+        inline double atan2(double y, double _X) {
+                return ( ::atan2(y, _X) );
+        }
+
+        inline float  sinh(float _X) {
+                return ( ::sinhf(_X) );
+        }
+
+        inline double sinh(double _X) {
+                return ( ::sinh(_X) );
+        }
+
+        inline float  cosh(float _X) {
+                return ( ::coshf(_X) );
+        }
+
+        inline double cosh(double _X) {
+                return ( ::cosh(_X) );
+        }
+
+        inline float  tanh(float _X) {
+                return ( ::tanhf(_X) );
+        }
+
+        inline double tanh(double _X) {
+                return ( ::tanh(_X) );
+        }
+
+        inline float  asinh(float _X) {
+                return ( ::asinhf(_X) );
+        }
+
+        inline double asinh(double _X) {
+                return ( ::asinh(_X) );
+        }
+
+        inline float  acosh(float _X) {
+                return ( ::acoshf(_X) );
+        }
+
+        inline double acosh(double _X) {
+                return ( ::acosh(_X) );
+        }
+
+        inline float  atanh(float _X) {
+                return ( ::atanhf(_X) );
+        }
+
+        inline double atanh(double _X) {
+                return ( ::atanh(_X) );
+        } 

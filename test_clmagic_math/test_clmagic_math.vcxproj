@@ -70,12 +70,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>E:\clmagic\dependents\opencv_4_1_1%28x86%29\opencv;$(IncludePath)</IncludePath>
-    <LibraryPath>E:\clmagic\dependents\opencv_4_1_1%28x86%29\debug\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(CUDA_PATH);D:\cplusplus\clmagic\dependents\opencv_4_1_1%28x86%29\opencv;$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>E:\clmagic\dependents\opencv_4_1_1%28x86%29\opencv;$(IncludePath)</IncludePath>
-    <LibraryPath>E:\clmagic\dependents\opencv_4_1_1%28x86%29\debug\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\cplusplus\clmagic\dependents\opencv_4_1_1%28x86%29\opencv;$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -84,6 +84,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -109,6 +110,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -132,25 +134,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Common\Camera.cpp" />
-    <ClCompile Include="Common\d3dApp.cpp" />
-    <ClCompile Include="Common\d3dUtil.cpp" />
-    <ClCompile Include="Common\DDSTextureLoader.cpp" />
-    <ClCompile Include="Common\GameTimer.cpp" />
-    <ClCompile Include="Common\GeometryGenerator.cpp" />
-    <ClCompile Include="Common\MathHelper.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Common\Camera.h" />
-    <ClInclude Include="Common\d3dApp.h" />
-    <ClInclude Include="Common\d3dUtil.h" />
-    <ClInclude Include="Common\d3dx12.h" />
-    <ClInclude Include="Common\DDSTextureLoader.h" />
-    <ClInclude Include="Common\GameTimer.h" />
-    <ClInclude Include="Common\GeometryGenerator.h" />
-    <ClInclude Include="Common\MathHelper.h" />
-    <ClInclude Include="Common\UploadBuffer.h" />
+    <ClInclude Include="test_lapack.h" />
+    <ClInclude Include="test_real.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

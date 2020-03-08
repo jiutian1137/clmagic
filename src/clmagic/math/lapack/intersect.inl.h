@@ -1,22 +1,22 @@
 #pragma once
-#ifndef __CLMAGIC_CORE_GEOMETRY_MATH_LAPACK___INTERSECT___H__
-#define __CLMAGIC_CORE_GEOMETRY_MATH_LAPACK___INTERSECT___H__
+#ifndef __CLMAGIC_CORE_GEOMETRY_matH_LAPACK___INTERSECT___H__
+#define __CLMAGIC_CORE_GEOMETRY_matH_LAPACK___INTERSECT___H__
 #include "../lapack.h"
 
 namespace clmagic 
 {
 	template<typename _Ty> inline
-		bool intersect(_in(Vector2_<_Ty>) _Pos, _Ty _Left, _Ty _Right, _Ty _Bottom, _Ty _Top)
+		bool intersect(_in(vector2<_Ty>) _Pos, _Ty _Left, _Ty _Right, _Ty _Bottom, _Ty _Top)
 		{	// _Pos in [_Left,_Right,_Bottom,_Top]
 		return (_Pos.x < _Left || _Pos.x > _Right || _Pos.y < _Bottom || _Pos.y > _Top);
 		}
 
 	template<typename T> inline
-		int intersect(_in(Vector3_<T>) _Pos, _in(Vector3_<T>) _V0, _in(Vector3_<T>) _V1, _in(Vector3_<T>) _V2)
+		int intersect(_in(vector3<T>) _Pos, _in(vector3<T>) _V0, _in(vector3<T>) _V1, _in(vector3<T>) _V2)
 		{	// _Pos in triangle face
-		Vector3_<T> v0 = _V1 - _V0;
-		Vector3_<T> v1 = _V2 - _V0;
-		Vector3_<T> v2 = _Pos - _V0;
+		vector3<T> v0 = _V1 - _V0;
+		vector3<T> v1 = _V2 - _V0;
+		vector3<T> v2 = _Pos - _V0;
 
 		T dot00, dot01, dot02, dot11, dot12;
 		dot00 = dot(v0, v0);
@@ -43,10 +43,10 @@ namespace clmagic
 		}
 
 	template<typename T> inline 
-		bool intersect(_in(Vector3_<T>) _Origin, _in(Vector3_<T>) _Dir, _in(Vector3_<T>) _V0, _in(Vector3_<T>) _V1, _in(Vector3_<T>) _V2, _out(Vector3_<T>) _Point)
+		bool intersect(_in(vector3<T>) _Origin, _in(vector3<T>) _Dir, _in(vector3<T>) _V0, _in(vector3<T>) _V1, _in(vector3<T>) _V2, _out(vector3<T>) _Point)
 		{
-		Vector3_<T> _U, _V, _N;
-		Vector3_<T> _W0, _W;
+		vector3<T> _U, _V, _N;
+		vector3<T> _W0, _W;
 		T _R, _A, _B;
 
 		_U = _V1 - _V0;
@@ -58,11 +58,11 @@ namespace clmagic
 		_W0 = _Origin - _V0;
 		_A = -dot(_N, _W0);
 		_B = dot(_N, _Dir);
-		if ( abs(_B) < Real(0.1) )
+		if ( abs(_B) < R(0.1) )
 			return (false);
 
 		_R = _A / _B;
-		if (_R < Real(0) || _R > Real(1))
+		if (_R < R(0) || _R > R(1))
 			return (false);
 
 		_Point = _Origin + _R * _Dir;
@@ -78,11 +78,11 @@ namespace clmagic
 		_InvD = 1.0f / (_UdotV * _UdotV - _UdotU * _VdotV);
 
 		T _S = (_UdotV * _WdotV - _VdotV * _WdotU) * _InvD;
-		if ( _S < Real(0) || _S > Real(1) )
+		if ( _S < R(0) || _S > R(1) )
 			return (false);
 
 		T _T = (_UdotV * _WdotU - _UdotU * _WdotV) * _InvD;
-		if ( _T < Real(0) || _T > Real(1) )
+		if ( _T < R(0) || _T > R(1) )
 			return (false);
 
 		return (true);

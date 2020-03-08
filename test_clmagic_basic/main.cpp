@@ -1,7 +1,8 @@
 #include "../src/clmagic/basic.h"
-#include <iostream>
-#include <iomanip>
+#include <array>
 #include <string>
+#include <iomanip>
+#include <iostream>
 
 
 template<typename _Iter>
@@ -104,15 +105,31 @@ void KMP(const std::string& _Str, const std::string& _Where) {
 	}
 }
 
+struct Num {
+
+	Num operator-() const {
+		return Num{ -this->a };
+	}
+
+	int a = 100;
+};
+
+template<typename _Ty, typename _Fn>
+auto vvvv(const _Ty& _Obj, _Fn _Func) {
+	return _Func(_Obj);
+}
+
 int main(int argc, char** argv) {
-	
+	Num _SSS;
+	auto _SSS2 = vvvv(_SSS, _SSS.operator-());
+
+
 	//tset_fopen();
 
-
-	std::string _Test_PK = "2321123211222112312";
+	/*std::string _Test_PK = "2321123211222112312";
 	std::cout << _Test_PK << std::endl;
-	KMP(_Test_PK, "11");
-
+	KMP(_Test_PK, "11");*/
+	
 	std::cin.get();
 	return (0);
 }

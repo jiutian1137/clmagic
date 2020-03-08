@@ -48,14 +48,14 @@ namespace clmagic
 	@_example:
 		clmagic::glslshader_interpreter shader;
 		shader.push_const("const int MAX_TEXTURE_COUNT = 2;");
-		shader.push_uniform("uniform MaterialProperties MATERIAL[MAX_TEXTURE_COUNT];");
-		shader.push_uniform("uniform mat4 PROJECTION_MATRIX;");
-		shader.push_uniform("uniform mat4 VIEW_MATRIX;");
-		shader.push_uniform("uniform mat4 WORLD_MATRIX;");
+		shader.push_uniform("uniform materialProperties matERIAL[MAX_TEXTURE_COUNT];");
+		shader.push_uniform("uniform mat4 PROJECTION_matRIX;");
+		shader.push_uniform("uniform mat4 VIEW_matRIX;");
+		shader.push_uniform("uniform mat4 WORLD_matRIX;");
 		shader.push_inblock("in vec4 in_Position;");
 		shader.push_inblock("in vec3 in_Normal;");
 		shader.push_inblock("in vec2 in_Texcoord;");
-		shader.push_struct("struct MaterialProperties\n"
+		shader.push_struct("struct materialProperties\n"
 							"{\n"
 							"int type;\n"
 							"vec3 \t\t\tambient;\n"
@@ -66,7 +66,7 @@ namespace clmagic
 							"};\n");
 		shader.push_function("vec3 PropertiesColor()\n"
 							"{\n"
-							"return (MATERIAL.ambient + MATERIAL.diffuse) * 0.5;\n"
+							"return (matERIAL.ambient + matERIAL.diffuse) * 0.5;\n"
 							"}\n");
 
 
@@ -105,10 +105,10 @@ namespace clmagic
 		constexpr static const char* Keyword_Vec2 = "vec2";
 		constexpr static const char* Keyword_Vec3 = "vec3";
 		constexpr static const char* Keyword_Vec4 = "vec4";
-		constexpr static const char* Keyword_Mat2 = "mat2";
-		constexpr static const char* Keyword_Mat3 = "mat3";
-		constexpr static const char* Keyword_Mat4 = "mat4";
-		constexpr static const char* Keyword_Mat3x4 = "mat3x4";
+		constexpr static const char* Keyword_mat2 = "mat2";
+		constexpr static const char* Keyword_mat3 = "mat3";
+		constexpr static const char* Keyword_mat4 = "mat4";
+		constexpr static const char* Keyword_mat3x4 = "mat3x4";
 		
 
 
@@ -121,7 +121,7 @@ namespace clmagic
 
 		/*
 		@_Chunk: uniform vec3 LightPosition;
-				 uniform int MaterialType[10];
+				 uniform int materialType[10];
 		*/
 		void push_uniform(const std::string& _Chunk);
 		void check_uniform();
@@ -139,7 +139,7 @@ namespace clmagic
 		void push_outblock(const std::string& _Chunk);
 
 		/*
-		@_Chunk: struct MaterialProperties{ int type; vec3 color; }
+		@_Chunk: struct materialProperties{ int type; vec3 color; }
 				 struct lightproperties{ int type; vec3 ambient; }
 		*/
 		void push_struct(const std::string& _Chunk);

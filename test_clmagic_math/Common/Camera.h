@@ -55,8 +55,8 @@ public:
 	void LookAt(const DirectX::XMFLOAT3& pos, const DirectX::XMFLOAT3& target, const DirectX::XMFLOAT3& up);
 
 	// Get View/Proj matrices.
-	DirectX::XMMATRIX GetView()const;
-	DirectX::XMMATRIX GetProj()const;
+	DirectX::XMmatRIX GetView()const;
+	DirectX::XMmatRIX GetProj()const;
 
 	DirectX::XMFLOAT4X4 GetView4x4f()const;
 	DirectX::XMFLOAT4X4 GetProj4x4f()const;
@@ -70,7 +70,7 @@ public:
 	void RotateY(float angle);
 
 	// After modifying camera position/orientation, call to rebuild the view matrix.
-	void UpdateViewMatrix();
+	void UpdateViewmatrix();
 
 private:
 
@@ -91,8 +91,8 @@ private:
 	bool mViewDirty = true;
 
 	// Cache View/Proj matrices.
-	DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 mView = mathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 mProj = mathHelper::Identity4x4();
 };
 
 #endif // CAMERA_H

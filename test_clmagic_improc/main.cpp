@@ -5,18 +5,18 @@ using namespace::clmagic;
 class brush {
 public:
 
-	virtual void draw_in(cv::Mat& _Src) const {
+	virtual void draw_in(cv::mat& _Src) const {
 		gradient(
 			_Mymask,
 			cv::Size(_Mysize, _Mysize),
 			{ std::pair<float, cv::Vec3b>(0.0f, cv::Vec3b(255, 255, 255)), std::pair<float, cv::Vec3b>(1.0f, cv::Vec3b(0, 0, 0)) }
 		);
-		cv::Mat _Roi_src = _Src(cv::Rect(cv::Point(_Mypos.x, _Mypos.y), cv::Size(_Mysize, _Mysize)));
+		cv::mat _Roi_src = _Src(cv::Rect(cv::Point(_Mypos.x, _Mypos.y), cv::Size(_Mysize, _Mysize)));
 		cv::addWeighted(_Roi_src, (1.0 - _Myopacity), _Mymask, _Myopacity, 1.0f, _Roi_src);
 
 		/*cv::Vec3f _Color = cv::Vec3f(255.f, 0.f, 0.f);
 
-		cv::Mat _Roi_src = _Src( cv::Rect(cv::Point(_Mypos.x, _Mypos.y), cv::Size(_Mysize, _Mysize)) );
+		cv::mat _Roi_src = _Src( cv::Rect(cv::Point(_Mypos.x, _Mypos.y), cv::Size(_Mysize, _Mysize)) );
 		cv::Point _Src_center = _Roi_src.size() / 2;
 		for (int i = 0; i != _Roi_src.rows; ++i) {
 			for (int j = 0; j != _Roi_src.cols; ++j) {
@@ -33,7 +33,7 @@ public:
 	float _Mysize;
 	Vec2 _Mypos;
 	float _Myopacity = 1.0f;
-	cv::Mat _Mymask;
+	cv::mat _Mymask;
 };
 
 brush g_test_brush;
@@ -47,7 +47,7 @@ struct particle_emmit {
 	cv::Vec3b _Color1;
 
 
-	void draw_in(cv::Mat& _Src, float t) {
+	void draw_in(cv::mat& _Src, float t) {
 		t = fmod(t, _Period);
 		auto _Point = _Pos + t * _Dir;
 		if (_Point.x >= 0 && _Point.y >= 0 && _Point.x < _Src.cols-1 && _Point.y < _Src.rows-1)
@@ -60,8 +60,8 @@ struct particle_emmit {
 	}
 };
 
-cv::Mat _Src;
-cv::Mat _Dst;
+cv::mat _Src;
+cv::mat _Dst;
 particle_emmit g_test_emmit;
 
 
