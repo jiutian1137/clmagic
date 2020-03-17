@@ -14,6 +14,8 @@
 
 #pragma comment(lib, "lib/opencv_world411d.lib")
 
+
+
 //void test_foundation() {
 //	using namespace::clmagic;
 //
