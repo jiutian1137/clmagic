@@ -43,15 +43,15 @@ namespace clmagic
 
 
 	*/
-	template<typename T = real_t, typename _Vtag = normal_vector_tag>
+	template<typename T = real_t, typename _Block = T>
 	struct quaternion {
 		using scalar_type = T;
 
 		// <construct>
 		quaternion(const T& x = T(0), const T& y = T(0), const T& z = T(0), const T& w = T(1));
-		explicit quaternion(const vector<T, 4, _Vtag>& xyzw);
-		explicit quaternion(const matrix<T, 3, 3, false, _Vtag>& _Matrix);
-		explicit quaternion(const matrix<T, 4, 4, false, _Vtag>& _Matrix);
+		explicit quaternion(const vector<T, 4, _Block>& xyzw);
+		explicit quaternion(const matrix<T, 3, 3, false, _Block>& _Matrix);
+		explicit quaternion(const matrix<T, 4, 4, false, _Block>& _Matrix);
 		quaternion(const unit_vector3<T>& _Axis, const T& _Radians);
 
 		quaternion(_in(vector3<T>) _From, _in(vector3<T>) _To)
@@ -82,7 +82,7 @@ namespace clmagic
 		friend quaternion operator/(_in(quaternion) q1, _in(quaternion) q2) { return (q1 * conj(q2)); }
 		friend T dot(_in(quaternion) _A, _in(quaternion) _B) { return (_A.w * _B.w + dot(_A.xyz, _B.xyz)); }
 
-		vector<T, 4, _Vtag> _Myvec;// IM:xyz RE:w
+		vector<T, 4, _Block> _Myvec;// IM:xyz RE:w
 	};
 
 

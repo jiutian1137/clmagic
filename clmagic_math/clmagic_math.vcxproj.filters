@@ -106,9 +106,6 @@
     <ClInclude Include="..\src\clmagic\math\calculus.h">
       <Filter>public</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\lapack\world_matrix.inl.h">
-      <Filter>private\lapack</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\clmagic\math\mstring.h">
       <Filter>public</Filter>
     </ClInclude>

@@ -42,7 +42,6 @@
     <ClInclude Include="..\src\clmagic\math\lapack\matrix.h" />
     <ClInclude Include="..\src\clmagic\math\lapack\transform.inl.h" />
     <ClInclude Include="..\src\clmagic\math\lapack\vector.h" />
-    <ClInclude Include="..\src\clmagic\math\lapack\world_matrix.inl.h" />
     <ClInclude Include="..\src\clmagic\math\mstring.h" />
     <ClInclude Include="..\src\clmagic\math\other.h" />
     <ClInclude Include="..\src\clmagic\math\other\color_space.inl.h" />

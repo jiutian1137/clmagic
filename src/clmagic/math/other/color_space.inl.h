@@ -65,13 +65,13 @@ namespace clmagic
 			value * (1.0f - (1.0f - _Hue$60_fraction) * saturation)
 			};
 
-		const std::array<vec_<int, 3>, 6> _Swizzle = {
-			vec_<int, 3>{ 0, 3, 1 },
-			vec_<int, 3>{ 2, 0, 1 },
-			vec_<int, 3>{ 1, 0, 3 },
-			vec_<int, 3>{ 1, 2, 0 },
-			vec_<int, 3>{ 3, 1, 0 },
-			vec_<int, 3>{ 0, 1, 2 }
+		const std::array<vector<int, 3>, 6> _Swizzle = {
+			vector<int, 3>{ 0, 3, 1 },
+			vector<int, 3>{ 2, 0, 1 },
+			vector<int, 3>{ 1, 0, 3 },
+			vector<int, 3>{ 1, 2, 0 },
+			vector<int, 3>{ 3, 1, 0 },
+			vector<int, 3>{ 0, 1, 2 }
 			};
 		const size_t _Swizzleindex = static_cast<size_t>(_Hue$60_floor) % 6;
 

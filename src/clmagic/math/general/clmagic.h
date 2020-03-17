@@ -74,6 +74,10 @@ namespace clmagic {
 		return (constexpr_align(N, _Bound) / _Bound);
 	}
 
+	inline size_t offset_align_of(size_t _Bound, const void* _Ptr) {
+		// _Ptr offset on boundary _Bound
+		return static_cast<size_t>(reinterpret_cast<uintptr_t>(_Ptr)& (_Bound - 1));
+	}
 
 
 	constexpr bool constexpr_aligned16(size_t N) {

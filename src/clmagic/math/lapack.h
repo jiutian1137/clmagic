@@ -218,8 +218,8 @@ OpenVINO-serial number: CZL3-BH28FBG4
 	}
 
 	namespace Rodrigues {
-		template<typename _Ty, typename _Vtag> inline
-		matrix3x3<_Ty, true> rotation(unit_vector3<_Ty, _Vtag> axis, radians<_Ty> theta) {
+		template<typename _Ty, typename _Block> inline
+		matrix3x3<_Ty, true> rotation(unit_vector3<_Ty, _Block> axis, radians<_Ty> theta) {
 			const auto c   = cos(static_cast<_Ty>(theta));
 			const auto s   = sin(static_cast<_Ty>(theta));
 			const auto x   = axis[0];

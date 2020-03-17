@@ -50,6 +50,9 @@ namespace clmagic {
 
 
 	/* - - - - - - - numeric calculate - - - - - - - - - */
+	inline int32_t abs(int32_t _X) { return _CSTD abs(_X); }
+	inline float   abs(float   _X) { return _CSTD abs(_X); }
+	inline double  abs(double  _X) { return _CSTD abs(_X); }
 
 	// to_fraction(_X)
 	inline int32_t trunc(int32_t _X) { assert(false); return 0; }
@@ -157,8 +160,8 @@ namespace clmagic {
 
 	/* - - - - - - - geometry - - - - - - - - - */
 	// sqrt(a² + b²)
-	inline float  typot(float  _A, float  _B) { return _CSTD hypotf(_A, _B); }
-	inline double typot(double _A, double _B) { return _CSTD hypot(_A, _B); }
+	inline float  hypot(float  _A, float  _B) { return _CSTD hypotf(_A, _B); }
+	inline double hypot(double _A, double _B) { return _CSTD hypot(_A, _B); }
 
 	inline float   sin(float  _X) { return _CSTD sinf(_X); }
 	inline double  sin(double _X) { return _CSTD sin(_X); }
@@ -226,6 +229,9 @@ namespace clmagic {
 		dst[1] = v0[2] * v1[0] - v0[0] * v1[2];
 		dst[2] = v0[0] * v1[1] - v0[1] * v1[0];
 	}
+
+
+#undef _FUNC_IMPLEMENT
 
 }// namespace clmagic
 

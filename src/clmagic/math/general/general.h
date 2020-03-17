@@ -16,6 +16,639 @@
 #include <functional>
 #include <initializer_list>
 
+namespace std {
+	/*- - - - - - - - - - - - - - - - - - - - func_abs - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_pow {
+		_Ty operator()(const _Ty& _X, const _Ty& _Y) {
+			return pow(_X, _Y);
+		}
+	};
+
+	template<>
+	struct func_pow<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty&& _X, const _Ty&& _Y) -> decltype(pow(_X, _Y)) {
+			return pow(_X, _Y);
+		}
+	};
+
+	/*- - - - - - - - - - - - - - - - - - - - func_abs - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_abs {
+		_Ty operator()(const _Ty& _X) {
+			return abs(_X);
+		}
+	};
+
+	template<>
+	struct func_abs<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty&& _X) -> decltype(abs(_X)) {
+			return abs(_X);
+		}
+	};
+
+	/*- - - - - - - - - - - - - - - - - - - - func_floor - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_floor {
+		_Ty operator()(const _Ty& _X) {
+			return floor(_X);
+		}
+	};
+
+	template<>
+	struct func_floor<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty&& _X) -> decltype(floor(_X)) {
+			return floor(_X);
+		}
+	};
+
+	/*- - - - - - - - - - - - - - - - - - - - func_ceil - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_ceil {
+		_Ty operator()(const _Ty& _X) {
+			return ceil(_X);
+		}
+	};
+
+	template<>
+	struct func_ceil<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty&& _X) -> decltype(ceil(_X)) {
+			return ceil(_X);
+		}
+	};
+
+	/*- - - - - - - - - - - - - - - - - - - - func_trunc - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_trunc {
+		_Ty operator()(const _Ty& _X) {
+			return trunc(_X);
+		}
+	};
+
+	template<>
+	struct func_trunc<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty&& _X) -> decltype(trunc(_X)) {
+			return trunc(_X);
+		}
+	};
+
+	/*- - - - - - - - - - - - - - - - - - - - func_round - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_round {
+		_Ty operator()(const _Ty& _X) {
+			return round(_X);
+		}
+	};
+
+	template<>
+	struct func_round<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(round(_X)) {
+			return round(_X);
+		}
+	};
+
+	/*- - - - - - - - - - - - - - - - - - - - func_sqrt - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_sqrt {
+		_Ty operator()(const _Ty& _X) {
+			return sqrt(_X);
+		}
+	};
+
+	template<>
+	struct func_sqrt<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(sqrt(_X)) {
+			return sqrt(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_cbrt - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_cbrt {
+		_Ty operator()(const _Ty& _X) {
+			return cbrt(_X);
+		}
+	};
+
+	template<>
+	struct func_cbrt<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(cbrt(_X)) {
+			return cbrt(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_invsqrt - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_invsqrt {
+		_Ty operator()(const _Ty& _X) {
+			return invsqrt(_X);
+		}
+	};
+
+	template<>
+	struct func_invsqrt<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(invsqrt(_X)) {
+			return invsqrt(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_invcbrt - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_invcbrt {
+		_Ty operator()(const _Ty& _X) {
+			return invcbrt(_X);
+		}
+	};
+
+	template<>
+	struct func_invcbrt<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(invcbrt(_X)) {
+			return invcbrt(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_exp - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_exp {
+		_Ty operator()(const _Ty& _X) {
+			return exp(_X);
+		}
+	};
+
+	template<>
+	struct func_exp<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(exp(_X)) {
+			return exp(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_exp2 - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_exp2 {
+		_Ty operator()(const _Ty& _X) {
+			return exp2(_X);
+		}
+	};
+
+	template<>
+	struct func_exp2<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(exp2(_X)) {
+			return exp2(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_exp10 - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_exp10 {
+		_Ty operator()(const _Ty& _X) {
+			return exp10(_X);
+		}
+	};
+
+	template<>
+	struct func_exp10<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(exp10(_X)) {
+			return exp10(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_log - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_log {
+		_Ty operator()(const _Ty& _X) {
+			return log(_X);
+		}
+	};
+
+	template<>
+	struct func_log<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(log(_X)) {
+			return log(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_log2 - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_log2 {
+		_Ty operator()(const _Ty& _X) {
+			return log2(_X);
+		}
+	};
+
+	template<>
+	struct func_log2<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(log2(_X)) {
+			return log2(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_log10 - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_log10 {
+		_Ty operator()(const _Ty& _X) {
+			return log10(_X);
+		}
+	};
+
+	template<>
+	struct func_log10<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(log10(_X)) {
+			return log10(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_log1p - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_log1p {
+		_Ty operator()(const _Ty& _X) {
+			return log1p(_X);
+		}
+	};
+
+	template<>
+	struct func_log1p<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(log1p(_X)) {
+			return log1p(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_expm1 - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_expm1 {
+		_Ty operator()(const _Ty& _X) {
+			return expm1(_X);
+		}
+	};
+
+	template<>
+	struct func_expm1<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(expm1(_X)) {
+			return expm1(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_erf - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_erf {
+		_Ty operator()(const _Ty& _X) {
+			return erf(_X);
+		}
+	};
+
+	template<>
+	struct func_erf<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(erf(_X)) {
+			return erf(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_erfc - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_erfc {
+		_Ty operator()(const _Ty& _X) {
+			return erfc(_X);
+		}
+	};
+
+	template<>
+	struct func_erfc<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(erfc(_X)) {
+			return erfc(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_erfinv - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_erfinv {
+		_Ty operator()(const _Ty& _X) {
+			return erfinv(_X);
+		}
+	};
+
+	template<>
+	struct func_erfinv<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(erfinv(_X)) {
+			return erfinv(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_erfcinv - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_erfcinv {
+		_Ty operator()(const _Ty& _X) {
+			return erfcinv(_X);
+		}
+	};
+
+	template<>
+	struct func_erfcinv<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(erfcinv(_X)) {
+			return erfcinv(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_hypot - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_hypot {
+		_Ty operator()(const _Ty& _X, const _Ty& _Y) {
+			return hypot(_X, _Y);
+		}
+	};
+
+	template<>
+	struct func_hypot<void> {
+		template<typename _Ty1, typename _Ty2>
+		auto operator()(const _Ty1& _X, const _Ty2& _Y) -> decltype(hypot(_X, _Y)) {
+			return hypot(_X, _Y);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_sin - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_sin {
+		_Ty operator()(const _Ty& _X) {
+			return sin(_X);
+		}
+	};
+
+	template<>
+	struct func_sin<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(sin(_X)) {
+			return sin(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_cos - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_cos {
+		_Ty operator()(const _Ty& _X) {
+			return cos(_X);
+		}
+	};
+
+	template<>
+	struct func_cos<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(cos(_X)) {
+			return cos(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_tan - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_tan {
+		_Ty operator()(const _Ty& _X) {
+			return tan(_X);
+		}
+	};
+
+	template<>
+	struct func_tan<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(tan(_X)) {
+			return tan(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_asin - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_asin {
+		_Ty operator()(const _Ty& _X) {
+			return asin(_X);
+		}
+	};
+
+	template<>
+	struct func_asin<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(asin(_X)) {
+			return asin(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_acos - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_acos {
+		_Ty operator()(const _Ty& _X) {
+			return acos(_X);
+		}
+	};
+
+	template<>
+	struct func_acos<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(acos(_X)) {
+			return acos(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_atan - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_atan {
+		_Ty operator()(const _Ty& _X) {
+			return atan(_X);
+		}
+	};
+
+	template<>
+	struct func_atan<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(atan(_X)) {
+			return atan(_X);
+		}
+	};
+
+	/*- - - - - - - - - - - - - - - - - - - - func_atan2 - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_atan2 {
+		_Ty operator()(const _Ty& _Y, const _Ty& _X) const {
+			return atan2(_Y, _X);
+		}
+	};
+
+	template<>
+	struct func_atan2<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty&& _Y, const _Ty&& _X) -> decltype(atan2(_Y, _X)) const {
+			return atan2(_Y, _X);
+		}
+	};
+
+	/*- - - - - - - - - - - - - - - - - - - - func_sinh - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_sinh {
+		_Ty operator()(const _Ty& _X) {
+			return sinh(_X);
+		}
+	};
+
+	template<>
+	struct func_sinh<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(sinh(_X)) {
+			return sinh(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_cosh - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_cosh {
+		_Ty operator()(const _Ty& _X) {
+			return cosh(_X);
+		}
+	};
+
+	template<>
+	struct func_cosh<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(cosh(_X)) {
+			return cosh(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_tanh - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_tanh {
+		_Ty operator()(const _Ty& _X) {
+			return tanh(_X);
+		}
+	};
+
+	template<>
+	struct func_tanh<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(tanh(_X)) {
+			return tanh(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_asinh - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_asinh {
+		_Ty operator()(const _Ty& _X) {
+			return asinh(_X);
+		}
+	};
+
+	template<>
+	struct func_asinh<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(asinh(_X)) {
+			return asinh(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_acosh - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_acosh {
+		_Ty operator()(const _Ty& _X) {
+			return acosh(_X);
+		}
+	};
+
+	template<>
+	struct func_acosh<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(acosh(_X)) {
+			return acosh(_X);
+		}
+	};
+
+
+
+	/*- - - - - - - - - - - - - - - - - - - - func_atanh - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty = void>
+	struct func_atanh {
+		_Ty operator()(const _Ty& _X) {
+			return atanh(_X);
+		}
+	};
+
+	template<>
+	struct func_atanh<void> {
+		template<typename _Ty>
+		auto operator()(const _Ty& _X) -> decltype(atanh(_X)) {
+			return atanh(_X);
+		}
+	};
+
+}// namespace STD
+
 namespace clmagic {
 	template <typename... _Types>
 	struct _Arg_types : public std::bool_constant<true> /* default true */ {
@@ -95,31 +728,14 @@ namespace clmagic {
 		//constexpr static auto e = static_cast<_Ty>(2.71828);
 	};
 
-	
 
 
-	template<typename _Ty, bool = std::is_floating_point_v<_Ty>>
-	struct _Abs {
-		static _Ty process(const _Ty& _Left) {// default false, false
-			return (_Left < 0 ? (-_Left) : _Left);
-		}
-	};
 
-	template<typename _Ty>
-	struct _Abs<_Ty, true> {// IEEE754 signed floating point
-		static _Ty process(const _Ty& _Left) {
-			constexpr size_t _Bits = sizeof(_Ty) * 8;
-			using _BitTy = std::bitset<_Bits>;
-			auto       _Bitval = *reinterpret_cast<const _BitTy*>(&_Left);
-			const auto _Mask   = ~(_BitTy(1) << (_Bits - 1));
-			_Bitval &= _Mask;
-			return (*reinterpret_cast<_Ty*>(&_Bitval));
-		}
-	};
 
-	// error C4146: unary minus operator applied to unsigned type...
-	template<typename _Ty> inline
-	_Ty abs(const _Ty& _Left) { return (_Abs<_Ty>::process(_Left)); }
+
+	//// error C4146: unary minus operator applied to unsigned type...
+	//template<typename _Ty> inline
+	//_Ty abs(const _Ty& _Left) { return func_abs<_Ty>()(_Left); }
 
 
 	/*
@@ -449,6 +1065,11 @@ namespace clmagic {
 		{	// @_Require: ( @abs ) and ( operator-(rhs) ) and ( operator<=(rhs) )
 		return ( abs(_Lhs - _Rhs) <= _Thresould );
 		}
+
+	template<typename _Ty, typename _Ty2>
+	bool approach_equal(const _Ty& _Lhs, const _Ty& _Rhs, const _Ty2& _Thresould) {	// @_Require: ( @abs ) and ( operator-(rhs) ) and ( operator<=(rhs) )
+		return (abs(_Lhs - _Rhs) <= _Thresould);
+	}
 
 	template<typename _Ty>
 	const _Ty& clamp(_in(_Ty) _Lhs, _in(_Ty) _Lowval, _in(_Ty) _Upval)

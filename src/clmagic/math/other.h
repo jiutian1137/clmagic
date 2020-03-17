@@ -47,13 +47,11 @@ namespace clmagic
 	};
 
 	template<typename T> constexpr
-	vec_<T, 3> constexpr_to_vec_3(_in(ColorRGB) _Rgb) {
-		const auto _Linearcolor = vec_<T, 3>{
+	vector<T, 3> constexpr_to_vec_3(_in(ColorRGB) _Rgb) {
+		return vector<T, 3>{
 			(T)_Rgb.red * (T)(1.0 / 255.0),
 			(T)_Rgb.green * (T)(1.0 / 255.0),
-			(T)_Rgb.blue * (T)(1.0 / 255.0)
-		};
-		return ( _Linearcolor );
+			(T)_Rgb.blue * (T)(1.0 / 255.0) };
 	}
 
 	constexpr ColorRGB cRGB_RED = ColorRGB(255, 0, 0);
@@ -132,8 +130,8 @@ namespace clmagic
 		// lb = pos - size * uv
 		//
 	public:
-		using position_type = vec_<T, 2>;
-		using region_type   = vec_<T, 2>;
+		using position_type = vector<T, 2>;
+		using region_type   = vector<T, 2>;
 
 		static position_type rectcoords_cast(RECT_COORD In_Coord);
 		static std::string to_string(RECT_COORD _Rectcoord);

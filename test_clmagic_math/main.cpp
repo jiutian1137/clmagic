@@ -12,9 +12,7 @@
 #include "glm/fwd.hpp"
 #include "glm/gtc/noise.hpp"
 
-#pragma comment(lib, "lib/opencv_world411d.lib")
-
-
+//#pragma comment(lib, "lib/opencv_world411d.lib")
 
 //void test_foundation() {
 //	using namespace::clmagic;
@@ -311,90 +309,318 @@ void task_6() {
 	std::cout << inverse(A2) * C2 * inverse(B2) << std::endl;
 }
 
+void task_linear_related() {
+	using namespace::clmagic;
+
+	//dmatrix<3, 2> A;
+	//A.col(0).assign(std::initializer_list<double>{0, 1, 1});
+	//A.col(1).assign(std::initializer_list<double>{1, 1, 0});
+
+	//dmatrix<3, 3> B;
+	//B.col(0).assign(std::initializer_list<double>{ -1, 0, 1 });
+	//B.col(1).assign(std::initializer_list<double>{ 1, 2, 1 });
+	//B.col(2).assign(std::initializer_list<double>{ 3, 2, -1 });
+
+
+	//using Amat3x2_3 = augumented_matrix_row_transform<double, 3, 2, double, 3, double>;
+	//auto Acopy = A;
+	//auto Bcopy = B;
+	//Amat3x2_3::solve_until(Acopy, Bcopy);
+	//std::cout << Acopy << std::endl;
+	//std::cout << Bcopy << std::endl;
+	//bool _Ok_1 = Acopy.rank() == Bcopy.rank();
+
+	//using Amat3x3_2 = augumented_matrix_row_transform<double, 3, 3, double, 2, double>;
+	//Acopy = A;
+	//Bcopy = B;
+	//Amat3x3_2::solve_until(Bcopy, Acopy);
+	//std::cout << Acopy << std::endl;
+	//std::cout << Bcopy << std::endl;
+	//bool _Ok_2 = Acopy.rank() == Bcopy.rank();
+
+	//if (_Ok_1 == _Ok_2) {
+	//	// solve[A,B] R(A) == R(B),
+	//	// solve[B,A] R(B) == R(A)
+	//	// vector equalizer
+	//	std::cout << "Result: A == B" << std::endl;
+	//} else {
+	//	std::cout << "Result: A != B" << std::endl;
+	//}
+
+	
+}
+
+inline double f(double x) {
+	return _CSTD pow(2.71828, -x);
+}
+
+
+template<typename _Tp>
+void output_A(_Tp* A) {
+    for (size_t i = 0; i != 3; ++i) {
+        for (size_t j = 0; j != 3; ++j) {
+            std::cout << *(A + (3 * i + j)) << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+template<typename _Tp>
+void output_W(_Tp* A) {
+    for (size_t i = 0; i != 3; ++i) {
+        std::cout << *(A + i) << " ";
+        std::cout << std::endl;
+    }
+}
+
+
+template<typename _Ty, size_t _Rows>
+void Jacobi_help(const clmagic::matrix<_Ty, _Rows, _Rows>& A, size_t k, size_t* indR, size_t* indC) {
+    if (k < _Rows - 1) {
+        size_t m  = k + 1;
+        _Ty    mv = std::abs(A.at(k, m));
+        for (size_t i = k + 2; i < _Rows; ++i) {// [k+2, N)
+            const auto val = std::abs(A.at(k, i));
+            if (mv < val)
+                mv = val, m = i;
+        }
+        indR[k] = m;
+    }
+
+    if (k > 0) {// (0, n]
+        size_t m  = 0;
+        _Ty    mv = std::abs(A.at(0, k));
+        for (size_t i = 1; i < k; i++) {// [1, k)
+            const auto val = std::abs(A.at(i, k));
+            if (mv < val)
+                mv = val, m = i;
+        }
+        indC[k] = m;
+    }
+}
+
+template<typename _Tp, size_t _Rows> bool
+JacobiImpl_(clmagic::matrix<_Tp, _Rows, _Rows>& A, clmagic::matrix<_Tp, _Rows, 1>& W, clmagic::matrix<_Tp, _Rows, _Rows>* V) {
+    // from OpenCV-library www.opencv.org
+    const _Tp eps = std::numeric_limits<_Tp>::epsilon();
+    int i, k;
+
+    if (V != nullptr)  {
+        V->assign(static_cast<_Tp>(1));
+    }
+
+    int iters, maxIters = _Rows * _Rows * 30;
+
+    size_t indR[_Rows];
+    size_t indC[_Rows];
+
+    for (k = 0; k < _Rows; k++)
+    {
+        W.at(k, 0) = A.at(k, k);
+        Jacobi_help(A, k, indR, indC);
+      
+    }
+
+    _Tp mv;
+
+    if (_Rows > 1) for (iters = 0; iters < maxIters; iters++) {
+        // find index (k,l) of pivot p
+
+        for (k = 0, mv = std::abs(A.at(0, indR[0])), i = 1; i < _Rows - 1; i++) {
+            _Tp val = std::abs(A.at(i, indR[i]));
+            if (mv < val)
+                mv = val, k = i;
+        }
+        int l = indR[k];
+        for (i = 1; i < _Rows; i++) {
+            _Tp val = std::abs(A.at(indC[i], i));
+            if (mv < val)
+                mv = val, k = indC[i], l = i;
+        }
+
+        _Tp p = A.at(k, l);
+        if (std::abs(p) <= eps)
+            break;
+        _Tp y = (W.at(l, 0) - W.at(k, 0)) * (_Tp)0.5;
+        _Tp t = std::abs(y) + hypot(p, y);
+        _Tp s = hypot(p, t);
+        _Tp c = t / s;
+        s = p / s; t = (p / t) * p;
+        if (y < 0)
+            s = -s, t = -t;
+        A.at(k, l) = (_Tp)0;
+
+        W.at(k, 0) -= t;
+        W.at(l, 0) += t;
+
+        _Tp a0, b0;
+
+#undef rotate
+#define rotate(v0, v1) a0 = v0, b0 = v1, v0 = a0*c - b0*s, v1 = a0*s + b0*c
+
+        // rotate rows and columns k and l
+        for (i = 0; i < k; i++)
+            rotate(A.at(i, k), A.at(i, l));
+        for (i = k + 1; i < l; i++)
+            rotate(A.at(k, i), A.at(i, l));
+        for (i = l + 1; i < _Rows; i++)
+            rotate(A.at(k, i), A.at(l, i));
+
+        // rotate eigenvectors
+        if (V)
+            for (i = 0; i < _Rows; i++)
+                rotate(V->at(k, i), V->at(l, i));
+
+#undef rotate
+
+
+        Jacobi_help(A, k, indR, indC);
+        Jacobi_help(A, l, indR, indC);
+    }
+
+    // sort eigenvalues & eigenvectors
+    /*for (k = 0; k < n - 1; k++)
+    {
+        m = k;
+        for (i = k + 1; i < n; i++)
+        {
+            if (W[m] < W[i])
+                m = i;
+        }
+        if (k != m)
+        {
+            std::swap(W[m], W[k]);
+            if (V)
+                for (i = 0; i < n; i++)
+                    std::swap(V[vstep * m + i], V[vstep * k + i]);
+        }
+    }*/
+
+    return true;
+}
+
+template<typename _Ty, size_t _Rows> 
+void power_iteration(const clmagic::square_matrix<_Ty, _Rows> _Matrix, size_t _Count, _Ty& _Eval, clmagic::matrix<_Ty, _Rows, 1>& _Ev) {
+    clmagic::matrix<_Ty, _Rows, 1> _X;
+    for (auto _First = _X.begin(); _First != _X.end(); ++_First) {
+        *_First = clmagic::randf(1.0, 2.0);
+    }
+
+    while (_Count--) {
+        auto _Y = _Matrix * _X;
+        //_X.col(0) = clmagic::normalize(_Y.col(0));
+    }
+    
+    const auto t0 = _X.transpose_copy() * _Matrix * _X;
+    _Ev = _X;
+    _Eval = t0.at(0, 0);
+}
+
+
+
 void test() {
 	using namespace::clmagic;
 
-	dmatrix<4, 4> A = {
-		1, 1, 1, 1,
-		2, 3, 4, 5,
-		2*2, 3*3, 4*4, 5*5,
-		2*2*2, 3*3*3, 4*4*4, 5*5*5
-	};
+
+    dmatrix<3, 3> A;
+	A.col(0) = { 1, 1, 1 };
+	A.col(1) = { 1, 0, -1 };
+	A.col(2) = { 1, 0, 1 };
+
+	dmatrix<3, 3> B;
+	B.col(0) = { 1, 2, 1 };
+	B.col(1) = { 2, 3, 4 };
+	B.col(2) = { 3, 4, 3 };
+	using Amat3x3_3 = augumented_matrix_row_transform<double, 3, 3, double, 3, double>;
+	Amat3x3_3::solve_until(B, A);
 	std::cout << A << std::endl;
+	std::cout << B << std::endl;
 
-	dmatrix<4, 5> Ab = {
-		1, 1, 1, 1, 0,
-		2, 3, 4, 5, 0,
-		2 * 2, 3 * 3, 4 * 4, 5 * 5, 0,
-		2 * 2 * 2, 3 * 3 * 3, 4 * 4 * 4, 5 * 5 * 5, 0
-	};
-	Ab.col(4).assign(std::initializer_list<double>{7.0, 7.0, 7.0, 4.0});
-	std::cout << Ab << std::endl;
-	auto Ab_pos = major_iterator< dmatrix<4, 5>::common_matrix_type>(Ab);
-	while ( matrix_row_transform<dmatrix<4, 5>::common_matrix_type>::solve_down<true>( Ab, Ab_pos) ) {}
-	while (matrix_row_transform<dmatrix<4, 5>::common_matrix_type>::solve_up<true>(Ab, Ab_pos)) {}
-	std::cout << Ab << std::endl;
-	std::cout << std::endl;
+	dmatrix<3, 1> x = { 1, 1, 3 };
+	std::cout << A * x << std::endl;
 
-	auto L           = dmatrix<4, 4>(1.0);
-	auto _Lu_process = LU<double, 4, normal_vector_tag>();
-	if (_Lu_process(A, L, A)) {
-		std::cout << L << std::endl;
-		std::cout << A << std::endl;
-		std::cout << L * A  << std::endl;
+   
+    dmatrix<3, 3> A2 = {
+        1, 2, 3,
+        2, 1, 3,
+        3, 3, 6
+    };
+    auto A2copy = A2;
+    dmatrix<3, 1> W2;
+    dmatrix<3, 3> V2;
+    JacobiImpl_(A2, W2, &V2);
+    std::cout << A2 << std::endl;
+    std::cout << W2 << std::endl;
+    std::cout << V2 << std::endl;
 
-		dmatrix<4, 1> b = {
-			7, 7, 7, 4
-		};
-
-		auto x = _Lu_process(L, A, b);
-		std::cout << x << std::endl;
-	}
-
-	/*std::cout << A << std::endl;
-	dmatrix<4, 4> Ainv = dmatrix < 4, 4>(1.f);
-
-	using AMat4x8 = _Augmented_matrix<double, 4, 4, 4, normal_vector_tag, normal_vector_tag>;
-
-	auto ALU = AMat4x8(A, Ainv);
-	std::cout << ALU << std::endl;
-	auto _Pos = major_iterator<AMat4x8>(ALU);
-
-	while (matrix_row_transform<AMat4x8>::solve_down<true>(ALU, _Pos) ) {
-		std::cout << ALU << std::endl;
-	}
-	while (matrix_row_transform<AMat4x8>::solve_up(ALU, _Pos) ) {
-		std::cout << ALU << std::endl;
-	}*/
-
-
-	/*dmatrix<4, 4> L;
-	dmatrix<4, 4> U;
-	for (size_t i = 0; i != 4; ++i) {
-		for (size_t j = 0; j != 4; ++j) {
-			U.at(i, j) = ALU.at(i, j);
-		}
-	}
-	for (size_t i = 0; i != 4; ++i) {
-		for (size_t j = 0; j != 4; ++j) {
-			L.at(i, j) = ALU.at(i, j + 4);
-		}
-	}
-	std::cout << "L:" << L << std::endl;
-	std::cout << "U:" << U << std::endl;
-	std::cout << "LU=" << inverse(L) * U << std::endl;
-	std::cout << L * A << std::endl;*/
+    double Eval;
+    power_iteration(A2copy, 50, Eval, W2);
+    std::cout << std::endl;
+    std::cout << Eval << std::endl;
+    std::cout << W2 << std::endl;
 }
 
+void test_vectorany() {
+    using namespace::clmagic;
+	std::cout << "test vector_any<>" << std::endl;
+
+    vector_any<float, __m256> _Vec;
+    for (float f = 2.f; f <= 100.f; ++f) {
+        _Vec.push_back(f);
+    }
+    std::cout << _Vec << std::endl;
+    std::cout << "block-capacity: " << _Vec.capacity() << std::endl;
+    std::cout << "scalar-capacity: " << _Vec.capacity() * block_traits<__m128>::size() << std::endl;
+
+	while (_Vec.size() > 5) {
+		_Vec.pop_back();
+	}
+	std::cout << _Vec << std::endl;
+	std::cout << "block-capacity: " << _Vec.capacity() << std::endl;
+	std::cout << "scalar-capacity: " << _Vec.capacity() * block_traits<__m128>::size() << std::endl;
+
+	_Vec.clear();
+	std::cout << _Vec << std::endl;
+	std::cout << "block-capacity: " << _Vec.capacity() << std::endl;
+	std::cout << "scalar-capacity: " << _Vec.capacity() * block_traits<__m128>::size() << std::endl;
+
+	vector<float, 6> A = { 2.f, 2.f, 2.f };
+	vector<float, 6> B = { 1.f, 2.f, 2.f, 2.f, 2.f };
+	auto _Cmp = (A == B);
+	std::cout << _Cmp << std::endl;
+	std::cout << (A == B) << std::endl;
+	std::cout << sum(A) << std::endl;
+	std::cout << product(A) << std::endl;
+	std::cout << dot(A, B) << std::endl;
+	std::cout << length(A) << std::endl;
+	auto Y = normalize(B);
+	std::cout << Y << std::endl;
+	std::cout << length(Y) << std::endl;
+	vector_any<double> VanyA = { 1.0, 2.0, 3.0, 4.0, 6.0 };
+	vector_any<double> VanyB = { 1.0, 2.0, 3.0, 4.0, 6.0 };
+	vector_any<double> VanyC = { 1.0, 2.0, 3.0, 4.0, 6.0 };
+	mul(VanyA, VanyB, VanyC);
+	std::cout << VanyA << std::endl;
+	std::cout << VanyB << std::endl;
+	std::cout << VanyC << std::endl;
+	vector<double, 6> VD = { 1.f, 2.f, 3.f, 4.f, 6.f };
+	mul(VanyC, VD(0, 5), VD(0, 5));
+	std::cout << VD << std::endl;
+}
+
+
 int main() {
+    srand(static_cast<uint32_t>(time(0)));
 	//diagonal_matrix_operation();
-	/*task_1();
+	task_1();
 	task_2();
 	task_3();
 	task_4();
 	task_5();
-	task_6();*/
+	task_6();
+
 	test();
+	test_vectorany();
 
 	std::cin.get();
 	return (0);
