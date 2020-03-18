@@ -92,6 +92,9 @@ namespace clmagic {
 			return (block_offset() / sizeof(scalar_type) + size() >= block_traits::size());
 		}
 
+		scalar_pointer ptr(size_t _Pos = 0) const {
+			return _First + _Pos;
+		}
 		scalar_pointer begin() const {
 			return _First; 
 		}
@@ -133,19 +136,30 @@ namespace clmagic {
 		subvector(scalar_pointer _First_arg, scalar_pointer _Last_arg)
 			: _Mybase(_First_arg, _Last_arg) {}
 
+		scalar_pointer ptr(size_t _Pos = 0) {
+			return  const_cast<scalar_pointer>(_Mybase::ptr(_Pos));
+		}
 		scalar_pointer begin() {
-			return const_cast<scalar_pointer>(_Mybase::begin()); }
+			return const_cast<scalar_pointer>(_Mybase::begin()); 
+		}
 		scalar_pointer end() {
-			return const_cast<scalar_pointer>(_Mybase::end()); }
-		scalar_const_pointer begin() const {
-			return _Mybase::begin(); }
-		scalar_const_pointer end() const {
-			return _Mybase::end(); }
-
+			return const_cast<scalar_pointer>(_Mybase::end()); 
+		}
 		scalar_reference operator[](size_t _Pos) {
-			return const_cast<scalar_reference>(_Mybase::operator[](_Pos)); }
+			return const_cast<scalar_reference>(_Mybase::operator[](_Pos)); 
+		}
+		scalar_pointer ptr(size_t _Pos = 0) const {
+			return _Mybase::ptr(_Pos);
+		}
+		scalar_const_pointer begin() const {
+			return _Mybase::begin(); 
+		}
+		scalar_const_pointer end() const {
+			return _Mybase::end(); 
+		}
 		scalar_const_reference operator[](size_t _Pos) const {
-			return _Mybase::operator[](_Pos); }
+			return _Mybase::operator[](_Pos); 
+		}
 		
 		void fill(scalar_const_reference _Val) {
 			std::fill(this->begin(), this->end(), _Val); }
@@ -160,7 +174,7 @@ namespace clmagic {
 			vector_size<_Ty, _Block> _Mysize;
 		};
 	
-		refernece& self_ref() {
+		refernece& subvector_ref() {
 			return reinterpret_cast<refernece&>(*this);
 		}
 	};
@@ -306,7 +320,7 @@ namespace clmagic {
 			scalar_type _Result;
 
 			if (_Leading_size != 0) {
-				const scalar_type          _Tmp_bk   = _Func1(*(_First1 - 1), *(_First2 - 1));
+				const block_type           _Tmp_bk   = _Func1(*(_First1 - 1), *(_First2 - 1));
 				const scalar_const_pointer _Last_bk  = reinterpret_cast<scalar_const_pointer>((&_Tmp_bk) + 1);
 				scalar_const_pointer       _First_bk = _Last_bk - _Leading_size;
 				_Result = *_First_bk++;// initial
@@ -418,7 +432,7 @@ namespace clmagic {
 		template<typename _Fn1, typename _Fn2> inline
 		static void transform_right_scalar(vector_const_reference _Left, vector_reference _Result,
 			/*block*/_Fn1 _Func1, /*scalar*/_Fn2 _Func2, scalar_const_reference _Scalar) {
-			const auto _Scalar_block = block_traits<block_type>::set1(_Scalar);
+			const auto _Scalar_block = block_traits::set1(_Scalar);
 			transform(_Left, _Result, 
 				[_Func1, &_Scalar_block] (block_const_reference _X) { return _Func1(_X, _Scalar_block); },
 				[_Func2, &_Scalar] (scalar_const_reference _X) { return _Func2(_X, _Scalar); } );
@@ -427,7 +441,7 @@ namespace clmagic {
 		template<typename _Fn1, typename _Fn2> inline
 		static void transform_left_scalar(vector_const_reference _Right, vector_reference _Result,
 			/*block*/_Fn1 _Func1, /*scalar*/_Fn2 _Func2, scalar_const_reference _Scalar) {
-			const auto _Scalar_block = block_traits<block_type>::set1(_Scalar);
+			const auto _Scalar_block = block_traits::set1(_Scalar);
 			transform(_Right, _Result,
 				[_Func1, &_Scalar_block](block_const_reference _X) { return _Func1(_Scalar_block, _X); },
 				[_Func2, &_Scalar](scalar_const_reference _X) { return _Func2(_Scalar, _X); } );
@@ -573,7 +587,23 @@ namespace clmagic {
 		_Accelerate_subvector<_Ty, _Block>::transform_left_scalar(_Right, _Result, std::modulus<_Block>(), std::modulus<_Ty>(), _Scalar);
 	}
 
-	
+	template<typename _Ty, typename _Block> inline
+	_Ty norm(const_subvector<_Ty, _Block> _X, const _Ty& _Level) {
+		return _Accelerate_subvector<_Ty, _Block>::norm(_X, _Level);
+	}
+	template<typename _Ty, typename _Block> inline
+	_Ty normL2_square(const_subvector<_Ty, _Block> _X) {
+		return dot(_X, _X);
+	}
+	template<typename _Ty, typename _Block> inline
+	void normalize(const_subvector<_Ty, _Block> _Source, subvector<_Ty, _Block> _Dest) {
+		const auto _NormL2sq = normL2_square(_Source);
+		if (abs(_NormL2sq - static_cast<_Ty>(1)) > std::numeric_limits<_Ty>::epsilon()) {
+			div(_Source, sqrt(_NormL2sq), _Dest);
+		} else {
+			std::copy(_Source.begin(), _Source.end(), _Dest.begin());
+		}
+	}
 
 	template<typename Iter>
 	std::string _To_string(Iter _First, Iter _Last) {
@@ -721,7 +751,7 @@ namespace clmagic {
 		}
 
 		template<typename _Fn>
-		void assign(const vector& _Left, const scalar_type& _Scalar, _Fn _Func) {
+		void assign(const vector& _Left, const _Ty& _Scalar, _Fn _Func) {
 			const auto _Right_bk = block_traits::set1(_Scalar);
 			this->assign(_Left,
 				[_Func, &_Right_bk](block_const_reference _Left_bk) {
@@ -730,7 +760,7 @@ namespace clmagic {
 		}
 
 		template<typename _Fn>
-		void assign(const scalar_type& _Scalar, const vector& _Right, _Fn _Func) {
+		void assign(const _Ty& _Scalar, const vector& _Right, _Fn _Func) {
 			const auto _Left_bk = block_traits::set1(_Scalar);
 			this->assign(_Right, 
 				[_Func, &_Left_bk] (block_const_reference _Right_bk) {
@@ -746,7 +776,7 @@ namespace clmagic {
 		}
 
 		template<typename _Fn>
-		vector<bool, _Size>&& compare(const scalar_type& _Scalar, _Fn _Pred) const {
+		vector<bool, _Size>&& compare(const _Ty& _Scalar, _Fn _Pred) const {
 			vector<bool, _Size> _Result;
 			auto       _First = this->begin();
 			const auto _Last  = this->end();
@@ -763,7 +793,7 @@ namespace clmagic {
 		explicit vector(scalar_const_reference _Val) { 
 			this->assign(_Val); }
 
-		vector(std::initializer_list<scalar_type> _Ilist) { 
+		vector(std::initializer_list<_Ty> _Ilist) {
 			this->assign(_Ilist); }
 
 		template<typename _Iter> vector(_Iter _First, _Iter _Last) { 
@@ -775,12 +805,15 @@ namespace clmagic {
 		template<typename _Fn> vector(const vector& _Left, const vector& _Right, _Fn _Func) {
 			this->assign(_Left, _Right, _Func); }
 
-		template<typename _Fn> vector(const vector& _Left, const scalar_type& _Scalar, _Fn _Func) {
+		template<typename _Fn> vector(const vector& _Left, const _Ty& _Scalar, _Fn _Func) {
 			this->assign(_Left, _Scalar, _Func); }
 
-		template<typename _Fn> vector(const scalar_type& _Scalar, const vector& _Right, _Fn _Func) {
+		template<typename _Fn> vector(const _Ty& _Scalar, const vector& _Right, _Fn _Func) {
 			this->assign(_Scalar, _Right, _Func); }
 
+		vector& operator=(std::initializer_list<_Ty> _Ilist) {
+			this->assign(_Ilist);
+		}
 
 		subvector operator()(size_t _First, size_t _Last) {
 			return subvector(this->ptr(_First), this->ptr(_Last)); 
@@ -795,10 +828,10 @@ namespace clmagic {
 		vector<bool, _Size> operator!=(const vector& _Right) const {
 			return this->compare(_Right, std::not_equal_to<scalar_type>());
 		}
-		vector<bool, _Size> operator<(const vector& _Right) const {
+		vector<bool, _Size> operator< (const vector& _Right) const {
 			return this->compare(_Right, std::less<scalar_type>());
 		}
-		vector<bool, _Size> operator>(const vector& _Right) const {
+		vector<bool, _Size> operator> (const vector& _Right) const {
 			return this->compare(_Right, std::greater<scalar_type>());
 		}
 		vector<bool, _Size> operator<=(const vector& _Right) const {
@@ -813,10 +846,10 @@ namespace clmagic {
 		vector<bool, _Size> operator!=(const scalar_type& _Scalar) const {
 			return this->compare(_Scalar, std::not_equal_to<scalar_type>());
 		}
-		vector<bool, _Size> operator<(const scalar_type& _Scalar) const {
+		vector<bool, _Size> operator< (const scalar_type& _Scalar) const {
 			return this->compare(_Scalar, std::less<scalar_type>());
 		}
-		vector<bool, _Size> operator>(const scalar_type& _Scalar) const {
+		vector<bool, _Size> operator> (const scalar_type& _Scalar) const {
 			return this->compare(_Scalar, std::greater<scalar_type>());
 		}
 		vector<bool, _Size> operator<=(const scalar_type& _Scalar) const {
@@ -1119,6 +1152,8 @@ namespace clmagic {
 		using block_type           = _Block;
 		using block_pointer        = _Block*;
 		using block_const_pointer  = _Block const*;
+		using block_reference       = _Block&;
+		using block_const_reference = _Block const&;
 
 		using subvector       = clmagic::subvector<_Ty, _Block>;
 		using const_subvector = clmagic::const_subvector<_Ty, _Block>;
@@ -1128,27 +1163,186 @@ namespace clmagic {
 
 		vector_any() : _Mybase(nullptr, nullptr), _Myalloc(), _Mydata(nullptr), _Mycapacity(0) { }
 
+		vector_any(const vector_any& _Right) : vector_any() {// copy-constructor
+			this->assign(_Right.begin(), _Right.end());
+		}
+
+		vector_any(vector_any&& _Right)
+			: _Mybase(std::move(_Right)), _Myalloc(_Right._Myalloc), 
+			_Mydata(_Right._Mydata), _Mycapacity(_Right._Mycapacity) {// move-constructor
+			_Right._Mydata         = nullptr;
+			_Right._Mycapacity     = 0;
+			_Right.subvector_ref() = { nullptr, nullptr, {0, 0, 0 } };
+		}
+
 		template<typename _Iter>
 		void assign(_Iter _First, _Iter _Last) {
-			const size_t _Newcapacity = std::distance(_First, _Last) / block_traits::size() + 1;
-			this->_Realocate(_Newcapacity, 0);
+			const auto _Distance    = std::distance(_First, _Last);
+			const auto _Newcapacity = _Distance / block_traits::size() + static_cast<size_t>(_Distance % block_traits::size() != 0);
+			this->_Reallocate(_Newcapacity);
 
-			auto&           _Myvec  = _Mybase::self_ref();
-			scalar_pointer& _Mylast = _Myvec._Mylast;
-			for (; _First != _Last; ++_First) {
-				allocate_traits::construct(_Myalloc, _Mylast, *_First);
-				++_Mylast;// correct _Mylast
+			auto&           _Myvec   = _Mybase::subvector_ref();
+			scalar_pointer  _Myfirst = _Myvec._Myfirst;
+			scalar_pointer& _Mylast  = _Myvec._Mylast;
+			const auto      _Mysize  = _Mylast - _Myfirst;
+			if (_Mysize < _Distance) {// copy [_First, _Last) to [_Myfirst, ...), construct [..., _Last) to [..., _Mylast)
+				for (; _Myfirst != _Mylast; ++_Myfirst, ++_First) {
+					*_Myfirst = *_First;
+				}
+				for (; _First != _Last; ++_First, ++_Mylast/*correct _Mylast*/) {
+					allocate_traits::construct(_Myalloc, _Mylast, *_First);
+				}
+			} else {
+				for (; _Myfirst != _Mylast; ++_Myfirst, ++_First) {
+					*_Myfirst = *_First;
+				}
+				_Destroy_range(_Myfirst, _Mylast);
+				_Mylast = _Myfirst;// correct _Mylast
 			}
-			_Myvec._Mysize = make_vector_size<_Ty, _Block>(_Myvec._Myfirst, _Myvec._Mylast);// correct _Myvsize
+			_Myvec._Mysize = make_vector_size<_Ty, _Block>(_Myvec._Myfirst, _Myvec._Mylast);// correct vector-size
 		}
+
+		template<typename _Fn>
+		void assign(const vector_any& _Left, _Fn _Func) {// memory aligned
+			assert(_Left.aligned());
+			this->_Resize(_Left.size());
+			assert(this->aligned());
+			std::transform(_Left.block_begin(), _Left.block_end(), this->block_begin(), _Func);
+		}
+
+		template<typename _Fn>
+		void assign(const vector_any& _Left, const vector_any& _Right, _Fn _Func) {
+			assert(_Left.size() == _Right.size());
+			assert(_Left.aligned() && _Right.aligned());
+			this->_Resize(_Left.size());
+			assert(this->aligned());
+			std::transform(_Left.block_begin(), _Left.block_end(), _Right.block_begin(), this->block_begin(), _Func);
+		}
+
+		template<typename _Fn>
+		void assign(const vector_any& _Left, const _Block& _Right_bk, _Fn _Func) {
+			this->assign(_Left,
+				[_Func, &_Right_bk](block_reference _Left_bk) { return _Func(_Left_bk, _Right_bk); });
+		}
+
+		template<typename _Fn>
+		void assign(const _Block& _Left_bk, const vector_any& _Right, _Fn _Func) {
+			this->assign(_Right,
+				[_Func, &_Left_bk](block_reference _Right_bk) { return _Func(_Left_bk, _Right_bk); });
+		}
+
+		// <Internal-function>
+		template<typename _Fn>
+		void _Assign(const vector_any& _Left, const _Ty& _Scalar, _Fn _Func) {
+			this->assign(_Left, block_traits::set1(_Scalar));
+		}
+
+		template<typename _Fn>
+		void _Assign(const _Ty& _Scalar, const vector_any& _Right, _Fn _Func) {
+			this->assign(block_traits::set1(_Scalar), _Right);
+		}
+		// </Internal-function>
 
 		template<typename _Iter>
 		vector_any(_Iter _First, _Iter _Last) : vector_any() {
 			this->assign(_First, _Last);
 		}
 
-		vector_any(std::initializer_list<scalar_type> _Ilist) : vector_any(_Ilist.begin(), _Ilist.end()) { 
-			// do nothing
+		vector_any(std::initializer_list<_Ty> _Ilist) : vector_any() {
+			this->assign(_Ilist.begin(), _Ilist.end());
+		}
+
+		template<typename _Fn>
+		vector_any(const vector_any& _Left, _Fn _Func) : vector_any() {
+			assert(_Left.aligned());
+			auto       _First = _Left.block_begin();
+			const auto _Last  = _Left.block_end();
+			this->_Reallocate(_Last - _First);
+			assert(this->aligned());
+
+			auto _Dest = this->block_begin();
+			for (; _First != _Last; ++_First, ++_Dest) {
+				allocate_traits::construct(_Myalloc, _Dest, _Func(*_First));
+			}
+			auto& _Myvec   = _Mybase::subvector_ref();
+			_Myvec._Mylast = _Myvec._Myfirst + _Left.size();
+			_Myvec._Mysize = make_vector_size<_Ty, _Block>(_Myvec._Myfirst, _Myvec._Mylast);// correct vector_size
+		}
+
+		template<typename _Fn>
+		vector_any(vector_any&& _Left, _Fn _Func) : vector_any(_Left) {
+			std::transform(this->block_begin(), this->block_end(), this->block_begin(), _Func);
+		}
+
+		template<typename _Fn>
+		vector_any(const vector_any& _Left, const vector_any& _Right, _Fn _Func) : vector_any() {// construct(this, _Func(_Left, _Right))
+			assert(_Left.size() == _Right.size());
+			assert(_Left.aligned() && _Right.aligned());
+			auto       _First1 = _Left.block_begin();
+			const auto _Last1  = _Left.block_end();
+			this->_Reallocate(_Last1 - _First1);
+			assert(this->aligned());
+
+			auto _First2 = _Right.block_begin();
+			auto _Dest   = this->block_begin();
+			for (; _First1 != _Last1; ++_First1, ++_First2, ++_Dest) {
+				allocate_traits::construct(_Myalloc, _Dest, _Func(*_First1, *_First2));
+			}
+			auto& _Myvec   = _Mybase::subvector_ref();
+			_Myvec._Mylast = _Myvec._Myfirst + _Left.size();
+			_Myvec._Mysize = make_vector_size<_Ty, _Block>(_Myvec._Myfirst, _Myvec._Mylast);// correct vector_size
+		}
+		
+		// <Internal-function>
+		template<typename _Fn>
+		vector_any(const vector_any& _Left, const _Ty& _Scalar, _Fn _Func) : vector_any() {// construct( this, _Func(_Left, block_tratis::set1(_Scalar)) )
+			assert(_Left.aligned());
+			auto       _First = _Left.block_begin();
+			const auto _Last  = _Left.block_end();
+			this->_Reallocate(_Last - _First);
+			assert(this->aligned());
+
+			const auto _Right_bk = block_traits::set1(_Scalar);
+			auto       _Dest     = this->block_begin();
+			for (; _First != _Last; ++_First, ++_Dest) {
+				allocate_traits::construct(_Myalloc, _Dest, _Func(*_First, _Right_bk));
+			}
+			auto& _Myvec   = _Mybase::subvector_ref();
+			_Myvec._Mylast = _Myvec._Myfirst + _Left.size();
+			_Myvec._Mysize = make_vector_size<_Ty, _Block>(_Myvec._Myfirst, _Myvec._Mylast);// correct vector_size
+		}
+
+		template<typename _Fn>
+		vector_any(const _Ty& _Scalar, const vector_any& _Right, _Fn _Func) : vector_any() {// construct( this, _Func(block_tratis::set1(_Scalar), _Right) )
+			assert(_Right.aligned());
+			auto       _First = _Right.block_begin();
+			const auto _Last  = _Right.block_end();
+			this->_Reallocate(_Last - _First);
+			assert(this->aligned());
+
+			const auto _Left_bk = block_traits::set1(_Scalar);
+			auto       _Dest    = this->block_begin();
+			for (; _First != _Last; ++_First, ++_Dest) {
+				allocate_traits::construct(_Myalloc, _Dest, _Func(_Left_bk, *_First));
+			}
+			auto& _Myvec   = _Mybase::subvector_ref();
+			_Myvec._Mylast = _Myvec._Myfirst + _Right.size();
+			_Myvec._Mysize = make_vector_size<_Ty, _Block>(_Myvec._Myfirst, _Myvec._Mylast);// correct vector_size
+		}
+		// </Internal-function>
+		
+		vector_any& operator=(const vector_any& _Right) {
+			this->assign(_Right.begin(), _Right.end());
+			return *this;
+		}
+		vector_any& operator=(vector_any&& _Right) {
+			_Mybase::subvector_ref() = _Right.subvector_ref();
+			_Mydata     = _Right._Mydata;
+			_Mycapacity = _Right._Mycapacity;
+			_Right._Mydata         = nullptr;
+			_Right._Mycapacity     = 0;
+			_Right.subvector_ref() = { 0, 0, {0, 0, 0} };
+			return *this;
 		}
 
 		subvector operator()(size_t _First, size_t _Last) {
@@ -1158,18 +1352,108 @@ namespace clmagic {
 			return const_subvector(this->ptr(_First), this->ptr(_Last));
 		}
 
+		vector_any operator-() const {
+			return std::move(vector_any(*this, std::negate<block_type>()));
+		}
+		vector_any operator+(const vector_any& _Right) const {
+			return std::move(vector_any(*this, _Right, std::plus<block_type>()));
+		}
+		vector_any operator-(const vector_any& _Right) const {
+			return std::move(vector_any(*this, _Right, std::minus<block_type>()));
+		}
+		vector_any operator*(const vector_any& _Right) const {
+			return std::move(vector_any(*this, _Right, std::multiplies<block_type>()));
+		}
+		vector_any operator/(const vector_any& _Right) const {
+			return std::move(vector_any(*this, _Right, std::divides<block_type>()));
+		}
+		vector_any operator%(const vector_any& _Right) const {
+			return std::move(vector_any(*this, _Right, std::modulus<block_type>()));
+		}
+		vector_any operator+(const _Ty& _Scalar) const {
+			return std::move(vector_any(*this, _Scalar, std::plus<block_type>()));
+		}
+		vector_any operator-(const _Ty& _Scalar) const {
+			return std::move(vector_any(*this, _Scalar, std::minus<block_type>()));
+		}
+		vector_any operator*(const _Ty& _Scalar) const {
+			return std::move(vector_any(*this, _Scalar, std::multiplies<block_type>()));
+		}
+		vector_any operator/(const _Ty& _Scalar) const {
+			return std::move(vector_any(*this, _Scalar, std::divides<block_type>()));
+		}
+		vector_any operator%(const _Ty& _Scalar) const {
+			return std::move(vector_any(*this, _Scalar, std::modulus<block_type>()));
+		}
+		vector_any& operator+=(const vector_any& _Right) {
+			this->assign(*this, _Right, std::plus<block_type>());
+			return (*this);
+		}
+		vector_any& operator-=(const vector_any& _Right) {
+			this->assign(*this, _Right, std::minus<block_type>());
+			return (*this);
+		}
+		vector_any& operator*=(const vector_any& _Right) {
+			this->assign(*this, _Right, std::multiplies<block_type>());
+			return (*this);
+		}
+		vector_any& operator/=(const vector_any& _Right) {
+			this->assign(*this, _Right, std::divides<block_type>());
+			return (*this);
+		}
+		vector_any& operator%=(const vector_any& _Right) {
+			this->assign(*this, _Right, std::modulus<block_type>());
+			return (*this);
+		}
+		vector_any& operator+=(const _Ty& _Scalar) {
+			this->_Assign(*this, _Scalar, std::plus<block_type>());
+			return (*this);
+		}
+		vector_any& operator-=(const _Ty& _Scalar) {
+			this->_Assign(*this, _Scalar, std::minus<block_type>());
+			return (*this);
+		}
+		vector_any& operator*=(const _Ty& _Scalar) {
+			this->_Assign(*this, _Scalar, std::multiplies<block_type>());
+			return (*this);
+		}
+		vector_any& operator/=(const _Ty& _Scalar) {
+			this->_Assign(*this, _Scalar, std::divides<block_type>());
+			return (*this);
+		}
+		vector_any& operator%=(const _Ty& _Scalar) {
+			this->_Assign(*this, _Scalar, std::modulus<block_type>());
+			return (*this);
+		}
+		
 		size_t size() const {
 			return _Mybase::size();
 		}
 		size_t capacity() const {
 			return _Mycapacity; 
 		}
-		bool empty() const {
-			return (this->size() == 0);
+		bool empty() const {// size is Zero
+			return (this->begin() == this->end());
+		}
+		bool aligned() const {
+			return (reinterpret_cast<uintptr_t>(_Mydata) & (std::alignment_of_v<_Block> - 1)) == 0;
+		}
+
+		block_pointer block_begin() {
+			return _Mydata;
+		}
+		block_pointer block_end() {
+			return _Mydata + this->size() / block_traits::size() + static_cast<size_t>(this->size() % block_traits::size() != 0);
+		}
+		block_const_pointer block_begin() const {
+			return _Mydata;
+		}
+		block_const_pointer block_end() const {
+			return _Mydata + this->size() / block_traits::size() + static_cast<size_t>(this->size() % block_traits::size() != 0);
 		}
 
 		scalar_pointer ptr(size_t _Pos = 0) {
-			return _Mybase::begin() + _Pos;
+			return _Mybase::ptr(_Pos);
 		}
 		scalar_pointer begin() {
 			return _Mybase::begin(); 
@@ -1182,7 +1466,7 @@ namespace clmagic {
 		}
 		
 		scalar_const_pointer ptr(size_t _Pos = 0) const {
-			return _Mybase::begin() + _Pos; }
+			return _Mybase::ptr(_Pos); }
 		scalar_const_pointer begin() const {
 			return _Mybase::begin(); 
 		}
@@ -1192,8 +1476,8 @@ namespace clmagic {
 		scalar_const_reference operator[](size_t _Pos) const {
 			return _Mybase::operator[](_Pos); }
 
-		void clear() {// don't modify capcity
-			auto& _Myvec = _Mybase::self_ref();
+		void clear() {// clear _Mybase, don't modify capacity
+			auto& _Myvec = _Mybase::subvector_ref();
 			_Destroy_range(_Myvec._Myfirst, _Myvec._Mylast);
 			_Myvec._Mylast = _Myvec._Myfirst;
 			_Myvec._Mysize = { 0, 0, 0 };
@@ -1201,14 +1485,14 @@ namespace clmagic {
 
 		template<typename... _Valty>
 		void emplace_back(_Valty&&... _Val) {
-			if (_Has_capacity(1)) {
-				auto&           _Myvec  = _Mybase::self_ref();
+			if ( _Has_capacity(this->size() + 1) ) {
+				auto&           _Myvec  = _Mybase::subvector_ref();
 				scalar_pointer& _Mylast = _Myvec._Mylast;
 				allocate_traits::construct(_Myalloc, _Mylast, std::forward<_Valty...>(_Val...));
 				++_Mylast;// correct _Mylast
-				_Myvec._Mysize = make_vector_size<_Ty, _Block>(_Myvec._Myfirst, _Myvec._Mylast);// correct _Myvsize
+				_Myvec._Mysize = make_vector_size<_Ty, _Block>(_Myvec._Myfirst, _Myvec._Mylast);// correct vector-size
 			} else {
-				_Realocate(_Calculate_growth(this->capacity() + 1), this->size());
+				_Reallocate(_Calculate_growth(this->capacity() + 1));
 				emplace_back(std::forward<_Valty...>(_Val...));
 			}
 		}
@@ -1222,17 +1506,25 @@ namespace clmagic {
 
 		void pop_back() {
 			if ( !this->empty() ) {
-				auto& _Myvec = _Mybase::self_ref();
+				auto& _Myvec = _Mybase::subvector_ref();
 				--_Myvec._Mylast;
 				allocate_traits::destroy(_Myalloc, _Myvec._Mylast);
 			}
 		}
 
 		~vector_any() {// destroy[_First, _last) and delete[] _Mydata
-			auto& _Myvec = _Mybase::self_ref();
-			_Destroy_range(_Myvec._Myfirst, _Myvec._Mylast);
-			allocate_traits::deallocate(_Myalloc, _Mydata, _Mycapacity);
-			_Mydata = nullptr;
+			if (_Mydata != nullptr) {
+				auto& _Myvec = _Mybase::subvector_ref();
+				_Destroy_range(_Myvec._Myfirst, _Myvec._Mylast);
+				allocate_traits::deallocate(_Myalloc, _Mydata, _Mycapacity);
+				_Mydata     = nullptr;
+				_Mycapacity = 0;
+			} else {// _Mydata == nullptr
+				if (!this->empty()) {
+					std::cout << "[vector_any<_Ty, _Block> memory exception] ->[~vector_any()]" << std::endl;
+					//throw std::exception("[vector_any<_Ty, _Block> memory exception] ->[~vector_any()]");
+				}
+			}
 		}
 
 		friend std::string to_string(const vector_any& _Left) {
@@ -1241,19 +1533,27 @@ namespace clmagic {
 			return (_Ostr << to_string(_Left)); }
 
 	private:
-		void _Destroy_range(scalar_pointer _First, scalar_const_pointer _Last) {
+
+		scalar_pointer _Destroy_range(scalar_pointer _First, scalar_const_pointer _Last) {
 			for (; _First != _Last; ++_First) {
-				//_First->~_Ty();
 				allocate_traits::destroy(_Myalloc, _First);
 			}
+			return _First;
+		}
+
+		scalar_pointer _Construct_range(scalar_pointer _First, scalar_const_pointer _Last, const _Ty& _Val) {
+			for (; _First != _Last; ++_First) {
+				allocate_traits::construct(_Myalloc, _First, _Val);
+			}
+			return _First;
 		}
 
 		size_t max_size() const {
 			return std::numeric_limits<size_t>::max();
 		}
 
-		bool _Has_capacity(size_t _Addition) {
-			return (this->size() + _Addition <= this->capacity() * block_traits::size());
+		bool _Has_capacity(size_t _Size) {// _Size scalar-sizes  <= _My scalar_sizes
+			return (_Size <= _Mycapacity * block_traits::size());
 		}
 
 		/* learning from C++Stantard-library-vector<_Ty,...> */
@@ -1275,33 +1575,54 @@ namespace clmagic {
 		}
 
 		/* learning from C++Stantard-library-vector<_Ty,...> */
-		void _Realocate(size_t _Newcapacity/*block*/, size_t _Newsize/*scalar*/) {
-			auto&           _Myvec   = _Mybase::self_ref();
-			scalar_pointer& _Myfirst = _Myvec._Myfirst;
-			scalar_pointer& _Mylast  = _Myvec._Mylast;
-			auto&           _Myvsize = _Myvec._Mysize;
-
+		void _Reallocate(size_t _Newcapacity/*block*/) {
 			if (_Newcapacity != _Mycapacity) {
+				auto&           _Myvec   = _Mybase::subvector_ref();
+				scalar_pointer& _Myfirst = _Myvec._Myfirst;
+				scalar_pointer& _Mylast  = _Myvec._Mylast;
+
+				const size_t    _Mysize  = _Mylast - _Myfirst;
+
 				block_pointer  _Newdata  = allocate_traits::allocate(_Myalloc, _Newcapacity); // reallocate;
 				scalar_pointer _Newfirst = reinterpret_cast<scalar_pointer>(_Newdata);
+				scalar_pointer _Newlast  = _Newfirst;
 
-				size_t _Oldsize = _Mylast - _Myfirst;
-				if (_Oldsize != 0) {
-					auto _Last = _Myfirst + std::min(_Oldsize, _Newsize);
-					std::move(_Myfirst, _Last, _Newfirst);
+				if (_Mysize != 0) {// move [_Myfirst, ...) to [_Newfirst, _Newlast) and delete _Olddata
+					auto _Last = _Myfirst + std::min(_Mysize, _Newcapacity * block_traits::size());
+					_Newlast = std::move(_Myfirst, _Last, _Newfirst);
 					_Destroy_range(_Last, _Mylast);
 					allocate_traits::deallocate(_Myalloc, _Mydata, _Mycapacity);
-				}// move [_Myfirst, ...) to [_Newfirst, ...) and delete _Mydata
-				_Mydata     = _Newdata;
-				_Myfirst    = _Newfirst;
-				_Mycapacity = _Newcapacity;
+				}
+				_Mydata        = _Newdata;
+				_Mycapacity    = _Newcapacity;
+				_Myfirst       = _Newfirst;
+				_Mylast        = _Newlast;
+				_Myvec._Mysize = make_vector_size<_Ty, _Block>(_Myfirst, _Mylast);// correct vector_size
 			}
-
-			_Mylast  = _Myfirst + _Newsize;
-			_Myvsize = make_vector_size<_Ty, _Block>(_Myfirst, _Mylast);
 		}
 
-		_Alloc _Myalloc;
+		/* learning from C++Stantard-library-vector<_Ty,...> */
+		void _Resize(size_t _Newsize/*scalar*/, const _Ty& _Val) {
+			if (_Newsize != this->size()) {
+				if ( !_Has_capacity(_Newsize) ) {
+					_Reallocate(_Calculate_growth(_Newsize / block_traits::size() + 1));
+				}
+
+				auto&           _Myvec   = _Mybase::subvector_ref();
+				scalar_pointer  _Myfirst = _Myvec._Myfirst;
+				scalar_pointer& _Mylast  = _Myvec._Mylast;
+				if (_Newsize < this->size()) {// destroy [_Newlast, _Mylast)
+					auto _Newlast = _Myfirst + _Newsize;
+					_Mylast = _Destroy_range(_Newlast, _Mylast);
+				} else {// construct [_Mylast, _Newlast)
+					auto _Newlast = _Myfirst + _Newsize;
+					_Mylast = _Construct_range(_Mylast, _Newlast, _Val);
+				}
+				_Myvec._Mysize = make_vector_size<_Ty, _Block>(_Myfirst, _Mylast);// correct vector_size
+			}
+		}
+
+		_Alloc  _Myalloc;
 		_Block* _Mydata;
 		size_t  _Mycapacity;
 	};
@@ -1335,7 +1656,7 @@ namespace clmagic {
 
 		unit_vector() = default;
 
-		unit_vector(_STD initializer_list<scalar_type> _Ilist, bool _Unitized = false)
+		unit_vector(std::initializer_list<_Ty> _Ilist, bool _Unitized = false)
 			: _Mybase(_Ilist) {
 			if (!_Unitized) this->normalize();
 		}
@@ -1345,12 +1666,12 @@ namespace clmagic {
 			// 
 		}
 
-		vector_type operator-() const {
-			return vector_type(std::negate<>(*this), true);
+		unit_vector operator-() const {
+			return unit_vector(std::negate<>(*this), true);
 		}
 	};
 
-	template<typename _Ty = real_t, typename _Block = _Ty>
+	template<typename _Ty, typename _Block = _Ty>
 		using unit_vector3 = unit_vector<_Ty, 3, _Block>;
 
 

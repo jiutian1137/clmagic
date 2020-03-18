@@ -521,7 +521,6 @@ void power_iteration(const clmagic::square_matrix<_Ty, _Rows> _Matrix, size_t _C
 void test() {
 	using namespace::clmagic;
 
-
     dmatrix<3, 3> A;
 	A.col(0) = { 1, 1, 1 };
 	A.col(1) = { 1, 0, -1 };
@@ -560,7 +559,7 @@ void test() {
     std::cout << W2 << std::endl;
 }
 
-void test_vectorany() {
+void test_vectorany() {// vector_any<_Ty, _Block> is News, don't used it
     using namespace::clmagic;
 	std::cout << "test vector_any<>" << std::endl;
 
@@ -606,6 +605,16 @@ void test_vectorany() {
 	vector<double, 6> VD = { 1.f, 2.f, 3.f, 4.f, 6.f };
 	mul(VanyC, VD(0, 5), VD(0, 5));
 	std::cout << VD << std::endl;
+
+	vector_any<float, __m256> Vany8 = { 1.f, 2.f, 3.f, 4.f, 5.f, 7.f, 8.f };
+	vector_any<float, __m256> Vany9 = { 1.f, 2.f, 3.f, 4.f, 5.f, 7.f, 8.f };
+	std::cout << Vany8 << std::endl;
+	std::cout << -Vany8 << std::endl;
+	std::cout << Vany8 + Vany8 << std::endl;
+	std::cout << Vany8 + Vany9 << std::endl;
+	auto Vany10 = Vany8 + Vany8;
+	normalize(Vany10, Vany10);
+	std::cout << Vany10 << std::endl;
 }
 
 
