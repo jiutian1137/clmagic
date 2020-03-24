@@ -136,5 +136,14 @@
     <ClInclude Include="..\src\clmagic\math\lapack\matrix.h">
       <Filter>private\lapack</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\clmagic\math\lapack\Euler.h">
+      <Filter>private\lapack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\math\lapack\Rodrigues.h">
+      <Filter>private\lapack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\math\lapack\geometry.h">
+      <Filter>private\lapack</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

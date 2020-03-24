@@ -6,6 +6,7 @@
 #ifndef clmagic_math_general_BITSET_h_
 #define clmagic_math_general_BITSET_h_
 #include <bitset>
+#include <assert.h>
 
 namespace clmagic {
 	template<size_t _Bits>

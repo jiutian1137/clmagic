@@ -37,9 +37,12 @@
     <ClInclude Include="..\src\clmagic\math\general\unit.h" />
     <ClInclude Include="..\src\clmagic\math\illumunation.h" />
     <ClInclude Include="..\src\clmagic\math\lapack.h" />
+    <ClInclude Include="..\src\clmagic\math\lapack\Euler.h" />
     <ClInclude Include="..\src\clmagic\math\lapack\general.inl.h" />
+    <ClInclude Include="..\src\clmagic\math\lapack\geometry.h" />
     <ClInclude Include="..\src\clmagic\math\lapack\intersect.inl.h" />
     <ClInclude Include="..\src\clmagic\math\lapack\matrix.h" />
+    <ClInclude Include="..\src\clmagic\math\lapack\Rodrigues.h" />
     <ClInclude Include="..\src\clmagic\math\lapack\transform.inl.h" />
     <ClInclude Include="..\src\clmagic\math\lapack\vector.h" />
     <ClInclude Include="..\src\clmagic\math\mstring.h" />

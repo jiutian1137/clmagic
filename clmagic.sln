@@ -21,6 +21,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "clmagic_improc", "clmagic_i
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_clmagic_improc", "test_clmagic_improc\test_clmagic_improc.vcxproj", "{1D08642E-FD4A-4564-9386-28A36C5E6300}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_graphics", "test_graphics\test_graphics.vcxproj", "{D10A4D5E-93DF-4FB6-8FBB-1A8762DBBEB8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -101,6 +103,14 @@ Global
 		{1D08642E-FD4A-4564-9386-28A36C5E6300}.Release|x64.Build.0 = Release|x64
 		{1D08642E-FD4A-4564-9386-28A36C5E6300}.Release|x86.ActiveCfg = Release|Win32
 		{1D08642E-FD4A-4564-9386-28A36C5E6300}.Release|x86.Build.0 = Release|Win32
+		{D10A4D5E-93DF-4FB6-8FBB-1A8762DBBEB8}.Debug|x64.ActiveCfg = Debug|x64
+		{D10A4D5E-93DF-4FB6-8FBB-1A8762DBBEB8}.Debug|x64.Build.0 = Debug|x64
+		{D10A4D5E-93DF-4FB6-8FBB-1A8762DBBEB8}.Debug|x86.ActiveCfg = Debug|Win32
+		{D10A4D5E-93DF-4FB6-8FBB-1A8762DBBEB8}.Debug|x86.Build.0 = Debug|Win32
+		{D10A4D5E-93DF-4FB6-8FBB-1A8762DBBEB8}.Release|x64.ActiveCfg = Release|x64
+		{D10A4D5E-93DF-4FB6-8FBB-1A8762DBBEB8}.Release|x64.Build.0 = Release|x64
+		{D10A4D5E-93DF-4FB6-8FBB-1A8762DBBEB8}.Release|x86.ActiveCfg = Release|Win32
+		{D10A4D5E-93DF-4FB6-8FBB-1A8762DBBEB8}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

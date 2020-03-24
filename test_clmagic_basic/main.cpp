@@ -105,23 +105,30 @@ void KMP(const std::string& _Str, const std::string& _Where) {
 	}
 }
 
-struct Num {
 
-	Num operator-() const {
-		return Num{ -this->a };
-	}
 
-	int a = 100;
-};
+#include <thread>
+#include <future>
 
-template<typename _Ty, typename _Fn>
-auto vvvv(const _Ty& _Obj, _Fn _Func) {
-	return _Func(_Obj);
+int ival() {
+	return 9999;
+}
+
+int add(int a, int b) {
+	return a + b;
+}
+
+void test_thread() {
+	//std::future<int> _Task = std::async(std::launch::async, add, 1, 800);
+	std::packaged_task<int(int, int)> _Task = std::packaged_task<int(int, int)>(add);
+	_Task.make_ready_at_thread_exit(1, 2);
+	_Task(10, 2);
+	//auto _Result = _Task.get_future();
+	std::cout << _Task.get_future().get() << std::endl;
 }
 
 int main(int argc, char** argv) {
-	Num _SSS;
-	auto _SSS2 = vvvv(_SSS, _SSS.operator-());
+	test_thread();
 
 
 	//tset_fopen();

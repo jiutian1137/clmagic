@@ -8,608 +8,179 @@
 
 #include "clmagic.h"
 
-#include <array>
-#include <string>
 #include <assert.h>
 #include <iostream>
+#include <functional>
 
 #include <ivec.h>
 #include <fvec.h>
 #include <dvec.h>
 
 
-namespace std {
-	/*- - - - - - - - - - - - - - - - - - - - - std::bit_and - - - - - - - - - - - - - - - - - - - - - - - -*/
-	template<>
-	struct bit_and<__m128> {
-		__m128 operator()(const __m128& _Left, const __m128& _Right) const {
-			return _mm_and_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_and<__m128d> {
-		__m128d operator()(const __m128d& _Left, const __m128d& _Right) const {
-			return _mm_and_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_and<__m128i> {
-		__m128i operator()(const __m128i& _Left, const __m128i& _Right) const {
-			return _mm_and_si128(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_and<__m256> {
-		__m256 operator()(const __m256& _Left, const __m256& _Right) const {
-			return _mm256_and_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_and<__m256d> {
-		__m256d operator()(const __m256d& _Left, const __m256d& _Right) const {
-			return _mm256_and_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_and<__m256i> {
-		__m256i operator()(const __m256i& _Left, const __m256i& _Right) const {
-			return _mm256_and_si256(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_and<__m512> {
-		__m512 operator()(const __m512& _Left, const __m512& _Right) const {
-			return _mm512_and_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_and<__m512d> {
-		__m512d operator()(const __m512d& _Left, const __m512d& _Right) const {
-			return _mm512_and_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_and<__m512i> {
-		__m512i operator()(const __m512i& _Left, const __m512i& _Right) const {
-			return _mm512_and_epi32(_Left, _Right);
-		}
-	};
-
-	/*- - - - - - - - - - - - - - - - - - - - - std::bit_or - - - - - - - - - - - - - - - - - - - - - - - -*/
-	template<>
-	struct bit_or<__m128> {
-		__m128 operator()(const __m128& _Left, const __m128& _Right) const {
-			return _mm_or_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_or<__m128d> {
-		__m128d operator()(const __m128d& _Left, const __m128d& _Right) {
-			return _mm_or_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_or<__m128i> {
-		__m128i operator()(const __m128i& _Left, const __m128i& _Right) {
-			return _mm_or_si128(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_or<__m256> {
-		__m256 operator()(const __m256& _Left, const __m256& _Right) {
-			return _mm256_or_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_or<__m256d> {
-		__m256d operator()(const __m256d& _Left, const __m256d& _Right) {
-			return _mm256_or_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_or<__m256i> {
-		__m256i operator()(const __m256i& _Left, const __m256i& _Right) {
-			return _mm256_or_si256(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_or<__m512> {
-		__m512 operator()(const __m512& _Left, const __m512& _Right) {
-			return _mm512_or_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_or<__m512d> {
-		__m512d operator()(const __m512d& _Left, const __m512d& _Right) {
-			return _mm512_or_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_or<__m512i> {
-		__m512i operator()(const __m512i& _Left, const __m512i& _Right) {
-			return _mm512_or_epi32(_Left, _Right);
-		}
-	};
-
-	/*- - - - - - - - - - - - - - - - - - - - - std::bit_xor - - - - - - - - - - - - - - - - - - - - - - - -*/
-	template<>
-	struct bit_xor<__m128> {
-		__m128 operator()(const __m128& _Left, const __m128& _Right) {
-			return _mm_xor_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_xor<__m128d> {
-		__m128d operator()(const __m128d& _Left, const __m128d& _Right) {
-			return _mm_xor_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_xor<__m128i> {
-		__m128i operator()(const __m128i& _Left, const __m128i& _Right) {
-			return _mm_xor_si128(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_xor<__m256> {
-		__m256 operator()(const __m256& _Left, const __m256& _Right) {
-			return _mm256_xor_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_xor<__m256d> {
-		__m256d operator()(const __m256d& _Left, const __m256d& _Right) {
-			return _mm256_xor_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_xor<__m256i> {
-		__m256i operator()(const __m256i& _Left, const __m256i& _Right) {
-			return _mm256_xor_si256(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_xor<__m512> {
-		__m512 operator()(const __m512& _Left, const __m512& _Right) {
-			return _mm512_xor_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_xor<__m512d> {
-		__m512d operator()(const __m512d& _Left, const __m512d& _Right) {
-			return _mm512_xor_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct bit_xor<__m512i> {
-		__m512i operator()(const __m512i& _Left, const __m512i& _Right) {
-			return _mm512_xor_epi32(_Left, _Right);
-		}
-	};
-
-	/*- - - - - - - - - - - - - - - - - - - - - std::negate - - - - - - - - - - - - - - - - - - - - - - - -*/
-	template<>
-	struct negate<__m128> {
-		__m128 operator()(const __m128& _Left) const {
-			return _mm_mul_ps(_Left, _mm_set1_ps(-1.f));
-		}
-	};
-
-	template<>
-	struct negate<__m128d> {
-		__m128d operator()(const __m128d& _Left) const {
-			return _mm_mul_pd(_Left, _mm_set1_pd(-1.0));
-		}
-	};
-
-	template<>
-	struct negate<__m128i> {
-		__m128i operator()(const __m128i& _Left) const {
-			return _mm_mul_epi32(_Left, _mm_set1_epi32(-1));
-		}
-	};
-
-	template<>
-	struct negate<__m256> {
-		__m256 operator()(const __m256& _Left) const {
-			return _mm256_mul_ps(_Left, _mm256_set1_ps(-1.0f));
-		}
-	};
-
-	template<>
-	struct negate<__m256d> {
-		__m256d operator()(const __m256d& _Left) const {
-			return _mm256_mul_pd(_Left, _mm256_set1_pd(-1.0f));
-		}
-	};
-
-	template<>
-	struct negate<__m256i> {
-		__m256i operator()(const __m256i& _Left) const {
-			return _mm256_mul_epi32(_Left, _mm256_set1_epi32(-1));
-		}
-	};
-
-	template<>
-	struct negate<__m512> {
-		__m512 operator()(const __m512& _Left, const __m512& _Right) const {
-			return _mm512_mul_ps(_Left, _mm512_set1_ps(-1.0f));
-		}
-	};
-
-	template<>
-	struct negate<__m512d> {
-		__m512d operator()(const __m512d& _Left, const __m512d& _Right) const {
-			return _mm512_mul_pd(_Left, _mm512_set1_pd(-1.0f));
-		}
-	};
-
-	template<>
-	struct negate<__m512i> {
-		__m512i operator()(const __m512i& _Left, const __m512i& _Right) const {
-			return _mm512_mul_epi32(_Left, _mm512_set1_epi32(-1));
-		}
-	};
-
-	/*- - - - - - - - - - - - - - - - - - - - - std::plus - - - - - - - - - - - - - - - - - - - - - - - -*/
-	template<>
-	struct plus<__m128> {
-		__m128 operator()(const __m128& _Left, const __m128& _Right) const {
-			return _mm_add_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct plus<__m128d> {
-		__m128d operator()(const __m128d& _Left, const __m128d& _Right) const {
-			return _mm_add_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct plus<__m128i> {
-		__m128i operator()(const __m128i& _Left, const __m128i& _Right) const {
-			return _mm_add_epi32(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct plus<__m256> {
-		__m256 operator()(const __m256& _Left, const __m256& _Right) const {
-			return _mm256_add_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct plus<__m256d> {
-		__m256d operator()(const __m256d& _Left, const __m256d& _Right) const {
-			return _mm256_add_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct plus<__m256i> {
-		__m256i operator()(const __m256i& _Left, const __m256i& _Right) const {
-			return _mm256_add_epi32(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct plus<__m512> {
-		__m512 operator()(const __m512& _Left, const __m512& _Right) const {
-			return _mm512_add_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct plus<__m512d> {
-		__m512d operator()(const __m512d& _Left, const __m512d& _Right) const {
-			return _mm512_add_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct plus<__m512i> {
-		__m512i operator()(const __m512i& _Left, const __m512i& _Right) const {
-			return _mm512_add_epi32(_Left, _Right);
-		}
-	};
-
-	/*- - - - - - - - - - - - - - - - - - - - - std::minus - - - - - - - - - - - - - - - - - - - - - - - -*/
-	template<>
-	struct minus<__m128> {
-		__m128 operator()(const __m128& _Left, const __m128& _Right) const {
-			return _mm_sub_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct minus<__m128d> {
-		__m128d operator()(const __m128d& _Left, const __m128d& _Right) const {
-			return _mm_sub_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct minus<__m128i> {
-		__m128i operator()(const __m128i& _Left, const __m128i& _Right) const {
-			return _mm_sub_epi32(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct minus<__m256> {
-		__m256 operator()(const __m256& _Left, const __m256& _Right) const {
-			return _mm256_sub_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct minus<__m256d> {
-		__m256d operator()(const __m256d& _Left, const __m256d& _Right) const {
-			return _mm256_sub_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct minus<__m256i> {
-		__m256i operator()(const __m256i& _Left, const __m256i& _Right) const {
-			return _mm256_sub_epi32(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct minus<__m512> {
-		__m512 operator()(const __m512& _Left, const __m512& _Right) const {
-			return _mm512_sub_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct minus<__m512d> {
-		__m512d operator()(const __m512d& _Left, const __m512d& _Right) const {
-			return _mm512_sub_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct minus<__m512i> {
-		__m512i operator()(const __m512i& _Left, const __m512i& _Right) const {
-			return _mm512_sub_epi32(_Left, _Right);
-		}
-	};
-
-	/*- - - - - - - - - - - - - - - - - - - - - std::multiplies - - - - - - - - - - - - - - - - - - - - - - - -*/
-	template<>
-	struct multiplies<__m128> {
-		__m128 operator()(const __m128& _Left, const __m128& _Right) const {
-			return _mm_mul_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct multiplies<__m128d> {
-		__m128d operator()(const __m128d& _Left, const __m128d& _Right) const {
-			return _mm_mul_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct multiplies<__m128i> {
-		__m128i operator()(const __m128i& _Left, const __m128i& _Right) const {
-			return _mm_mul_epi32(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct multiplies<__m256> {
-		__m256 operator()(const __m256& _Left, const __m256& _Right) const {
-			return _mm256_mul_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct multiplies<__m256d> {
-		__m256d operator()(const __m256d& _Left, const __m256d& _Right) const {
-			return _mm256_mul_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct multiplies<__m256i> {
-		__m256i operator()(const __m256i& _Left, const __m256i& _Right) const {
-			return _mm256_mul_epi32(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct multiplies<__m512> {
-		__m512 operator()(const __m512& _Left, const __m512& _Right) const {
-			return _mm512_mul_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct multiplies<__m512d> {
-		__m512d operator()(const __m512d& _Left, const __m512d& _Right) const {
-			return _mm512_mul_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct multiplies<__m512i> {
-		__m512i operator()(const __m512i& _Left, const __m512i& _Right) const {
-			return _mm512_mul_epi32(_Left, _Right);
-		}
-	};
-
-	/*- - - - - - - - - - - - - - - - - - - - - std::divides - - - - - - - - - - - - - - - - - - - - - - - -*/
-	template<>
-	struct divides<__m128> {
-		__m128 operator()(const __m128& _Left, const __m128& _Right) const {
-			return _mm_div_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct divides<__m128d> {
-		__m128d operator()(const __m128d& _Left, const __m128d& _Right) const {
-			return _mm_div_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct divides<__m128i> {
-		__m128i operator()(const __m128i& _Left, const __m128i& _Right) const {
-			return _mm_div_epi32(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct divides<__m256> {
-		__m256 operator()(const __m256& _Left, const __m256& _Right) const {
-			return _mm256_div_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct divides<__m256d> {
-		__m256d operator()(const __m256d& _Left, const __m256d& _Right) const {
-			return _mm256_div_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct divides<__m256i> {
-		__m256i operator()(const __m256i& _Left, const __m256i& _Right) const {
-			return _mm256_div_epi32(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct divides<__m512> {
-		__m512 operator()(const __m512& _Left, const __m512& _Right) const {
-			return _mm512_div_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct divides<__m512d> {
-		__m512d operator()(const __m512d& _Left, const __m512d& _Right) const {
-			return _mm512_div_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct divides<__m512i> {
-		__m512i operator()(const __m512i& _Left, const __m512i& _Right) const {
-			return _mm512_div_epi32(_Left, _Right);
-		}
-	};
-
-	/*- - - - - - - - - - - - - - - - - - - - - std::modulus - - - - - - - - - - - - - - - - - - - - - - - -*/
-	template<>
-	struct modulus<__m128> {
-		__m128 operator()(const __m128& _Left, const __m128& _Right) const {
-			return _mm_fmod_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct modulus<__m128d> {
-		__m128d operator()(const __m128d& _Left, const __m128d& _Right) const {
-			return _mm_fmod_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct modulus<__m128i> {
-		__m128i operator()(const __m128i& _Left, const __m128i& _Right) const {
-			/*
-			_Left   = _Right * x + _Result
-			_Result = _Left - _Right * x
-									   _Left
-			_Result = _Left - _Right * ------
-									   _Right
-			*/
-			return _mm_sub_epi32(_Left,
-				_mm_mul_epi32(_Right, _mm_div_epi32(_Left, _Right)));
-		}
-	};
-
-	template<>
-	struct modulus<__m256> {
-		__m256 operator()(const __m256& _Left, const __m256& _Right) const {
-			return _mm256_fmod_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct modulus<__m256d> {
-		__m256d operator()(const __m256d& _Left, const __m256d& _Right) const {
-			return _mm256_fmod_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct modulus<__m256i> {
-		__m256i operator()(const __m256i& _Left, const __m256i& _Right) const {
-			return _mm256_sub_epi32(_Left,
-				_mm256_mul_epi32(_Right, _mm256_div_epi32(_Left, _Right)));
-		}
-	};
-
-	template<>
-	struct modulus<__m512> {
-		__m512 operator()(const __m512& _Left, const __m512& _Right) const {
-			return _mm512_fmod_ps(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct modulus<__m512d> {
-		__m512d operator()(const __m512d& _Left, const __m512d& _Right) const {
-			return _mm512_fmod_pd(_Left, _Right);
-		}
-	};
-
-	template<>
-	struct modulus<__m512i> {
-		__m512i operator()(const __m512i& _Left, const __m512i& _Right) const {
-			return _mm512_sub_epi32(_Left,
-				_mm512_mul_epi32(_Right, _mm512_div_epi32(_Left, _Right)));
-		}
-	};
-
-}// namespace STD
-
+#define _mm_psfunc_epi32_1st(_mmXXX_, NAME, X) \
+_mmXXX_##cvtps_epi32( _mmXXX_##NAME##_ps(_mmXXX_##cvtepi32_ps(X)) )
+
+#define _mm_psfunc_epi32_2nd(_mmXXX_, NAME, X, Y) \
+_mmXXX_##cvtps_epi32( _mmXXX_##NAME##_ps(_mmXXX_##cvtepi32_ps(X), _mmXXX_##cvtepi32_ps(Y)) )
+
+
+// error C2679: binary '>>': no operator found which takes a right-hand operand of type '__m128'
+	// @_Solve: using namespace::clmagic;
+inline __m128 operator-(__m128 A) {
+	return _mm_mul_ps(A, _mm_set1_ps(-1.0f));
+}
+inline __m128 operator+(__m128 A, __m128 B) {
+	return _mm_add_ps(A, B);
+}
+inline __m128 operator-(__m128 A, __m128 B) {
+	return _mm_sub_ps(A, B);
+}
+inline __m128 operator*(__m128 A, __m128 B) {
+	return _mm_mul_ps(A, B);
+}
+inline __m128 operator/(__m128 A, __m128 B) {
+	return _mm_div_ps(A, B);
+}
+inline __m128 operator%(__m128 A, __m128 B) {
+	return _mm_fmod_ps(A, B);
+}
+
+inline __m128d operator-(__m128d A) {
+	return _mm_mul_pd(A, _mm_set1_pd(-1.0));
+}
+inline __m128d operator+(__m128d A, __m128d B) {
+	return _mm_add_pd(A, B);
+}
+inline __m128d operator-(__m128d A, __m128d B) {
+	return _mm_sub_pd(A, B);
+}
+inline __m128d operator*(__m128d A, __m128d B) {
+	return _mm_mul_pd(A, B);
+}
+inline __m128d operator/(__m128d A, __m128d B) {
+	return _mm_div_pd(A, B);
+}
+inline __m128d operator%(__m128d A, __m128d B) {
+	return _mm_fmod_pd(A, B);
+}
+
+inline __m128i operator-(__m128i A) {
+	return _mm_mul_epi32(A, _mm_set1_epi32(-1));
+}
+inline __m128i operator+(__m128i A, __m128i B) {
+	return _mm_add_epi32(A, B);
+}
+inline __m128i operator-(__m128i A, __m128i B) {
+	return _mm_sub_epi32(A, B);
+}
+inline __m128i operator*(__m128i A, __m128i B) {
+	return _mm_mul_epi32(A, B);
+}
+inline __m128i operator/(__m128i A, __m128i B) {
+	return _mm_div_epi32(A, B);
+}
+inline __m128i operator%(__m128i A, __m128i B) {
+	return _mm_psfunc_epi32_2nd(_mm_, fmod, A, B);
+}
+
+inline __m256 operator-(__m256 A) {
+	return _mm256_mul_ps(A, _mm256_set1_ps(-1.0f));
+}
+inline __m256 operator+(__m256 A, __m256 B) {
+	return _mm256_add_ps(A, B);
+}
+inline __m256 operator-(__m256 A, __m256 B) {
+	return _mm256_sub_ps(A, B);
+}
+inline __m256 operator*(__m256 A, __m256 B) {
+	return _mm256_mul_ps(A, B);
+}
+inline __m256 operator/(__m256 A, __m256 B) {
+	return _mm256_div_ps(A, B);
+}
+inline __m256 operator%(__m256 A, __m256 B) {
+	return _mm256_fmod_ps(A, B);
+}
+
+inline __m256d operator-(__m256d A) {
+	return _mm256_mul_pd(A, _mm256_set1_pd(-1.0));
+}
+inline __m256d operator+(__m256d A, __m256d B) {
+	return _mm256_add_pd(A, B);
+}
+inline __m256d operator-(__m256d A, __m256d B) {
+	return _mm256_sub_pd(A, B);
+}
+inline __m256d operator*(__m256d A, __m256d B) {
+	return _mm256_mul_pd(A, B);
+}
+inline __m256d operator/(__m256d A, __m256d B) {
+	return _mm256_div_pd(A, B);
+}
+inline __m256d operator%(__m256d A, __m256d B) {
+	return _mm256_fmod_pd(A, B);
+}
+
+inline __m256i operator-(__m256i A) {
+	return _mm256_mul_epi32(A, _mm256_set1_epi32(-1));
+}
+inline __m256i operator+(__m256i A, __m256i B) {
+	return _mm256_add_epi32(A, B);
+}
+inline __m256i operator-(__m256i A, __m256i B) {
+	return _mm256_sub_epi32(A, B);
+}
+inline __m256i operator*(__m256i A, __m256i B) {
+	return _mm256_mul_epi32(A, B);
+}
+inline __m256i operator/(__m256i A, __m256i B) {
+	return _mm256_div_epi32(A, B);
+}
+inline __m256i operator%(__m256i A, __m256i B) {
+	return _mm_psfunc_epi32_2nd(_mm256_, fmod, A, B);
+}
+
+inline __m512 operator-(__m512 A) {
+	return _mm512_mul_ps(A, _mm512_set1_ps(-1.0f));
+}
+inline __m512 operator+(__m512 A, __m512 B) {
+	return _mm512_add_ps(A, B);
+}
+inline __m512 operator-(__m512 A, __m512 B) {
+	return _mm512_sub_ps(A, B);
+}
+inline __m512 operator*(__m512 A, __m512 B) {
+	return _mm512_mul_ps(A, B);
+}
+inline __m512 operator/(__m512 A, __m512 B) {
+	return _mm512_div_ps(A, B);
+}
+inline __m512 operator%(__m512 A, __m512 B) {
+	return _mm512_fmod_ps(A, B);
+}
+
+inline __m512d operator-(__m512d A) {
+	return _mm512_mul_pd(A, _mm512_set1_pd(-1.0));
+}
+inline __m512d operator+(__m512d A, __m512d B) {
+	return _mm512_add_pd(A, B);
+}
+inline __m512d operator-(__m512d A, __m512d B) {
+	return _mm512_sub_pd(A, B);
+}
+inline __m512d operator*(__m512d A, __m512d B) {
+	return _mm512_mul_pd(A, B);
+}
+inline __m512d operator/(__m512d A, __m512d B) {
+	return _mm512_div_pd(A, B);
+}
+inline __m512d operator%(__m512d A, __m512d B) {
+	return _mm512_fmod_pd(A, B);
+}
+// SIMD has function more too
 
 namespace clmagic {
-
+	    
 	template<typename _Ty>
 		constexpr bool is_simd_v = std::_Is_any_of_v< 
 			std::remove_cv_t<_Ty>, __m128, __m128d, __m128i, __m256, __m256d, __m512, __m512d, __m512i>;
@@ -781,17 +352,6 @@ namespace clmagic {
 		return _Product;
 	}
 
-#ifdef _DEBUG
-#define clmagic_debug_assert_aligned16(N) assert((N & (16 -1)) == 0)
-#else
-#define clmagic_debug_assert_aligned16(N)
-#endif
-
-#define _mm_psfunc_epi32_1st(_mmXXX_, NAME, X) \
-_mmXXX_##cvtps_epi32( _mmXXX_##NAME##_ps(_mmXXX_##cvtepi32_ps(X)) )
-
-#define _mm_psfunc_epi32_2nd(_mmXXX_, NAME, X, Y) \
-_mmXXX_##cvtps_epi32( _mmXXX_##NAME##_ps(_mmXXX_##cvtepi32_ps(X), _mmXXX_##cvtepi32_ps(Y)) )
 
 	const union {
 		int i[8];
@@ -802,6 +362,7 @@ _mmXXX_##cvtps_epi32( _mmXXX_##NAME##_ps(_mmXXX_##cvtepi32_ps(X), _mmXXX_##cvtep
 		__m256d m;
 	} __f64vec4_abs_mask_cheat = { -1, 0x7fffffff, -1, 0x7fffffff, -1, 0x7fffffff, -1, 0x7fffffff };
 	
+
 	inline __m128  mod(__m128  _X, __m128  _Y) { return _mm_fmod_ps(_X, _Y); }
 	inline __m128d mod(__m128d _X, __m128d _Y) { return _mm_fmod_pd(_X, _Y); }
 	inline __m128i mod(__m128i _X, __m128i _Y) { return _mm_psfunc_epi32_2nd(_mm_, fmod, _X, _Y); }

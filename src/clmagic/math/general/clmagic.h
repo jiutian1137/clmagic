@@ -79,6 +79,8 @@ namespace clmagic {
 		return static_cast<size_t>(reinterpret_cast<uintptr_t>(_Ptr)& (_Bound - 1));
 	}
 
+	template<typename _Ty>
+	constexpr size_t alignment_mask_of_v = std::alignment_of_v<_Ty> - 1;
 
 	constexpr bool constexpr_aligned16(size_t N) {
 		// 0x00000552d0
