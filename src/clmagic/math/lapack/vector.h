@@ -291,9 +291,10 @@ namespace clmagic {
 			return _Static_stack;
 		}
 
-		static size_t calc_block_count(size_t _Count) {
-			const bool _Divide = (_Count % block_traits<_Block>::size()) != 0;
-			return _Count / block_traits<_Block>::size() + static_cast<size_t>(_Divide);
+		static size_t calc_block_count(size_t _Count/*scalar*/) {
+			return ceil(_Count, block_traits<_Block>::size()) / block_traits<_Block>::size();
+		/*	const bool _Divide = (_Count % block_traits<_Block>::size()) != 0;
+			return _Count / block_traits<_Block>::size() + static_cast<size_t>(_Divide);*/
 		}
 
 		static _Ty* allocate(size_t _Count/*scalar*/) {
@@ -921,7 +922,7 @@ namespace clmagic {
 		return dot(_X, _X);
 	}
 	template<typename _Ty, typename _Block> inline
-	void normalize(const const_subvector<_Ty, _Block>& _Source, subvector<_Ty, _Block> _Dest) {
+	void normalize(const const_subvector<_Ty, _Block>& _Source, subvector<_Ty, _Block>& _Dest) {
 		const auto _NormL2sq = normL2_square(_Source);
 		if ( !approach_equal(_NormL2sq, static_cast<_Ty>(1), std::numeric_limits<_Ty>::epsilon()) ) {
 			div(_Source, sqrt(_NormL2sq), _Dest);
@@ -997,20 +998,18 @@ namespace clmagic {
 			return _Mydata[_Pos]; }
 
 		// assgin(...)
-		void assign(scalar_const_reference _Val) {
-			std::fill(this->begin(), this->end(), _Val); 
-		}
-
-		void assign(std::initializer_list<scalar_type> _Ilist) {
-			assert(_Ilist.size() <= this->size());
-			auto _Dest = std::copy(_Ilist.begin(), _Ilist.end(), this->begin());
-			std::fill(_Dest, this->end(), static_cast<scalar_type>(0));
-		}
-
 		template<typename _Iter>
 		void assign(_Iter _First, _Iter _Last) {
 			assert( std::distance(_First, _Last) <= std::_Iter_diff_t<_Iter>(this->size()) );
 			auto _Dest = std::copy(_First, _Last, this->begin());
+			std::fill(_Dest, this->end(), static_cast<scalar_type>(0));
+		}
+		void assign(const scalar_type& _Val) {
+			std::fill(this->begin(), this->end(), _Val); 
+		}
+		void assign(std::initializer_list<scalar_type> _Ilist) {
+			assert(_Ilist.size() <= this->size());
+			auto _Dest = std::copy(_Ilist.begin(), _Ilist.end(), this->begin());
 			std::fill(_Dest, this->end(), static_cast<scalar_type>(0));
 		}
 
@@ -1034,23 +1033,15 @@ namespace clmagic {
 		}
 		
 		// constructor
-		constexpr vector() : _Mydata{ 0 } {}
-
-		explicit vector(const scalar_type& _Val) { 
-			this->assign(_Val); 
-		}
-		
-		vector(std::initializer_list<scalar_type> _Ilist) {
-			this->assign(_Ilist); 
-		}
-		
 		template<typename _Iter> 
-		vector(_Iter _First, _Iter _Last) { 
-			this->assign(_First, _Last); 
-		}
-
+		vector(_Iter _First, _Iter _Last) { this->assign(_First, _Last); }
+		constexpr vector() : _Mydata{ 0 } {}
+		explicit vector(const scalar_type& _Val) { this->assign(_Val); }
+		vector(std::initializer_list<scalar_type> _Ilist) { this->assign(_Ilist); }
+		
 		vector& operator=(std::initializer_list<scalar_type> _Ilist) {
 			this->assign(_Ilist);
+			return *this;
 		}
 
 		subvector operator()(size_t _First, size_t _Last) {
@@ -1256,6 +1247,15 @@ namespace clmagic {
 				}
 			}
 		}
+		template<typename _Fn> 
+		vector(const vector& _Left, _Fn _Func) {
+			this->_Assign(_Left, _Func); 
+		}
+		template<typename _Fn> 
+		vector(const vector& _Left, const vector& _Right, _Fn _Func) {
+			this->_Assign(_Left, _Right, _Func); 
+		}
+		
 		template<typename _Fn>
 		void _Assign(const vector& _Left, const block_type& _Right_block, _Fn _Func) {
 			this->_Assign(_Left,
@@ -1270,15 +1270,6 @@ namespace clmagic {
 					return _Func(_Left_block, _Right_block);
 				} );
 		}
-		
-		template<typename _Fn> 
-		vector(const vector& _Left, _Fn _Func) {
-			this->_Assign(_Left, _Func); 
-		}
-		template<typename _Fn> 
-		vector(const vector& _Left, const vector& _Right, _Fn _Func) {
-			this->_Assign(_Left, _Right, _Func); 
-		}
 		template<typename _Fn> 
 		vector(const vector& _Left, const block_type& _Right_block, _Fn _Func) {
 			this->_Assign(_Left, _Right_block, _Func); 
@@ -1290,14 +1281,6 @@ namespace clmagic {
 	
 	public:
 		template<typename _Fn>
-		static vector _Transform(const vector& _Left, _Fn _Func) {
-			return vector(_Left, _Func);
-		}
-		template<typename _Fn>
-		static vector _Transform(const vector& _Left, const vector& _Right, _Fn _Func) {
-			return vector(_Left, _Right, _Func);
-		}
-		template<typename _Fn>
 		static vector& _Transform(const vector& _Left, vector& _Result, _Fn _Func) {
 			_Result._Assign(_Left, _Func);
 			return _Result;
@@ -1306,6 +1289,14 @@ namespace clmagic {
 		static vector& _Transform(const vector& _Left, const vector& _Right, vector& _Result, _Fn _Func) {
 			_Result._Assign(_Left, _Right, _Func);
 			return _Result;
+		}
+		template<typename _Fn>
+		static vector _Transform_copy(const vector& _Left, _Fn _Func) {
+			return vector(_Left, _Func);
+		}
+		template<typename _Fn>
+		static vector _Transform_copy(const vector& _Left, const vector& _Right, _Fn _Func) {
+			return vector(_Left, _Right, _Func);
 		}
 
 	private:
@@ -1373,11 +1364,11 @@ namespace clmagic {
 
 	template<typename _Ty, size_t _Size, typename _Block> inline
 	vectorN mod(const vectorN& _Left, const vectorN& _Right) {
-		return vectorN::_Transform(_Left, _Right, std::modulus<_Block>());
+		return vectorN::_Transform_copy(_Left, _Right, std::modulus<>());
 	}
 	template<typename _Ty, size_t _Size, typename _Block> inline
 	vectorN pow(const vectorN& _Left, const vectorN& _Right) {
-		return vectorN::_Transform(_Left, _Right,
+		return vectorN::_Transform_copy(_Left, _Right,
 			[](auto&& A, auto&& B) { return pow(A, B); });
 	}
 	template<typename _Ty, size_t _Size, typename _Block> inline
@@ -1391,83 +1382,83 @@ namespace clmagic {
 
 	template<typename _Ty, size_t _Size, typename _Block> inline
 	vectorN abs(const vectorN& _Left) {
-		return vectorN::_Transform(_Left,
+		return vectorN::_Transform_copy(_Left,
 			[](auto&& bk) { return abs(bk); });
 	}
 	template<typename _Ty, size_t _Size, typename _Block> inline
 	vectorN floor(const vectorN& _Left) {
-		return vectorN::_Transform(_Left,
+		return vectorN::_Transform_copy(_Left,
 			[](auto&& bk) { return floor(bk); });
 	}
 	template<typename _Ty, size_t _Size, typename _Block> inline
 	vectorN ceil(const vectorN& _Left) {
-		return vectorN::_Transform(_Left,
+		return vectorN::_Transform_copy(_Left,
 			[](auto&& bk) { return ceil(bk); });
 	}
 	template<typename _Ty, size_t _Size, typename _Block> inline
 	vectorN trunc(const vectorN& _Left) {
-		return vectorN::_Transform(_Left,
+		return vectorN::_Transform_copy(_Left,
 			[](auto&& bk) { return trunc(bk); });
 	}
 	template<typename _Ty, size_t _Size, typename _Block> inline
 	vectorN round(const vectorN& _Left) {
-		return vectorN::_Transform(_Left,
+		return vectorN::_Transform_copy(_Left,
 			[](auto&& bk) { return round(bk); });
 	}
 	template<typename _Ty, size_t _Size, typename _Block> inline
 	vectorN sqrt(const vectorN& _Left) {
-		return vectorN::_Transform(_Left,
+		return vectorN::_Transform_copy(_Left,
 			[](auto&& bk) { return sqrt(bk); });
 	}
 	template<typename _Ty, size_t _Size, typename _Block> inline
 	vectorN cbrt(const vectorN& _Left) {
-		return vectorN::_Transform(_Left,
+		return vectorN::_Transform_copy(_Left,
 			[](auto&& bk) { return cbrt(bk); });
 	}
 	template<typename _Ty, size_t _Size, typename _Block> inline
 	vectorN invsqrt(const vectorN& _Left) {
-		return vectorN::_Transform(_Left,
+		return vectorN::_Transform_copy(_Left,
 			[](auto&& bk) { return invsqrt(bk); });
 	}
 	template<typename _Ty, size_t _Size, typename _Block> inline
 	vectorN invcbrt(const vectorN& _Left) {
-		return vectorN::_Transform(_Left,
+		return vectorN::_Transform_copy(_Left,
 			[](auto&& bk) { return invcbrt(bk); });
 	}
 
 	template<typename _Ty, size_t _Size, typename _Block> inline
 	vectorN sin(const vectorN& _Left) {
-		return vectorN::_Transform(_Left,
+		return vectorN::_Transform_copy(_Left,
 			[](auto&& bk) { return sin(bk); });
 	}
 	template<typename _Ty, size_t _Size, typename _Block> inline
 	vectorN cos(const vectorN& _Left) {
-		return vectorN::_Transform(_Left,
+		return vectorN::_Transform_copy(_Left,
 			[](auto&& bk) { return cos(bk); });
 	}
 	template<typename _Ty, size_t _Size, typename _Block> inline
 	vectorN tan(const vectorN& _Left) {
-		return vectorN::_Transform(_Left,
+		return vectorN::_Transform_copy(_Left,
 			[](auto&& bk) { return tan(bk); });
 	}
 	template<typename _Ty, size_t _Size, typename _Block> inline
 	vectorN asin(const vectorN& _Left) {
-		return vectorN::_Transform(_Left,
+		return vectorN::_Transform_copy(_Left,
 			[](auto&& bk) { return asin(bk); });
 	}
 	template<typename _Ty, size_t _Size, typename _Block> inline
 	vectorN acos(const vectorN& _Left) {
-		return vectorN::_Transform(_Left,
+		return vectorN::_Transform_copy(_Left,
 			[](auto&& bk) { return acos(bk); });
 	}
 	template<typename _Ty, size_t _Size, typename _Block> inline
 	vectorN atan(const vectorN& _Left) {
-		return vectorN::_Transform(_Left,
+		return vectorN::_Transform_copy(_Left,
 			[](auto&& bk) { return atan(bk); });
 	}
 	template<typename _Ty, size_t _Size, typename _Block> inline
 	vectorN atan2(const vectorN& _Y, const vectorN& _X) {
-		return vectorN::_Transform(_Y, _X,
+		return vectorN::_Transform_copy(_Y, _X,
 			[](auto&& bky, auto&& bkx) { return atan2(bky, bkx); } );
 	}
 

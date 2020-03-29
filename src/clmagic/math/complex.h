@@ -50,8 +50,8 @@ namespace clmagic
 		// <construct>
 		quaternion(const T& x = T(0), const T& y = T(0), const T& z = T(0), const T& w = T(1));
 		explicit quaternion(const vector<T, 4, _Block>& xyzw);
-		explicit quaternion(const matrix<T, 3, 3, false, _Block>& _Matrix);
-		explicit quaternion(const matrix<T, 4, 4, false, _Block>& _Matrix);
+		explicit quaternion(const matrix<T, 3, 3, _Block, false>& _Matrix);
+		explicit quaternion(const matrix<T, 4, 4, _Block, false>& _Matrix);
 		quaternion(const unit_vector3<T>& _Axis, const T& _Radians);
 
 		quaternion(_in(vector3<T>) _From, _in(vector3<T>) _To)

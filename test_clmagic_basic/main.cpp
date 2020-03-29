@@ -127,9 +127,9 @@ void test_thread() {
 	std::cout << _Task.get_future().get() << std::endl;
 }
 
-int main(int argc, char** argv) {
-	test_thread();
 
+
+int main(int argc, char** argv) {
 
 	//tset_fopen();
 
@@ -137,6 +137,5 @@ int main(int argc, char** argv) {
 	std::cout << _Test_PK << std::endl;
 	KMP(_Test_PK, "11");*/
 	
-	std::cin.get();
 	return (0);
 }

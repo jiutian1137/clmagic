@@ -4,13 +4,13 @@
 #include "matrix.h"
 
 namespace Rodrigues {
-	template<typename _Ty, size_t _Rows, bool _Major = clmagic::_COL_MAJOR_, typename _Block = _Ty>
+	template<typename _Ty, size_t _Rows, typename _Block = _Ty, bool _Major = clmagic::_COL_MAJOR_>
 	struct Rotation {// default matrix3x3
 		static_assert(_Rows == 3 || _Rows == 4, "Rodrigues::Rotation<_Ty, _Rows, _Cols, _Major, _Block>");
 		
-		using matrix_type = clmagic::square_matrix<_Ty, _Rows, _Major, _Block, clmagic::normal_matrix_tag>;
+		using matrix_type = clmagic::square_matrix<_Ty, _Rows, _Block, _Major, clmagic::normal_matrix_tag>;
 
-		matrix_type get_matrix(clmagic::unit_vector3<_Ty, _Block> axis, clmagic::radians angle) {
+		static matrix_type get_matrix(clmagic::unit_vector3<_Ty, _Block> axis, clmagic::radians angle) {
 			const auto c = clmagic::cos(static_cast<_Ty>(angle));
 			const auto s = clmagic::sin(static_cast<_Ty>(angle));
 			const auto x = axis[0];
@@ -59,7 +59,7 @@ namespace Rodrigues {
 			*/
 		}
 
-		clmagic::radians get_angle(const matrix_type& M) {
+		static clmagic::radians get_angle(const matrix_type& M) {
 			const auto theta = acos(
 				(M.at(0,0) + M.at(1,1) + M.at(2,2) - (_Ty)1)
 			   /*------------------------------------------*/
@@ -75,7 +75,7 @@ namespace Rodrigues {
 			*/
 		}
 	
-		clmagic::unit_vector3<_Ty, _Block> get_axis(const matrix_type& M, clmagic::radians angle) {
+		static clmagic::unit_vector3<_Ty, _Block> get_axis(const matrix_type& M, clmagic::radians angle) {
 			using vector3 = clmagic::vector3<_Ty, _Block>;
 
 			_Ty theta = static_cast<_Ty>(angle);
@@ -112,11 +112,11 @@ namespace Rodrigues {
 		}
 	};
 
-	template<typename _Ty, bool _Major, typename _Block>
-	struct Rotation<_Ty, 4, _Major, _Block> {// matrix4x4
-		using matrix_type = clmagic::square_matrix<_Ty, 4, _Major, _Block, clmagic::normal_matrix_tag>;
+	template<typename _Ty, typename _Block, bool _Major>
+	struct Rotation<_Ty, 4, _Block, _Major> {// matrix4x4
+		using matrix_type = clmagic::square_matrix<_Ty, 4, _Block, _Major, clmagic::normal_matrix_tag>;
 
-		matrix_type get_matrix(clmagic::unit_vector3<_Ty, _Block> axis, clmagic::radians angle) {
+		static matrix_type get_matrix(clmagic::unit_vector3<_Ty, _Block> axis, clmagic::radians angle) {
 			const auto c   = clmagic::cos(static_cast<_Ty>(angle));
 			const auto s   = clmagic::sin(static_cast<_Ty>(angle));
 			const auto x   = axis[0];
@@ -141,7 +141,7 @@ namespace Rodrigues {
 			}
 		}
 	
-		clmagic::radians get_angle(const matrix_type& M) {
+		static clmagic::radians get_angle(const matrix_type& M) {
 			const auto theta = acos(
 				(M.at(0,0) + M.at(1,1) + M.at(2,2) - (_Ty)1)
 			   /*------------------------------------------*/
@@ -149,7 +149,7 @@ namespace Rodrigues {
 			return clmagic::radians(clmagic::cvtfloating_rational(theta));
 		}
 
-		clmagic::unit_vector3<_Ty> get_axis(const matrix_type& M, clmagic::radians angle) {
+		static clmagic::unit_vector3<_Ty> get_axis(const matrix_type& M, clmagic::radians angle) {
 			using vector3 = clmagic::vector3<_Ty, _Block>;
 
 			_Ty theta = static_cast<_Ty>(angle);

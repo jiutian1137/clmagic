@@ -57,7 +57,7 @@ namespace clmagic {
 	std::bitset<_Bits>& operator-=(std::bitset<_Bits>& _Left, std::bitset<_Bits> _Right) {
 		for ( ; ; ) {
 			_Left  = _Left ^ _Right;
-			_Right = _Left & _Right;
+			_Right = _Left & _Right;// (_Left^_Right)&_Right
 			if ( _Right.none() ) {
 				break;
 			}
@@ -89,6 +89,19 @@ namespace clmagic {
 		return (_A -= (_Right));
 	}
 
+
+	inline size_t floor(size_t _Val, size_t _Bound) {
+		return _Val & (~(_Bound - 1));
+	}
+
+	inline size_t ceil(size_t _Val, size_t _Bound) {
+		const auto _Mask = (_Bound - 1);
+		return (_Val + _Mask) & (~_Mask);
+	}
+
+	inline size_t trunc(size_t _Val, size_t _Bound) {
+		return _Val & (_Bound - 1);
+	}
 
 	template<typename _BitTy> inline
 	_BitTy mask_at(size_t _Nx) {// pow(2, _Nx)
@@ -133,14 +146,14 @@ namespace clmagic {
 	}
 
 	template<typename _Ty, typename _BitTy> inline
-	_BitTy mask_use(const _Ty& _Val, _BitTy _Mask) {
+	_BitTy mask_use(const _Ty& _Val, _BitTy _Mask) {// _Val & _Mask
 		assert(sizeof(_Ty) == sizeof(_BitTy));
 		const auto _Valbit = *reinterpret_cast<const _BitTy*>(&_Val);
 		return (_Valbit & _Mask);
 	}
 
 	template<typename _Ty, typename _BitTy> inline
-	_BitTy mask_use(const _Ty& _Val, _BitTy _Mask, size_t _Off) {
+	_BitTy mask_use(const _Ty& _Val, _BitTy _Mask, size_t _Off) {// (_Val & _Mask) >> _Off
 		assert(sizeof(_Ty) == sizeof(_BitTy));
 		const auto _Valbit = *reinterpret_cast<const _BitTy*>(&_Val);
 		return ((_Valbit & _Mask) >> _Off);

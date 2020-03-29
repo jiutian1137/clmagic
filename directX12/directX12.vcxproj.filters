@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="..\src\clmagic\directX12\d3dx12.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore.h">
+      <Filter>private</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\enum_string.h">
+      <Filter>private</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\hlsl.h">
+      <Filter>private</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\static_mesh.h">
+      <Filter>private</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\frame_resource.h">
+      <Filter>private</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\directX12.h">
+      <Filter>include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="include">
+      <UniqueIdentifier>{1b252ba7-01e7-4fba-9393-8f1d47910b1a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="private">
+      <UniqueIdentifier>{46e6f6f7-24da-4ba5-a9ef-71dfbba73d51}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

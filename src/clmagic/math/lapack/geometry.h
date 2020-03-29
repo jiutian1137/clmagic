@@ -6,9 +6,9 @@
 #include "Rodrigues.h"
 
 namespace clmagic { 
-	template<typename _Ty, bool _Major = _COL_MAJOR_, typename _Block = _Ty>
+	template<typename _Ty, typename _Block = _Ty, bool _Major = _COL_MAJOR_>
 	struct PerspectiveLH {
-		using matrix_type = matrix4x4<_Ty, _Major, _Block, normal_matrix_tag>;
+		using matrix_type = matrix4x4<_Ty, _Block, _Major, normal_matrix_tag>;
 
 		/* @_fov: virtical field of angle
 		   @_r: aspect, window-width/window-height
@@ -132,9 +132,9 @@ namespace clmagic {
 		}
 	};
 
-	template<typename _Ty, bool _Major = _COL_MAJOR_, typename _Block = _Ty>
-	struct PerspectiveRH : public PerspectiveLH<_Ty, _Major, _Block> {
-		using matrix_type = matrix4x4<_Ty, _Major, _Block, normal_matrix_tag>;
+	template<typename _Ty, typename _Block = _Ty, bool _Major = _COL_MAJOR_>
+	struct PerspectiveRH : public PerspectiveLH<_Ty, _Block, _Major> {
+		using matrix_type = matrix4x4<_Ty, _Block, _Major, normal_matrix_tag>;
 
 		static matrix_type get_matrix(radians fov,  _Ty aspect, _Ty Znear, _Ty Zfar) {
 			auto r  = aspect;
@@ -189,15 +189,76 @@ namespace clmagic {
 	};
 
 
-	template<typename _Ty, size_t _Rows, bool _Major = _COL_MAJOR_, typename _Block = _Ty>
-	struct Rotation : public ::Rodrigues::Rotation<_Ty, _Rows, _Major, _Block> { 
+	template<typename _Ty, size_t _Rows, typename _Block = _Ty, bool _Major = _COL_MAJOR_>
+	struct Rotation : public ::Rodrigues::Rotation<_Ty, _Rows, _Block, _Major> {
 		//
 	};
 
+	template<typename _Ty, typename _Block = _Ty, bool _Major = _COL_MAJOR_>
+	struct Translation {
+		using matrix_type = matrix4x4<_Ty, _Block, _Major, normal_matrix_tag>;
 
-	template<typename _Ty, bool _Major = _COL_MAJOR_, typename _Block = _Ty>
+		static matrix_type get_matrix(_Ty x, _Ty y, _Ty z) {
+			if _CONSTEXPR_IF(matrix_type::col_major()) {
+				return matrix_type{
+					(_Ty)1, (_Ty)0, (_Ty)0,     x,
+					(_Ty)0, (_Ty)1, (_Ty)0,     y,
+					(_Ty)0, (_Ty)0, (_Ty)1,     z, 
+					(_Ty)0, (_Ty)0, (_Ty)0, (_Ty)1 };
+			} else {
+				return matrix_type{
+					(_Ty)1, (_Ty)0, (_Ty)0, (_Ty)0,
+					(_Ty)0, (_Ty)1, (_Ty)0, (_Ty)0,
+					(_Ty)0, (_Ty)0, (_Ty)1, (_Ty)0,
+					     x,      y,      z, (_Ty)1 };
+			}
+		}
+
+		static matrix_type get_matrix(const matrix_type& _Axis, _Ty x, _Ty y, _Ty z) {
+			/* @_node: col-major-order
+			M*TM(x,y,z,1) = E*TM(x1,y1,z1,1)
+			M*TM(x,y,z,1) = TM(x1,y1,z1,1)
+
+			[rx ux fx 0]   [1 0 0 x]   [rx ux fx rx*x+ux*y+fx*z]
+			[ry uy fy 0]   [0 1 0 y]   [ry uy fy ry*x+uy*y+fy*z]
+			[rz uz fz 0] * [0 0 1 z] = [rz uz fz rz*x+uz*y+fz*z]
+			[ 0  0  0 1]   [0 0 0 1]   [ 0  0  0       1       ]
+
+			row-major-order:
+			[      rx             ry            rz             0 ]
+			[      ux             uy            uz             0 ]
+			[      fx             fy            fz             0 ]
+			[rx*x+ux*y+fx*z ry*x+uy*y+fy*z rz*x+uz*y+fz*z      1 ]
+			*/
+			if _CONSTEXPR_IF(matrix_type::col_major()) {
+				const auto rx = _Axis.ref(0), ry = _Axis.ref(4), rz = _Axis.ref(8);
+				const auto ux = _Axis.ref(1), uy = _Axis.ref(5), uz = _Axis.ref(9);
+				const auto fx = _Axis.ref(2), fy = _Axis.ref(6), fz = _Axis.ref(10);
+				return matrix_type{
+					  rx,     ry,     rz,   rx*x+ux*y+fx*z,
+					  ux,     uy,     uz,   ry*x+uy*y+fy*z,
+					  fx,     fy,     fz,   rz*x+uz*y+fz*z,
+					(_Ty)0, (_Ty)0, (_Ty)0,      (_Ty)1 };
+			} else {
+				const auto rx = _Axis.ref(0), ry = _Axis.ref(1), rz = _Axis.ref(2);
+				const auto ux = _Axis.ref(4), uy = _Axis.ref(5), uz = _Axis.ref(6);
+				const auto fx = _Axis.ref(8), fy = _Axis.ref(9), fz = _Axis.ref(10);
+				return matrix_type{
+					      rx,             ry,             rz,       (_Ty)0,
+					      ux,             uy,             uz,       (_Ty)0,
+					      fx,             fy,             fz,       (_Ty)0,
+					rx*x+ux*y+fx*z, ry*x+uy*y+fy*z, rz*x+uz*y+fz*z, (_Ty)1 };
+			}
+		}
+
+		static matrix_type get_matrix(const matrix_type& _Axis, vector3<_Ty, _Block> pos) {
+			return get_matrix(_Axis, pos[0], pos[1], pos[2]);
+		}
+	};
+
+	template<typename _Ty, typename _Block = _Ty, bool _Major = _COL_MAJOR_>
 	struct LookatLH {
-		using matrix_type = matrix4x4<_Ty, _Major, _Block, normal_matrix_tag>;
+		using matrix_type = matrix4x4<_Ty, _Block, _Major, normal_matrix_tag>;
 		using vector3      = clmagic::vector3<_Ty, _Block>;
 		using unit_vector3 = clmagic::unit_vector3<_Ty, _Block>;
 
@@ -232,9 +293,9 @@ namespace clmagic {
 		}
 	};
 
-	template<typename _Ty, bool _Major = _COL_MAJOR_, typename _Block = _Ty>
+	template<typename _Ty, typename _Block = _Ty, bool _Major = _COL_MAJOR_>
 	struct LookatRH {
-		using matrix_type = matrix4x4<_Ty, _Major, _Block, normal_matrix_tag>;
+		using matrix_type = matrix4x4<_Ty, _Block, _Major, normal_matrix_tag>;
 		using vector3      = clmagic::vector3<_Ty, _Block>;
 		using unit_vector3 = clmagic::unit_vector3<_Ty, _Block>;
 
@@ -242,6 +303,7 @@ namespace clmagic {
 			return LookatLH<_Ty, _Major, _Block>::get_matrix(Peye, -f, u);
 		}
 	};
+
 }// namespace clmagic
 
 #endif

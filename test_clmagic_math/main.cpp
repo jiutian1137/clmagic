@@ -467,44 +467,11 @@ void test_vectorany() {// vector_any<_Ty, _Block> is News, don't used it
 	std::cout << _Vec << std::endl;
 	std::cout << "block-capacity: " << _Vec.capacity() << std::endl;
 	std::cout << "scalar-capacity: " << _Vec.capacity() * block_traits<__m128>::size() << std::endl;
-
-	vector<float, 6> A = { 2.f, 2.f, 2.f };
-	vector<float, 6> B = { 1.f, 2.f, 2.f, 2.f, 2.f };
-	auto _Cmp = (A == B);
-	std::cout << _Cmp << std::endl;
-	std::cout << (A == B) << std::endl;
-	std::cout << sum(A) << std::endl;
-	std::cout << product(A) << std::endl;
-	std::cout << dot(A, B) << std::endl;
-	std::cout << length(A) << std::endl;
-	auto Y = normalize(B);
-	std::cout << Y << std::endl;
-	std::cout << length(Y) << std::endl;
-	vector_any<double> VanyA = { 1.0, 2.0, 3.0, 4.0, 6.0 };
-	vector_any<double> VanyB = { 1.0, 2.0, 3.0, 4.0, 6.0 };
-	vector_any<double> VanyC = { 1.0, 2.0, 3.0, 4.0, 6.0 };
-	mul(VanyA, VanyB, VanyC);
-	std::cout << VanyA << std::endl;
-	std::cout << VanyB << std::endl;
-	std::cout << VanyC << std::endl;
-	vector<double, 6> VD = { 1.f, 2.f, 3.f, 4.f, 6.f };
-	mul(VanyC, VD(0, 5), VD(0, 5));
-	std::cout << VD << std::endl;
-
-	vector_any<float, __m256> Vany8 = { 1.f, 2.f, 3.f, 4.f, 5.f, 7.f, 8.f };
-	vector_any<float, __m256> Vany9 = { 1.f, 2.f, 3.f, 4.f, 5.f, 7.f, 8.f };
-	std::cout << Vany8 << std::endl;
-	std::cout << -Vany8 << std::endl;
-	std::cout << Vany8 + Vany8 << std::endl;
-	std::cout << Vany8 + Vany9 << std::endl;
-	auto Vany10 = Vany8 + Vany8;
-	normalize(Vany10, Vany10);
-	std::cout << Vany10 << std::endl;
 }
 
 void test_matrix() {
-	using PersepectiveLHf = clmagic::PerspectiveLH<float>;
-	clmagic::matrix4x4<float> _Proj = PersepectiveLHf::get_matrix(clmagic::degrees(60), 1600.0f / 900.0f, 10.0f, 10000.0f);
+	using PersepectiveLHf = clmagic::PerspectiveLH<float, __m128>;
+	auto _Proj = PersepectiveLHf::get_matrix(clmagic::degrees(60), 1600.0f / 900.0f, 10.0f, 10000.0f);
 	std::cout << _Proj << std::endl;
 	std::cout << "Znear: " << PersepectiveLHf::get_Znear(_Proj) << std::endl;
 	std::cout << "Zfar: " << PersepectiveLHf::get_Zfar(_Proj) << std::endl;
