@@ -6,7 +6,7 @@
 #include "hlsl.h"
 
 // extend
-#include "static_mesh.h"
+#include "mesh.h"
 #include "frame_resource.h"
 
 #endif // clmagic_directX12_h_

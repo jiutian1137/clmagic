@@ -3,7 +3,9 @@
 #define clmagic_math_lapack_GEOMETRY_h_
 #include "vector.h"
 #include "matrix.h"
+#include "Euler.h"
 #include "Rodrigues.h"
+#include "../complex/WilliamRowanHamilton.h"
 
 namespace clmagic { 
 	template<typename _Ty, typename _Block = _Ty, bool _Major = _COL_MAJOR_>
@@ -189,13 +191,29 @@ namespace clmagic {
 	};
 
 
+	// inverse( rotation(theta) ) = rotation(-theta)
+	// inverse( rotation(theta) ) = transpose( rotation(theta) )
+	// reflection() = rotation( Pi/2 )
 	template<typename _Ty, size_t _Rows, typename _Block = _Ty, bool _Major = _COL_MAJOR_>
-	struct Rotation : public ::Rodrigues::Rotation<_Ty, _Rows, _Block, _Major> {
-		//
+	struct rotation : public ::Rodrigues::rotation<_Ty, _Rows, _Block, _Major>,
+		::Euler::rotation<_Ty, _Rows, _Block, _Major>, 
+		::WilliamRowanHamilton::rotation<_Ty, _Rows, _Block, _Major> {
+		using matrix_type  = ::clmagic::square_matrix<_Ty, _Rows, _Block, _Major, clmagic::normal_matrix_tag>;
+		using unit_vector3 = ::clmagic::unit_vector3<_Ty, _Block>;
+		using quaternion   = ::WilliamRowanHamilton::quaternion<_Ty, _Block>;
+
+		static matrix_type get_matrix(unit_vector3 axis, radians angle) {
+			return ::Rodrigues::rotation<_Ty, _Rows, _Block, _Major>::get_matrix(axis, angle);
+		}
+
+		static matrix_type get_matrix(quaternion q) {
+			return ::WilliamRowanHamilton::rotation<_Ty, _Rows, _Block, _Major>::get_matrix(q);
+		}
 	};
 
+	// inverse( translation(x,y,z) ) = translation(-x,-y,-z)
 	template<typename _Ty, typename _Block = _Ty, bool _Major = _COL_MAJOR_>
-	struct Translation {
+	struct translation {
 		using matrix_type = matrix4x4<_Ty, _Block, _Major, normal_matrix_tag>;
 
 		static matrix_type get_matrix(_Ty x, _Ty y, _Ty z) {
@@ -256,6 +274,72 @@ namespace clmagic {
 		}
 	};
 
+
+	template<typename _Ty, typename _Block = _Ty>
+	struct scaling {
+		using matrix_type = ::clmagic::diagonal_matrix<_Ty, 4, 4, _Block, _COL_MAJOR_>;
+
+		static matrix_type get_matrix(_Ty x, _Ty y, _Ty z) {
+			return matrix_type{ x, y, z, (_Ty)1 };
+		}
+
+		static matrix_type get_matrix(_Ty s) {
+			return matrix_type{ (_Ty)1, (_Ty)1, (_Ty)1, ((_Ty)1) / s };
+		}
+	};
+
+	template<typename _Ty, typename _Block = _Ty, bool _Major = _COL_MAJOR_>
+	struct rigid_body_transform {
+		using translation = ::clmagic::translation<_Ty, _Block, _Major>;
+		using rotation    = ::clmagic::rotation<_Ty, 4, _Block, _Major>;
+		using matrix_type = ::clmagic::matrix4x4<_Ty, _Block, _Major>;
+
+		/* inverse( rigid_body )
+		 = inverse( translation(t)*rotation )
+		 = inverse(rotation) * inverse(translation(t))
+		 = transpose(rotation) * translation(-t)
+		               
+		transpose(rotation) * translation(-t)
+		 [rx ry rz 0]           [1 0 0 -x]   [rx ry rz dot(r,-t)]
+		 [ux uy uz 0]     *     [0 1 0 -y] = [ux uy uz dot(u,-t)]
+		 [fx fy fz 0]           [0 0 1 -z]   [fx fy fz dot(f,-t)]
+		 [0  0  0  1]           [0 0 0  1]   [0  0  0       1   ]
+		*/
+		static matrix_type inverse(const unit_vector3<_Ty, _Block>& r, const unit_vector3<_Ty, _Block>& u, const unit_vector3<_Ty, _Block>& f, const vector3<_Ty, _Block>& t) {
+			const vector3<_Ty, _Block> neg_t = -t;
+			if _CONSTEXPR_IF(matrix_type::col_major()) {
+				return matrix_type{
+					  r[0],   r[1],   r[2], dot(neg_t, r),
+					  u[0],   u[1],   u[2], dot(neg_t, u),
+					  f[0],   f[1],   f[2], dot(neg_t, f),
+					(_Ty)0, (_Ty)0, (_Ty)0,    (_Ty)1 };
+			} else {
+				return matrix_type{
+					    r[0],         u[0],        f[0],      (_Ty)0,
+					    r[1],         u[1],        f[1],      (_Ty)0,
+					    r[2],         u[2],        f[2],      (_Ty)0,
+					dot(neg_t,r), dot(neg_t,u), dot(neg_t,f), (_Ty)1 };
+			}
+		}
+
+		static matrix_type inverse(const matrix_type& M) {
+			if _CONSTEXPR_IF(matrix_type::col_major()) {
+				const auto r = unit_vector3<_Ty, _Block>({ M.at(0,0), M.at(1,0), M.at(2,0) }, true);
+				const auto u = unit_vector3<_Ty, _Block>({ M.at(0,1), M.at(1,1), M.at(2,1) }, true);
+				const auto f = unit_vector3<_Ty, _Block>({ M.at(0,2), M.at(1,2), M.at(2,2) }, true);
+				const auto t =      vector3<_Ty, _Block>({ M.at(0,3), M.at(1,3), M.at(2,3) });
+				return inverse(r, u, f, t);
+			} else {
+				const auto r = unit_vector3<_Ty, _Block>({ M.at(0,0), M.at(0,1), M.at(0,2) }, true);
+				const auto u = unit_vector3<_Ty, _Block>({ M.at(1,0), M.at(1,1), M.at(1,2) }, true);
+				const auto f = unit_vector3<_Ty, _Block>({ M.at(2,0), M.at(2,1), M.at(2,2) }, true);
+				const auto t =      vector3<_Ty, _Block>({ M.at(3,0), M.at(3,1), M.at(3,2) });
+				return inverse(r, u, f, t);
+			}
+		}
+	};
+
+
 	template<typename _Ty, typename _Block = _Ty, bool _Major = _COL_MAJOR_>
 	struct LookatLH {
 		using matrix_type = matrix4x4<_Ty, _Block, _Major, normal_matrix_tag>;
@@ -274,8 +358,8 @@ namespace clmagic {
 			*/
 			auto r = unit_vector3(cross3(u, f));
 			     u = unit_vector3(cross3(f, r), true);
-
-			const auto Pneg = -Peye;
+			return rigid_body_transform<_Ty, _Block, _Major>::inverse(r, u, f, Peye);
+			/*const auto Pneg = -Peye;
 
 			if _CONSTEXPR_IF(matrix_type::col_major()) {
 				return matrix_type{
@@ -289,7 +373,7 @@ namespace clmagic {
 					r[1],         u[1],         f[1],      (_Ty)0,
 					r[2],         u[2],         f[2],      (_Ty)0,
 					dot(Pneg,r), dot(Pneg,u), dot(Pneg,f), (_Ty)1 };
-			}
+			}*/
 		}
 	};
 

@@ -64,9 +64,6 @@
     <ClInclude Include="..\src\clmagic\math\lapack\intersect.inl.h">
       <Filter>private\lapack</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\complex\quaternion.inl.h">
-      <Filter>private\complex</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\clmagic\math\fraction\gradient.inl.h">
       <Filter>private\fraction</Filter>
     </ClInclude>
@@ -141,6 +138,9 @@
     </ClInclude>
     <ClInclude Include="..\src\clmagic\math\lapack\geometry.h">
       <Filter>private\lapack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\math\complex\WilliamRowanHamilton.h">
+      <Filter>private\complex</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

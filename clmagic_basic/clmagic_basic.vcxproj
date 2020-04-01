@@ -133,6 +133,7 @@
     <ClInclude Include="..\src\clmagic\basic\chrono.h" />
     <ClInclude Include="..\src\clmagic\basic\functional.h" />
     <ClInclude Include="..\src\clmagic\basic\string.h" />
+    <ClInclude Include="..\src\clmagic\basic\timer_wheel.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\clmagic\basic\fstream.cpp" />

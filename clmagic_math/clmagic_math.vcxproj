@@ -22,7 +22,7 @@
     <ClInclude Include="..\src\clmagic\math.h" />
     <ClInclude Include="..\src\clmagic\math\calculus.h" />
     <ClInclude Include="..\src\clmagic\math\complex.h" />
-    <ClInclude Include="..\src\clmagic\math\complex\quaternion.inl.h" />
+    <ClInclude Include="..\src\clmagic\math\complex\WilliamRowanHamilton.h" />
     <ClInclude Include="..\src\clmagic\math\fraction.h" />
     <ClInclude Include="..\src\clmagic\math\fraction\gradient.inl.h" />
     <ClInclude Include="..\src\clmagic\math\fraction\Perlin.inl.h" />

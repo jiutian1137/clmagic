@@ -13,14 +13,14 @@
     <ClInclude Include="..\src\clmagic\directX12\hlsl.h">
       <Filter>private</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\static_mesh.h">
-      <Filter>private</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\clmagic\directX12\frame_resource.h">
       <Filter>private</Filter>
     </ClInclude>
     <ClInclude Include="..\src\clmagic\directX12\directX12.h">
       <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\mesh.h">
+      <Filter>private</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

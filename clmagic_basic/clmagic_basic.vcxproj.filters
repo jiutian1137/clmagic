@@ -43,6 +43,9 @@
     <ClInclude Include="..\src\clmagic\basic\algorithm.h">
       <Filter>public</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\clmagic\basic\timer_wheel.h">
+      <Filter>public</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\clmagic\basic\logcout.cpp">

@@ -5,8 +5,8 @@
 
 namespace Rodrigues {
 	template<typename _Ty, size_t _Rows, typename _Block = _Ty, bool _Major = clmagic::_COL_MAJOR_>
-	struct Rotation {// default matrix3x3
-		static_assert(_Rows == 3 || _Rows == 4, "Rodrigues::Rotation<_Ty, _Rows, _Cols, _Major, _Block>");
+	struct rotation {// default matrix3x3
+		static_assert(_Rows == 3 || _Rows == 4, "->[::Rodrigues::rotation<_Ty, _Rows, _Cols, _Major, _Block>");
 		
 		using matrix_type = clmagic::square_matrix<_Ty, _Rows, _Block, _Major, clmagic::normal_matrix_tag>;
 
@@ -113,7 +113,7 @@ namespace Rodrigues {
 	};
 
 	template<typename _Ty, typename _Block, bool _Major>
-	struct Rotation<_Ty, 4, _Block, _Major> {// matrix4x4
+	struct rotation<_Ty, 4, _Block, _Major> {// matrix4x4
 		using matrix_type = clmagic::square_matrix<_Ty, 4, _Block, _Major, clmagic::normal_matrix_tag>;
 
 		static matrix_type get_matrix(clmagic::unit_vector3<_Ty, _Block> axis, clmagic::radians angle) {

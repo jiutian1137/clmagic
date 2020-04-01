@@ -115,7 +115,7 @@ namespace clmagic {
 		using _Minor_type     = _Common_matrix<_Ty, _Rows-1, _Cols-1, _Block>;
 		using _As_vector      = vector<_Ty, _Size, _Block>;
 
-		_Common_matrix() = default;
+		_Common_matrix() : _Mydata{ 0 } {}
 
 		static constexpr size_t rows() {// Number of matrix rows
 			return _Rows; }
@@ -1828,8 +1828,18 @@ namespace clmagic {
 		explicit matrix(const scalar_type& _Val) {
 			_Mybase::assign(_Val); }
 		explicit matrix(const diag_vector& _Diag_vector) {
-			for (size_t k = 0; k != this->diags(); ++k) _Mybase::at(k, k) = _Diag_vector[k]; }
+			for (size_t k = 0; k != this->diags(); ++k) 
+				_Mybase::at(k, k) = _Diag_vector[k]; }
 		explicit matrix(const _Mybase& _Right) : matrix(_Right.diag()){ }
+		matrix(std::initializer_list<scalar_type> _Ilist) {
+			assert(_Ilist.size() <= _Mybase::diags());
+			auto       _First = _Ilist.begin();
+			const auto _Last  = _Ilist.end();
+			auto       _Dest  = _Mybase::begin();
+			for (; _First != _Last; ++_First, ++_Dest, _Dest += _Mybase::cols()) {
+				*_Dest = *_First;
+			}
+		}
 
 		void assign(const scalar_type& _Val) {
 			_Mybase::assign(_Val); 

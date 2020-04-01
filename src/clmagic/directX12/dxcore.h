@@ -7,6 +7,7 @@
 #include <d3dcompiler.h>
 #include <wrl.h>
 #include <vector>
+#include <assert.h>
 
 #ifndef ThrowIfFailed
 /* @_from Book<<3D-Game-Programming-With-DirectX12>> */
@@ -50,15 +51,15 @@ namespace dx12 {
 		}
 
 		packaged_root_signature(ID3D12Device& _Device, const std::vector<D3D12_ROOT_PARAMETER>& _Parameters, const std::vector<D3D12_STATIC_SAMPLER_DESC>& _Samplers,
-			D3D12_ROOT_SIGNATURE_FLAGS _Flags, UINT _Nodemask = 0) {//_Device create D3D12RootSignature by _Parameters and _Samplers
+			D3D12_ROOT_SIGNATURE_FLAGS _Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT, UINT _Nodemask = 0) {//_Device create D3D12RootSignature by _Parameters and _Samplers
 			// 1. create D3D12_ROOT_SIGNATURE_DESC 
 			D3D12_VERSIONED_ROOT_SIGNATURE_DESC _Desc;
 			_Desc.Version = D3D_ROOT_SIGNATURE_VERSION_1_0;
-			_Desc.Desc_1_0.NumParameters = _Parameters.size();
-			_Desc.Desc_1_0.pParameters = _Parameters.data();
+			_Desc.Desc_1_0.NumParameters     = _Parameters.size();
+			_Desc.Desc_1_0.pParameters       = _Parameters.data();
 			_Desc.Desc_1_0.NumStaticSamplers = _Samplers.size();
-			_Desc.Desc_1_0.pStaticSamplers = _Samplers.data();
-			_Desc.Desc_1_0.Flags = _Flags;
+			_Desc.Desc_1_0.pStaticSamplers   = _Samplers.data();
+			_Desc.Desc_1_0.Flags             = _Flags;
 
 			// 2. D3D12SerializeRootSignature(...) 
 			// 3._Device.CreateRootSignature(...)
@@ -66,15 +67,15 @@ namespace dx12 {
 		}
 
 		packaged_root_signature(ID3D12Device& _Device, const std::vector<D3D12_ROOT_PARAMETER1>& _Parameters, const std::vector<D3D12_STATIC_SAMPLER_DESC>& _Samplers,
-			D3D12_ROOT_SIGNATURE_FLAGS _Flags, UINT _Nodemask = 0) {//_Device create D3D12RootSignature by _Parameters and _Samplers
+			D3D12_ROOT_SIGNATURE_FLAGS _Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT, UINT _Nodemask = 0) {//_Device create D3D12RootSignature by _Parameters and _Samplers
 			// 1. create D3D12_ROOT_SIGNATURE_DESC 
 			D3D12_VERSIONED_ROOT_SIGNATURE_DESC _Desc;
 			_Desc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
-			_Desc.Desc_1_1.NumParameters = _Parameters.size();
-			_Desc.Desc_1_1.pParameters = _Parameters.data();
+			_Desc.Desc_1_1.NumParameters     = _Parameters.size();
+			_Desc.Desc_1_1.pParameters       = _Parameters.data();
 			_Desc.Desc_1_1.NumStaticSamplers = _Samplers.size();
-			_Desc.Desc_1_1.pStaticSamplers = _Samplers.data();
-			_Desc.Desc_1_1.Flags = _Flags;
+			_Desc.Desc_1_1.pStaticSamplers   = _Samplers.data();
+			_Desc.Desc_1_1.Flags             = _Flags;
 
 			// 2. D3D12SerializeRootSignature(...) 
 			// 3._Device.CreateRootSignature(...)
@@ -262,8 +263,16 @@ namespace dx12 {
 	struct packaged_resource : public _Uncopyable {
 		packaged_resource() = default;
 		
-		packaged_resource(packaged_resource&& _Right) noexcept
-			: _Mydata(std::move(_Right._Mydata)), _Mystate(std::move(_Right._Mystate)) {}
+		packaged_resource(packaged_resource&& _Right) noexcept {
+			_Right._Swap(*this);
+			_Right.release();
+		}
+		
+		packaged_resource& operator=(packaged_resource&& _Right) noexcept {
+			_Right._Swap(*this);
+			_Right.release();
+			return (*this);
+		}
 		
 		/*
 		@_Resource_state:
@@ -288,10 +297,8 @@ namespace dx12 {
 			release();
 		}
 
-		packaged_resource& operator=(packaged_resource&& _Right) noexcept {
-			_Mydata  = std::move(_Right._Mydata);
-			_Mystate = std::move(_Right._Mystate);
-			return (*this);
+		virtual void release() {
+			_Mydata = nullptr;
 		}
 
 		ID3D12Resource* operator->() const {
@@ -315,10 +322,6 @@ namespace dx12 {
 			return static_cast<bool>(_Mydata);
 		}
 
-		virtual void release() {
-			_Mydata = nullptr;
-		}
-
 		/*
 		@_Return: _Old_state
 		@_Note: upload_heap, readback_heap can't transition
@@ -334,6 +337,11 @@ namespace dx12 {
 		Microsoft::WRL::ComPtr<ID3D12Resource> _Mydata;
 
 	protected:
+		void _Swap(packaged_resource& _Right) {
+			_Mydata.Swap(_Right._Mydata);
+			std::swap(_Mystate, _Right._Mystate);
+		}
+
 		D3D12_RESOURCE_STATES _Mystate = D3D12_RESOURCE_STATE_COMMON;
 	};
 
@@ -344,18 +352,19 @@ namespace dx12 {
 
 		packaged_resource_() = default;
 
-		packaged_resource_(packaged_resource_&& _Right) noexcept : _Mybase(std::move(_Right)) {}
-
-		packaged_resource_(ID3D12Device& _Device, const D3D12_HEAP_PROPERTIES& _Heap_properties, D3D12_HEAP_FLAGS _Heap_flags,
-			const D3D12_RESOURCE_DESC& _Resource_desc,
-			D3D12_RESOURCE_STATES      _Resource_state,
-			const D3D12_CLEAR_VALUE* _Optimized_clear_value = nullptr)
-			: _Mybase(_Device, _Heap_properties, _Heap_flags, _Resource_desc, _Resource_state, _Optimized_clear_value){}
+		packaged_resource_(packaged_resource_&& _Right) noexcept
+			: _Mybase(std::move(_Right)) {}
 
 		packaged_resource_& operator=(packaged_resource_&& _Right) noexcept { 
 			_Mybase::operator=(std::move(_Right));
 			return (*this);
 		}
+		
+		packaged_resource_(ID3D12Device& _Device, const D3D12_HEAP_PROPERTIES& _Heap_properties, D3D12_HEAP_FLAGS _Heap_flags,
+			const D3D12_RESOURCE_DESC& _Resource_desc,
+			D3D12_RESOURCE_STATES      _Resource_state,
+			const D3D12_CLEAR_VALUE* _Optimized_clear_value = nullptr)
+			: _Mybase(_Device, _Heap_properties, _Heap_flags, _Resource_desc, _Resource_state, _Optimized_clear_value){}
 	};
 
 
@@ -372,10 +381,17 @@ namespace dx12 {
 
 		packaged_resource_() = default;
 
-		packaged_resource_(packaged_resource_&& _Right) noexcept : _Mybase(std::move(_Right)), _Mapping(_Right._Mapping){
-			_Right._Mapping = nullptr;
+		packaged_resource_(packaged_resource_&& _Right) noexcept {
+			_Right._Swap(*this);
+			_Right.release();
 		}
 
+		packaged_resource_& operator=(packaged_resource_&& _Right) noexcept {
+			_Right._Swap(*this);
+			_Right.release();
+			return *this;
+		}
+		
 		packaged_resource_(ID3D12Device& _Device, const D3D12_RESOURCE_DESC& _Desc, const D3D12_CLEAR_VALUE* _Pval = nullptr, D3D12_HEAP_FLAGS _Heap_flags = D3D12_HEAP_FLAG_NONE) 
 			: _Mybase(_Device, heap_properties(), _Heap_flags, _Desc, D3D12_RESOURCE_STATE_GENERIC_READ/*requires*/, _Pval) {
 			_Mybase::get()->Map(0, nullptr, reinterpret_cast<void**>(&_Mapping));
@@ -383,12 +399,6 @@ namespace dx12 {
 
 		virtual ~packaged_resource_() override {
 			release();
-		}
-
-		packaged_resource_& operator=(packaged_resource_&& _Right) noexcept {
-			_Mybase::operator=(std::move(_Right));
-			_Mapping = _Right._Mapping;
-			return *this;
 		}
 
 		virtual void release() override {
@@ -447,8 +457,14 @@ namespace dx12 {
 		}
 
 		template<typename _Ty>
-		void copy_data(size_t _Off, const _Ty& _Val) {
-			memcpy(&_Mapping[_Off], &_Val, sizeof(_Ty));
+		void copy_data(const void* _Data, size_t _Size, size_t _Off = 0) {
+			if (_Data != nullptr && _Size != 0) {
+				assert(_Mybase::valid() && _Mapping != nullptr);
+				auto       _First = static_cast<const unsigned char*>(_Data);
+				const auto _Last  = _First + _Size;
+				auto       _Dest  = _Mapping + _Off;
+				std::copy(_First, _Last, _Dest);
+			}
 		}
 
 	private:
@@ -460,6 +476,12 @@ namespace dx12 {
 		}
 
 		unsigned char* _Mapping = nullptr;
+
+	protected:
+		void _Swap(packaged_resource_& _Right) {
+			_Mybase::_Swap(_Right);
+			std::swap(_Mapping, _Right._Mapping);
+		}
 	};
 
 	using packaged_resource_upload_heap = packaged_resource_<D3D12_HEAP_TYPE_UPLOAD>;
@@ -480,16 +502,27 @@ namespace dx12 {
 
 		packaged_resource_() = default;
 
-		packaged_resource_(packaged_resource_&& _Right) noexcept
-			: _Mybase(std::move(_Right)), _Myintermediate(std::move(_Right._Myintermediate)) {}
+		packaged_resource_(packaged_resource_&& _Right) noexcept {
+			_Right._Swap(*this);
+			_Right.release();
+		}
 
+		packaged_resource_& operator=(packaged_resource_&& _Right) noexcept {
+			_Right._Swap(*this);
+			_Right.release();
+			return (*this);
+		}
+		
 		packaged_resource_(ID3D12Device& _Device, const D3D12_RESOURCE_DESC& _Desc, D3D12_RESOURCE_STATES _State, const D3D12_CLEAR_VALUE* _Pval = nullptr, D3D12_HEAP_FLAGS _Heap_flags = D3D12_HEAP_FLAG_NONE)
 			: _Mybase(_Device, heap_properties(), _Heap_flags, _Desc, _State, _Pval) {}
 
-		packaged_resource_& operator=(packaged_resource_&& _Right) noexcept {
-			static_cast<_Mybase&>(*this) = std::move(_Right);
-			_Myintermediate = std::move(_Right._Myintermediate);
-			return (*this);
+		virtual ~packaged_resource_() override {
+			release();
+		}
+
+		virtual void release() override {
+			realease_intermediate();
+			_Mybase::release();
 		}
 
 		bool uploading() const {
@@ -528,6 +561,12 @@ namespace dx12 {
 		}
 
 		packaged_resource_upload_heap _Myintermediate;
+
+	protected:
+		void _Swap(packaged_resource_& _Right) {
+			_Mybase::_Swap(_Right);
+			std::swap(_Myintermediate, _Right._Myintermediate);
+		}
 	};
 
 	using packaged_resource_default_heap = packaged_resource_<D3D12_HEAP_TYPE_DEFAULT>;

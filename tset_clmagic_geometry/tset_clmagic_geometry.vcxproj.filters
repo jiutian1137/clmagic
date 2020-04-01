@@ -22,4 +22,7 @@
   <ItemGroup>
     <FxCompile Include="color.hlsl" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="LightingUtil.hlsl" />
+  </ItemGroup>
 </Project>
