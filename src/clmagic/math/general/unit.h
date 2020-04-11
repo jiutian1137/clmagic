@@ -5,7 +5,7 @@
 #pragma once
 #ifndef clmagic_math_general_UNIT_h_h
 #define clmagic_math_general_UNIT_h_h
-#include "../real/rational.h"
+#include "rational.h"
 #include <ratio>
 
 namespace clmagic {

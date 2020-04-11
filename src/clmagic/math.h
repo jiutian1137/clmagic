@@ -12,25 +12,25 @@
 
 #include "math/general/clmagic.h"
 #include "math/general/general.h"
+#include "math/general/rational.h"
+#include "math/general/real.h"
 #include "math/general/unit.h"
+
 #include "math/lapack/vector.h"
 #include "math/lapack/matrix.h"
 #include "math/lapack/geometry.h"
 #include "math/lapack/Euler.h"
 #include "math/lapack/Rodrigues.h"
-//#include "math/lapack/diag_matrix.h"
-//#include "math/real.h"
-//#include "math/simd.h"
-//#include "math/bitop.h"
-//#include "math/general.h"
-//#include "math/lapack.h"
-//#include "math/complex.h"
+
 #include "math/complex/WilliamRowanHamilton.h"
+
+#include "math/physics/atmosphere_scattering.h"
+#include "math/optics/lightsource.h"
+
 #include "math/calculus.h"
 #include "math/illumunation.h"
 #include "math/raytracing.h"
 #include "math/fraction.h"
-#include "math/physics.h"
 #include "math/other.h"
 #include "math/mstring.h"
 

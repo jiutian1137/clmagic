@@ -6,7 +6,7 @@
 #ifndef clmagic_math_SIMD_h_
 #define clmagic_math_SIMD_h_
 
-#include "clmagic.h"
+//#include "clmagic.h"
 
 #include <assert.h>
 #include <iostream>
@@ -44,6 +44,21 @@ inline __m128 operator/(__m128 A, __m128 B) {
 inline __m128 operator%(__m128 A, __m128 B) {
 	return _mm_fmod_ps(A, B);
 }
+inline __m128& operator+=(__m128& A, __m128 B) {
+	return (A = _mm_add_ps(A, B));
+}
+inline __m128& operator-=(__m128& A, __m128 B) {
+	return (A = _mm_sub_ps(A, B));
+}
+inline __m128& operator*=(__m128& A, __m128 B) {
+	return (A = _mm_mul_ps(A, B));
+}
+inline __m128& operator/=(__m128& A, __m128 B) {
+	return (A = _mm_div_ps(A, B));
+}
+inline __m128& operator%=(__m128& A, __m128 B) {
+	return (A = _mm_fmod_ps(A, B));
+}
 
 inline __m128d operator-(__m128d A) {
 	return _mm_mul_pd(A, _mm_set1_pd(-1.0));
@@ -62,6 +77,21 @@ inline __m128d operator/(__m128d A, __m128d B) {
 }
 inline __m128d operator%(__m128d A, __m128d B) {
 	return _mm_fmod_pd(A, B);
+}
+inline __m128d& operator+=(__m128d& A, __m128d B) {
+	return (A = _mm_add_pd(A, B));
+}
+inline __m128d& operator-=(__m128d& A, __m128d B) {
+	return (A = _mm_sub_pd(A, B));
+}
+inline __m128d& operator*=(__m128d& A, __m128d B) {
+	return (A = _mm_mul_pd(A, B));
+}
+inline __m128d& operator/=(__m128d& A, __m128d B) {
+	return (A = _mm_div_pd(A, B));
+}
+inline __m128d& operator%=(__m128d& A, __m128d B) {
+	return (A = _mm_fmod_pd(A, B));
 }
 
 inline __m128i operator-(__m128i A) {
@@ -82,6 +112,21 @@ inline __m128i operator/(__m128i A, __m128i B) {
 inline __m128i operator%(__m128i A, __m128i B) {
 	return _mm_psfunc_epi32_2nd(_mm_, fmod, A, B);
 }
+inline __m128i& operator+=(__m128i& A, __m128i B) {
+	return (A = _mm_add_epi32(A, B));
+}
+inline __m128i& operator-=(__m128i& A, __m128i B) {
+	return (A = _mm_sub_epi32(A, B));
+}
+inline __m128i& operator*=(__m128i& A, __m128i B) {
+	return (A = _mm_mul_epi32(A, B));
+}
+inline __m128i& operator/=(__m128i& A, __m128i B) {
+	return (A = _mm_div_epi32(A, B));
+}
+inline __m128i& operator%=(__m128i& A, __m128i B) {
+	return (A = _mm_psfunc_epi32_2nd(_mm_, fmod, A, B));
+}
 
 inline __m256 operator-(__m256 A) {
 	return _mm256_mul_ps(A, _mm256_set1_ps(-1.0f));
@@ -100,6 +145,21 @@ inline __m256 operator/(__m256 A, __m256 B) {
 }
 inline __m256 operator%(__m256 A, __m256 B) {
 	return _mm256_fmod_ps(A, B);
+}
+inline __m256& operator+=(__m256& A, __m256 B) {
+	return (A = _mm256_add_ps(A, B));
+}
+inline __m256& operator-=(__m256& A, __m256 B) {
+	return (A = _mm256_sub_ps(A, B));
+}
+inline __m256& operator*=(__m256& A, __m256 B) {
+	return (A = _mm256_mul_ps(A, B));
+}
+inline __m256& operator/=(__m256& A, __m256 B) {
+	return (A = _mm256_div_ps(A, B));
+}
+inline __m256& operator%=(__m256& A, __m256 B) {
+	return (A = _mm256_fmod_ps(A, B));
 }
 
 inline __m256d operator-(__m256d A) {
@@ -120,6 +180,21 @@ inline __m256d operator/(__m256d A, __m256d B) {
 inline __m256d operator%(__m256d A, __m256d B) {
 	return _mm256_fmod_pd(A, B);
 }
+inline __m256d& operator+=(__m256d& A, __m256d B) {
+	return (A = _mm256_add_pd(A, B));
+}
+inline __m256d& operator-=(__m256d& A, __m256d B) {
+	return (A = _mm256_sub_pd(A, B));
+}
+inline __m256d& operator*=(__m256d& A, __m256d B) {
+	return (A = _mm256_mul_pd(A, B));
+}
+inline __m256d& operator/=(__m256d& A, __m256d B) {
+	return (A = _mm256_div_pd(A, B));
+}
+inline __m256d& operator%=(__m256d& A, __m256d B) {
+	return (A = _mm256_fmod_pd(A, B));
+}
 
 inline __m256i operator-(__m256i A) {
 	return _mm256_mul_epi32(A, _mm256_set1_epi32(-1));
@@ -138,6 +213,21 @@ inline __m256i operator/(__m256i A, __m256i B) {
 }
 inline __m256i operator%(__m256i A, __m256i B) {
 	return _mm_psfunc_epi32_2nd(_mm256_, fmod, A, B);
+}
+inline __m256i& operator+=(__m256i& A, __m256i B) {
+	return (A = _mm256_add_epi32(A, B));
+}
+inline __m256i& operator-=(__m256i& A, __m256i B) {
+	return (A = _mm256_sub_epi32(A, B));
+}
+inline __m256i& operator*=(__m256i& A, __m256i B) {
+	return (A = _mm256_mul_epi32(A, B));
+}
+inline __m256i& operator/=(__m256i& A, __m256i B) {
+	return (A = _mm256_div_epi32(A, B));
+}
+inline __m256i& operator%=(__m256i& A, __m256i B) {
+	return (A = _mm_psfunc_epi32_2nd(_mm256_, fmod, A, B));
 }
 
 inline __m512 operator-(__m512 A) {

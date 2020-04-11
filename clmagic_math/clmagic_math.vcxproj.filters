@@ -35,11 +35,14 @@
     <Filter Include="private\real">
       <UniqueIdentifier>{867d2987-3d93-4dcf-9c66-f2d1aced6cac}</UniqueIdentifier>
     </Filter>
+    <Filter Include="private\calculus">
+      <UniqueIdentifier>{f081f0ee-3657-4e6e-9d82-7c75f511cf48}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="private\optics">
+      <UniqueIdentifier>{3715447e-08d5-4735-ad6e-5dba9296a4ef}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\clmagic\math\complex.h">
-      <Filter>public</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\clmagic\math\fraction.h">
       <Filter>public</Filter>
     </ClInclude>
@@ -50,9 +53,6 @@
       <Filter>public</Filter>
     </ClInclude>
     <ClInclude Include="..\src\clmagic\math\other.h">
-      <Filter>public</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\physics.h">
       <Filter>public</Filter>
     </ClInclude>
     <ClInclude Include="..\src\clmagic\math\raytracing.h">
@@ -112,14 +112,8 @@
     <ClInclude Include="..\src\clmagic\math\general\simd.h">
       <Filter>private\general</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\real\rational.h">
-      <Filter>private\real</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\clmagic\math\general\bitset.h">
       <Filter>private\general</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\real\real.h">
-      <Filter>private\real</Filter>
     </ClInclude>
     <ClInclude Include="..\src\clmagic\math\lapack\vector.h">
       <Filter>private\lapack</Filter>
@@ -141,6 +135,24 @@
     </ClInclude>
     <ClInclude Include="..\src\clmagic\math\complex\WilliamRowanHamilton.h">
       <Filter>private\complex</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\math\calculus\derivative.h">
+      <Filter>private\calculus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\math\general\real.h">
+      <Filter>private\general</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\math\general\rational.h">
+      <Filter>private\general</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\math\atmosphere_scattering.h">
+      <Filter>private\physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\math\optics\lightsource.h">
+      <Filter>private\optics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\math\optics\stylized_optics.h">
+      <Filter>private\optics</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

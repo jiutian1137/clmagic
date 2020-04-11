@@ -1,7 +1,7 @@
 ﻿#pragma once
 #ifndef clmagic_math_PHYSICS_h_
 #define clmagic_math_PHYSICS_h_
-#include "lapack.h"
+#include "../lapack/vector.h"
 
 namespace clmagic {
 

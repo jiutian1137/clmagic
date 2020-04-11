@@ -36,20 +36,20 @@ namespace Euler {
 				= [cos(theta) - sin(theta)] [r * cos(x)]
 				  [sin(theta) + cos(theta)] [r * sin(x)]
 	*/
-	template<typename _Ty, size_t _Rows, typename _Block = _Ty, bool _Major = clmagic::_COL_MAJOR_>
+	template<typename _SclTy, size_t _Rows, typename _BlkTy = _SclTy, bool _Major = clmagic::_COL_MAJOR_>
 	struct rotation {/*default matrix3x3*/
-		static_assert(_Rows == 3 || _Rows == 4, "->[::Euler::rotation<_Ty, _Rows, ...>]");
+		static_assert(_Rows == 3 || _Rows == 4, "->[::Euler::rotation<_SclTy, _Rows, ...>]");
 
-		using matrix_type = clmagic::square_matrix<_Ty, _Rows, _Block, _Major>;
+		using matrix_type = clmagic::square_matrix<_SclTy, _Rows, _BlkTy, _Major>;
 
 		matrix_type yaw(clmagic::radians _Angle) {// X-Z
-			const auto _Cos = clmagic::cos(static_cast<_Ty>(_Angle));
-			const auto _Sin = clmagic::sin(static_cast<_Ty>(_Angle));
+			const auto _Cos = clmagic::cos(static_cast<_SclTy>(_Angle));
+			const auto _Sin = clmagic::sin(static_cast<_SclTy>(_Angle));
 			if _CONSTEXPR_IF(matrix_type::col_major()) {
 				return matrix_type{
-					_Cos,   (_Ty)0, -_Sin,
-					(_Ty)0, (_Ty)1, (_Ty)0,
-					_Sin,   (_Ty)0, _Cos };
+					_Cos,   (_SclTy)0, -_Sin,
+					(_SclTy)0, (_SclTy)1, (_SclTy)0,
+					_Sin,   (_SclTy)0, _Cos };
 				/*
 				[c*X-s*Z]
 				[Y]
@@ -57,20 +57,20 @@ namespace Euler {
 				*/
 			} else {
 				return matrix_type{
-					_Cos,   (_Ty)0, _Sin,
-					(_Ty)0, (_Ty)1, (_Ty)0,
-					-_Sin,  (_Ty)0, _Cos };
+					_Cos,   (_SclTy)0, _Sin,
+					(_SclTy)0, (_SclTy)1, (_SclTy)0,
+					-_Sin,  (_SclTy)0, _Cos };
 			}
 		}
 	
 		matrix_type pitch(clmagic::radians _Angle) {// Z-Y
-			const auto _Cos = clmagic::cos(static_cast<_Ty>(_Angle));
-			const auto _Sin = clmagic::sin(static_cast<_Ty>(_Angle));
+			const auto _Cos = clmagic::cos(static_cast<_SclTy>(_Angle));
+			const auto _Sin = clmagic::sin(static_cast<_SclTy>(_Angle));
 			if _CONSTEXPR_IF(matrix_type::col_major()) {
 				return matrix_type{
-					(_Ty)1, (_Ty)0, (_Ty)0,
-					(_Ty)0,   _Cos, _Sin,
-					(_Ty)0,  -_Sin, _Cos };
+					(_SclTy)1, (_SclTy)0, (_SclTy)0,
+					(_SclTy)0,   _Cos, _Sin,
+					(_SclTy)0,  -_Sin, _Cos };
 				/*
 				[X]
 				[s*Z+c*Y]
@@ -78,20 +78,20 @@ namespace Euler {
 				*/
 			} else {
 				return matrix_type{
-					(_Ty)1, (_Ty)0, (_Ty)0,
-					(_Ty)0,   _Cos, -_Sin,
-					(_Ty)0,   _Sin, _Cos };
+					(_SclTy)1, (_SclTy)0, (_SclTy)0,
+					(_SclTy)0,   _Cos, -_Sin,
+					(_SclTy)0,   _Sin, _Cos };
 			}
 		}
 	
 		matrix_type roll(clmagic::radians _Angle) {// X-Y
-			const auto _Cos = clmagic::cos(static_cast<_Ty>(_Angle));
-			const auto _Sin = clmagic::sin(static_cast<_Ty>(_Angle));
+			const auto _Cos = clmagic::cos(static_cast<_SclTy>(_Angle));
+			const auto _Sin = clmagic::sin(static_cast<_SclTy>(_Angle));
 			if _CONSTEXPR_IF(matrix_type::col_major()) {
 				return matrix_type{
-					_Cos,   -_Sin,  (_Ty)0,
-					_Sin,   _Cos,   (_Ty)0,
-					(_Ty)0, (_Ty)0, (_Ty)1 };
+					_Cos,   -_Sin,  (_SclTy)0,
+					_Sin,   _Cos,   (_SclTy)0,
+					(_SclTy)0, (_SclTy)0, (_SclTy)1 };
 				/*
 				[c*X-s*Y]
 				[s*X+c*Y]
@@ -99,26 +99,26 @@ namespace Euler {
 				*/
 			} else {
 				return matrix_type{
-					_Cos,   _Sin,   (_Ty)0,
-					-_Sin,  _Cos,   (_Ty)0,
-					(_Ty)0, (_Ty)0, (_Ty)1 };
+					_Cos,   _Sin,   (_SclTy)0,
+					-_Sin,  _Cos,   (_SclTy)0,
+					(_SclTy)0, (_SclTy)0, (_SclTy)1 };
 			}
 		}
 	};
 
-	template<typename _Ty, typename _Block, bool _Major>
-	struct rotation<_Ty, 4, _Block, _Major> {/*matrix4x4*/
-		using matrix_type = clmagic::square_matrix<_Ty, 4, _Block, _Major>;
+	template<typename _SclTy, typename _BlkTy, bool _Major>
+	struct rotation<_SclTy, 4, _BlkTy, _Major> {/*matrix4x4*/
+		using matrix_type = clmagic::square_matrix<_SclTy, 4, _BlkTy, _Major>;
 
 		matrix_type yaw(clmagic::radians _Angle) {// X-Z
-			const auto _Cos = clmagic::cos(static_cast<_Ty>(_Angle));
-			const auto _Sin = clmagic::sin(static_cast<_Ty>(_Angle));
+			const auto _Cos = clmagic::cos(static_cast<_SclTy>(_Angle));
+			const auto _Sin = clmagic::sin(static_cast<_SclTy>(_Angle));
 			if _CONSTEXPR_IF(matrix_type::col_major()) {
 				return matrix_type{
-					_Cos,   (_Ty)0,  -_Sin, (_Ty)0,
-					(_Ty)0, (_Ty)1, (_Ty)0, (_Ty)0,
-					_Sin,   (_Ty)0,   _Cos, (_Ty)0,
-					(_Ty)0, (_Ty)0, (_Ty)0, (_Ty)1 };
+					_Cos,   (_SclTy)0,  -_Sin, (_SclTy)0,
+					(_SclTy)0, (_SclTy)1, (_SclTy)0, (_SclTy)0,
+					_Sin,   (_SclTy)0,   _Cos, (_SclTy)0,
+					(_SclTy)0, (_SclTy)0, (_SclTy)0, (_SclTy)1 };
 				/*
 				[c*X-s*Z]
 				[Y]
@@ -126,22 +126,22 @@ namespace Euler {
 				*/
 			} else {
 				return matrix_type{
-					_Cos,   (_Ty)0,   _Sin, (_Ty)0,
-					(_Ty)0, (_Ty)1, (_Ty)0, (_Ty)0,
-					-_Sin,  (_Ty)0,   _Cos, (_Ty)0,
-					(_Ty)0, (_Ty)0, (_Ty)0, (_Ty)1 };
+					_Cos,   (_SclTy)0,   _Sin, (_SclTy)0,
+					(_SclTy)0, (_SclTy)1, (_SclTy)0, (_SclTy)0,
+					-_Sin,  (_SclTy)0,   _Cos, (_SclTy)0,
+					(_SclTy)0, (_SclTy)0, (_SclTy)0, (_SclTy)1 };
 			}
 		}
 	
 		matrix_type pitch(clmagic::radians _Angle) {// Z-Y
-			const auto _Cos = clmagic::cos(static_cast<_Ty>(_Angle));
-			const auto _Sin = clmagic::sin(static_cast<_Ty>(_Angle));
+			const auto _Cos = clmagic::cos(static_cast<_SclTy>(_Angle));
+			const auto _Sin = clmagic::sin(static_cast<_SclTy>(_Angle));
 			if _CONSTEXPR_IF(matrix_type::col_major()) {
 				return matrix_type{
-					(_Ty)1, (_Ty)0, (_Ty)0, (_Ty)0,
-					(_Ty)0,   _Cos,   _Sin, (_Ty)0,
-					(_Ty)0,  -_Sin,   _Cos, (_Ty)0,
-					(_Ty)0, (_Ty)0, (_Ty)0, (_Ty)1 };
+					(_SclTy)1, (_SclTy)0, (_SclTy)0, (_SclTy)0,
+					(_SclTy)0,   _Cos,   _Sin, (_SclTy)0,
+					(_SclTy)0,  -_Sin,   _Cos, (_SclTy)0,
+					(_SclTy)0, (_SclTy)0, (_SclTy)0, (_SclTy)1 };
 				/*
 				[X]
 				[s*Z+c*Y]
@@ -149,22 +149,22 @@ namespace Euler {
 				*/
 			} else {
 				return matrix_type{
-					(_Ty)1, (_Ty)0, (_Ty)0, (_Ty)0,
-					(_Ty)0,   _Cos,  -_Sin, (_Ty)0,
-					(_Ty)0,   _Sin,   _Cos, (_Ty)0,
-					(_Ty)0, (_Ty)0, (_Ty)0, (_Ty)1 };
+					(_SclTy)1, (_SclTy)0, (_SclTy)0, (_SclTy)0,
+					(_SclTy)0,   _Cos,  -_Sin, (_SclTy)0,
+					(_SclTy)0,   _Sin,   _Cos, (_SclTy)0,
+					(_SclTy)0, (_SclTy)0, (_SclTy)0, (_SclTy)1 };
 			}
 		}
 	
 		matrix_type roll(clmagic::radians _Angle) {// X-Y
-			const auto _Cos = clmagic::cos(static_cast<_Ty>(_Angle));
-			const auto _Sin = clmagic::sin(static_cast<_Ty>(_Angle));
+			const auto _Cos = clmagic::cos(static_cast<_SclTy>(_Angle));
+			const auto _Sin = clmagic::sin(static_cast<_SclTy>(_Angle));
 			if _CONSTEXPR_IF(matrix_type::col_major()) {
 				return matrix_type{
-					_Cos,   -_Sin,  (_Ty)0, (_Ty)0,
-					_Sin,    _Cos,  (_Ty)0, (_Ty)0,
-					(_Ty)0, (_Ty)0, (_Ty)1, (_Ty)0,
-					(_Ty)0, (_Ty)0, (_Ty)0, (_Ty)1 };
+					_Cos,   -_Sin,  (_SclTy)0, (_SclTy)0,
+					_Sin,    _Cos,  (_SclTy)0, (_SclTy)0,
+					(_SclTy)0, (_SclTy)0, (_SclTy)1, (_SclTy)0,
+					(_SclTy)0, (_SclTy)0, (_SclTy)0, (_SclTy)1 };
 				/*
 				[c*X-s*Y]
 				[s*X+c*Y]
@@ -172,10 +172,10 @@ namespace Euler {
 				*/
 			} else {
 				return matrix_type{
-					_Cos,    _Sin,  (_Ty)0, (_Ty)0,
-					-_Sin,   _Cos,  (_Ty)0, (_Ty)0,
-					(_Ty)0, (_Ty)0, (_Ty)1, (_Ty)0,
-					(_Ty)0, (_Ty)0, (_Ty)0, (_Ty)1 };
+					_Cos,    _Sin,  (_SclTy)0, (_SclTy)0,
+					-_Sin,   _Cos,  (_SclTy)0, (_SclTy)0,
+					(_SclTy)0, (_SclTy)0, (_SclTy)1, (_SclTy)0,
+					(_SclTy)0, (_SclTy)0, (_SclTy)0, (_SclTy)1 };
 			}
 		}
 	};

@@ -90,16 +90,16 @@ namespace clmagic {
 	}
 
 
-	inline size_t floor(size_t _Val, size_t _Bound) {
+	constexpr size_t floor(size_t _Val, size_t _Bound) {
 		return _Val & (~(_Bound - 1));
 	}
 
-	inline size_t ceil(size_t _Val, size_t _Bound) {
+	constexpr size_t ceil(size_t _Val, size_t _Bound) {
 		const auto _Mask = (_Bound - 1);
 		return (_Val + _Mask) & (~_Mask);
 	}
 
-	inline size_t trunc(size_t _Val, size_t _Bound) {
+	constexpr size_t trunc(size_t _Val, size_t _Bound) {
 		return _Val & (_Bound - 1);
 	}
 

@@ -461,7 +461,7 @@ namespace clmagic {
 
 	template<typename _Ty, typename _Tyfactor>
 	_Ty lerp(_in(_Ty) _A, _in(_Ty) _B, _in(_Tyfactor) t)
-		{	// @_Equaltion: (1-t) * A + t * B
+		{	// @_Equaltion: (1-t)*A + t*B
 		return ( _A + (_B - _A) * t );
 		}
 

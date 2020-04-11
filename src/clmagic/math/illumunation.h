@@ -3,8 +3,7 @@
 #define clmagic_math_ILLUMUNATION_h_
 #include "lapack.h"
 
-namespace clmagic 
-{
+namespace clmagic {
 	template<typename T>
 		T attenuation(_in(T) _Dis, _in(T) _Falloffstart, _in(T) _Falloffend);
 
