@@ -46,11 +46,6 @@ cbuffer cbDirectionalLights : register(b5) {
     common_light_source SpotLights[SpotLightsCount];
 };
 
-struct VertexOut {
-    float4 PosH : SV_POSITION;
-    float3 PosW : POSITION;
-    float3 NormalW : NORMAL;
-};
 
 void VS(float3 Position : POSITION, 
     float3 Normal   : NORMAL, 
@@ -61,7 +56,7 @@ void VS(float3 Position : POSITION,
     
     float4 Pws = mul(WorldMatrix, float4x1(Position, 1));
     P = Pws.xyz;
-    N = mul((float3x3) WorldMatrix, Normal);
+    N = mul((float3x3)WorldMatrix, Normal);
     Pps = mul(mul(ProjMatrix, ViewMatrix), Pws);
 }
 
@@ -98,25 +93,31 @@ float4 PS(float4 Pps : SV_POSITION, float3 N : NORMAL, float3 P : POSITIONT) : S
     
     // unlit + klight * lit
     // unlit + dot(L, N)*lit
+    //float3 L = normalize(float3(1, 1, 0));
+    //float  t = (saturate(dot(N, L)) + 1) / 2;
+    //float3 r = reflect(-L, N);
+    //float  s = saturate(100 * dot(r, V) - 97);
     //return float4(lerp(lerp(Ccool, Cwarn, t), Chighlight, s), 1);
     
     float3 result = float3(0, 0, 0);
     int i = 0;
-    for (; i < DirectionalLightsCount; ++i) {
-        float3 L = - DirectionalLights[i].direction;
-        float  t = (dot(N, L) + 1) / 2;
+    for (; i < DirectionalLightsCount; ++i)
+    {
+        float3 L = -DirectionalLights[i].direction;
+        float t = (dot(N, L) + 1) / 2;
         float3 r = reflect(-L, N);
-        float  s = saturate(100 * dot(r, V) - 97);
+        float s = saturate(100 * dot(r, V) - 97);
         
         result = lerp(lerp(Ccool, Cwarn, t), Chighlight, s);
     }
     
-    for (i = 0; i < PointLightsCount; ++i) {
+    for (i = 0; i < PointLightsCount; ++i)
+    {
         float3 L = PointLights[i].position - P;
-        float  d = length(L);
+        float d = length(L);
         L /= d;
         float3 r = reflect(-L, N);
-        float  s = saturate(100 * dot(r, V) - 97);
+        float s = saturate(100 * dot(r, V) - 97);
         
         result += dot(N, L) * point_klight(PointLights[i], d) * lerp(Cwarn, Chighlight, s);
     }

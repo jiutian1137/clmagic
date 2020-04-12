@@ -7,7 +7,57 @@
 #include "Rodrigues.h"
 #include "../complex/WilliamRowanHamilton.h"
 
-namespace clmagic { 
+namespace clmagic {
+	template<typename _SclTy>
+	struct spherical_coordinate {
+		spherical_coordinate()
+			: radius(static_cast<_SclTy>(0)), azimuth(static_cast<_SclTy>(0)), zenith(static_cast<_SclTy>(0)) {}
+		
+		spherical_coordinate(_SclTy _Radius, radians _Azimuth, radians _Zenith)
+			: radius(_Radius), azimuth(static_cast<_SclTy>(_Azimuth)), zenith(static_cast<_SclTy>(_Zenith)) {}
+		
+		template<typename _VecTy>
+		spherical_coordinate(const _VecTy& XYZ) {		
+			const auto x = XYZ[0];
+			const auto y = XYZ[1];
+			const auto z = XYZ[2];
+
+			radius = sqrt(x*x + y*y + z*z);
+			// y = radius * cos(zenith) => zenith = acos(y/radius)
+			zenith = acos(y / radius);
+			//    x = radius * sin(zenith) * cos(azimuth)
+			//    z = radius * sin(zenith) * sin(azimuth)
+			// => x/z = tan(azimuth) => atan(x/z) = azimuth
+			azimuth = atan(x / z);
+		}
+
+		template<typename _VecTy>
+		_VecTy to_() const {
+			/*
+				  Y|  /Z
+				   | /
+				   |/
+			-------+--------X
+				  /|
+				 / |
+				   |
+			XZ_radius = cos(Pi/2 - zenith) = sin(zenith)
+			*/
+			const auto XZ_radius = radius * sin(zenith);
+			return _VecTy{ XZ_radius * cos(azimuth),
+						   radius    * cos(zenith), 
+						   XZ_radius * sin(azimuth) };
+		}
+
+		_SclTy radius;
+		_SclTy azimuth;
+		_SclTy zenith;
+	};
+
+	template<typename _Fn, typename _SclTy, size_t _Size, typename _BlkTy>
+	vector<_SclTy, _Size, _BlkTy> coordinate_cast(const vector<_SclTy, _Size, _BlkTy>& _Source) {
+	}
+
 	template<typename _SclTy, typename _BlkTy = _SclTy, bool _Major = _COL_MAJOR_>
 	struct PerspectiveLH {
 		using matrix_type = matrix4x4<_SclTy, _BlkTy, _Major, normal_matrix_tag>;

@@ -1135,7 +1135,7 @@ return std::move(_Result)
 	*/
 	template<typename _SclTy, size_t _Size, typename _BlkTy = _SclTy>
 	class __declspec(align(std::alignment_of_v<_BlkTy>)) vector {
-		constexpr static size_t _Real_size = ceil(_Size, std::alignment_of_v<_BlkTy>);
+		constexpr static size_t _Real_size = ceil(_Size * sizeof(_SclTy), std::alignment_of_v<_BlkTy>) / sizeof(_SclTy);
 		
 		_SclTy _Mydata[_Real_size];
 	

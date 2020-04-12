@@ -104,7 +104,7 @@ public:
 		mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr);
 
 		// 1.
-		gWaves = Waves(128, 128, 10.f, 0.03f, 6.0f, 0.2f);
+		gWaves = Waves(256, 256, 1.f, 0.03f, 6.0f, 0.2f);
 		size_t _Nframe = 3;
 
 		build_geometry();
@@ -194,9 +194,9 @@ public:
 		gMaterials["water"].data.set(_Temp, _Nframes);
 		gMaterials["water"].index = 1;
 	}
-
+	
 	void build_lights(size_t _Nframes) {
-		directional_light<float> _Dlight0({ 0.5f, 0.5f, 0.5f }, { -1.f, -1.f, 0.f });
+		directional_light<float> _Dlight0({ 0.5f, 0.5f, 0.5f }, { -0.5f, -1.f, 0.f });
 		gDirectionalLights["global"].set(_Dlight0, _Nframes);
 
 		point_light<float> _Plight0({ 0.7f, 0.7f, 0.7f }, { -20.f, 10.f, -20.f }, 30.f);
@@ -291,14 +291,8 @@ public:
 	}
 
 	virtual void Update(const GameTimer& gt) override {
-		auto _Phi   = phi.to_floating();
-		auto _Theta = theta.to_floating();
-		float x = radius * sinf(_Phi) * cosf(_Theta);
-		float z = radius * sinf(_Phi) * sinf(_Theta);
-		float y = radius * cosf(_Phi);
-		_My_view = clmagic::LookatLH<float, __m128>::get_matrix(vector3<float, __m128>{ x, y, z }, 
-			unit_vector3<float, __m128>{ -x, -y, -z }, 
-			unit_vector3<float, __m128>({ 0.f, 1.f, 0.f }, true) );
+		auto Peye = spherical_coordinate<float>(radius, azimuth, zinith).to_<vector3<float, __m128>>();
+		_My_view = clmagic::LookatLH<float, __m128>::get_matrix(Peye,  unit_vector3<float, __m128>{ -Peye }, unit_vector3<float, __m128>({ 0.f, 1.f, 0.f }, true) );
 	
 		{
 			const float dt = gt.DeltaTime();
@@ -407,7 +401,7 @@ public:
 		auto& _Cbpass = gFrameResources->per_frame.at<uniform_frame>(0);
 		_Cbpass.ViewMatrix  = transpose(_My_view);
 		_Cbpass.ProjMatrix  = transpose(_My_proj);
-		_Cbpass.EyePosition = vector3<float, __m128>{ x, y, z };
+		_Cbpass.EyePosition = Peye;
 		_Cbpass.DeltaTime   = gt.DeltaTime();
 		_Cbpass.TotalTime   = gt.TotalTime();
 		_Cbpass.AmbientLight = vector4<float, __m128>{ 0.1f, 0.1f, 0.1f, 1.f };
@@ -513,9 +507,9 @@ public:
 		if (btnState & MK_LBUTTON) {
 			auto dx = degrees(cvtfloating_rational<intmax_t>(0.10f * static_cast<float>(x - _My_LastMousePos.x)));
 			auto dy = degrees(cvtfloating_rational<intmax_t>(0.10f * static_cast<float>(y - _My_LastMousePos.y)));
-			theta += dx;
-			phi   += dy;
-			phi = clmagic::clamp(phi, degrees(18), degrees(162));
+			zinith  += dy;
+			azimuth += dx;
+			zinith = clmagic::clamp(zinith, degrees(18), degrees(162));
 		} else if(btnState & MK_RBUTTON){
 			float dx = 0.25f * static_cast<float>(x - _My_LastMousePos.x);
 			float dy = 0.25f * static_cast<float>(y - _My_LastMousePos.y);
@@ -549,8 +543,8 @@ private:
 	matrix4x4<float, __m128> _My_view;
 	matrix4x4<float, __m128> _My_proj;
 
-	clmagic::degrees theta  = 270;
-	clmagic::degrees phi    = 45;
+	clmagic::degrees zinith  = 45;
+	clmagic::degrees azimuth = 0;
 	float            radius = 50.f;
 	degrees          sun_theta = 270;
 	degrees          sun_phi = 90;

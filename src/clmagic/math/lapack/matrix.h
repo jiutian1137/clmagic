@@ -317,7 +317,7 @@ namespace clmagic {
 				[&_Left_bk, _Func](const _BlkTy& _Right_bk) { return _Func(_Left_bk, _Right_bk); });
 		}
 
-		constexpr static size_t _Real_size = ceil(_Rows * _Cols, std::alignment_of_v<_BlkTy>);
+		constexpr static size_t _Real_size = ceil(_Rows * _Cols * sizeof(_SclTy), std::alignment_of_v<_BlkTy>) / sizeof(_SclTy);
 
 		_SclTy _Mydata[_Real_size];
 	};
