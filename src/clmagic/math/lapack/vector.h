@@ -1643,7 +1643,7 @@ return std::move(_Result)
 		return true;
 	}
 
-#undef vectorN
+
 
 
 	/*
@@ -2173,11 +2173,35 @@ return std::move(_Result)
 		using unit_vector3 = unit_vector<_SclTy, 3, _BlkTy>;
 
 
+#define unit_vectorN unit_vector<_SclTy, _Size, _BlkTy>
+	// dot(_I,_Nref) < 0 ? N : -N
+	template<typename _SclTy, size_t _Size, typename _BlkTy> inline
+	unit_vectorN faceforward(const unit_vectorN& _Normal, const vectorN& _I, const vectorN& _Nref) {
+		return (dot(_I, _Nref) < static_cast<_SclTy>(0) ? _Normal : -_Normal);
+	}
 
+	template<typename _SclTy, size_t _Size, typename _BlkTy> inline
+	vectorN proj(const vectorN& _Vector, const vectorN& _Proj) {// return dot(V,||_Proj||) * |Proj| 
+		return (dot(_Vector, _Proj) / dot(_Proj, _Proj) * _Proj);
+		/*
+			|          / |
+			|_Vector/
+			|    /	     |
+			| /
+			|-> result<--|▜___________
+			| N |       N is n|malized
+			| ->   _Proj   <- |
 
+			proj_length = (N dot _Lhs)
+			proj_length = (normalize(_Proj) dot _Lhs)
+			proj = proj_length * normalize(_Proj)
 
-
-
+			proj = (_Lhs dot normalize(_Proj)) * normalize(_Proj)
+			proj = (_Lhs * _Proj / length(_Proj)) dot (_Proj / length(_Proj) * _Proj / length(_Proj))
+			proj = (_Lhs * _Proj / length(_Proj)) dot (_Proj^2 /length(_Proj)^2)
+			proj = (_Lhs dot _Proj) / dot(_Proj) * _Proj
+		*/
+	}
 
 	/*template<typename _SclTy, size_t _Size, typename _Vtag> inline
 	auto distance(const vector<_SclTy, _Size, _Vtag>& _A, const vector<_SclTy, _Size, _Vtag>& _B) 
@@ -2191,33 +2215,7 @@ return std::move(_Result)
 	//	return (dot(_A, _B) / _A.length() / _B.length());
 	//	}
 
-	//template<typename _SclTy, size_t _Size, typename _Vtag> inline
-	//unit_vectorN faceforward(const unit_vectorN& _Normal, const vectorN& _I, const vectorN& _Nref) {// dot(_I,_Nref) < 0 ? N : -N
-	//	return (dot(_I, _Nref) < static_cast<_SclTy>(0) ? _Normal : -_Normal);
-	//}
 
-	//template<typename _SclTy, size_t _Size, typename _Vtag> inline
-	//vectorN proj(const vectorN& _Vector, const vectorN& _Proj) {// return dot(V,||_Proj||) * |Proj| 
-	//	return (dot(_Vector, _Proj) / dot(_Proj, _Proj) * _Proj);
-	//	/*
-	//		|          / |
-	//		|_Vector/
-	//		|    /	     |
-	//		| /
-	//		|-> result<--|▜___________
-	//		| N |       N is n|malized
-	//		| ->   _Proj   <- |
-
-	//		proj_length = (N dot _Lhs)
-	//		proj_length = (normalize(_Proj) dot _Lhs)
-	//		proj = proj_length * normalize(_Proj)
-
-	//		proj = (_Lhs dot normalize(_Proj)) * normalize(_Proj)
-	//		proj = (_Lhs * _Proj / length(_Proj)) dot (_Proj / length(_Proj) * _Proj / length(_Proj))
-	//		proj = (_Lhs * _Proj / length(_Proj)) dot (_Proj^2 /length(_Proj)^2)
-	//		proj = (_Lhs dot _Proj) / dot(_Proj) * _Proj
-	//	*/
-	//}
 
 	//template<typename _SclTy, size_t _Size, typename _Vtag> inline
 	//vectorN proj(const vectorN& _Vector, const unit_vectorN& _Proj) {// return dot(V,N)*N

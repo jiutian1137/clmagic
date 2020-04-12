@@ -54,9 +54,35 @@ namespace clmagic {
 		_SclTy zenith;
 	};
 
-	template<typename _Fn, typename _SclTy, size_t _Size, typename _BlkTy>
-	vector<_SclTy, _Size, _BlkTy> coordinate_cast(const vector<_SclTy, _Size, _BlkTy>& _Source) {
-	}
+
+	template<typename _SclTy>
+	struct cylindrical_coordinate {
+		cylindrical_coordinate()
+			: radius(static_cast<_SclTy>(0)), azimuth(static_cast<_SclTy>(0)), height(static_cast<_SclTy>(0)) {}
+
+		cylindrical_coordinate(_SclTy _Radius, radians _Azimuth, _SclTy _Height)
+			: radius(_Radius), azimuth(_Azimuth), height(_Height) {}
+
+		template<typename _VecTy>
+		cylindrical_coordinate(const _VecTy& XYZ) {
+			const auto x = XYZ[0];
+			const auto y = XYZ[1];
+			const auto z = XYZ[2];
+			radius  = sqrt(x*x + z*z);
+			azimuth = acos(x / radius);
+			height  = y;
+		}
+
+		template<typename _VecTy>
+		_VecTy to_() const {
+			return _VecTy{ radius*cos(azimuth), height, radius*sin(azimuth) };
+		}
+
+		_SclTy radius;
+		_SclTy azimuth;
+		_SclTy height;
+	};
+
 
 	template<typename _SclTy, typename _BlkTy = _SclTy, bool _Major = _COL_MAJOR_>
 	struct PerspectiveLH {
@@ -240,6 +266,120 @@ namespace clmagic {
 		}
 	};
 
+	/*@_planar_projection: convert V to P in the Plane
+	*/
+	template<typename _SclTy, typename _BlkTy = _SclTy, bool _Major = _COL_MAJOR_>
+	struct planar_projection {
+		using matrix_type = matrix4x4<_SclTy, _BlkTy, _Major, normal_matrix_tag>;
+		
+		/*<figure>
+				. <-- Peye
+			   /\ \ 
+			 //  \\ \
+			/vvvv\  \  \
+			ssssss\   \   \
+			sssssss\    \    \
+			ssssssss\     \     \
+			=========================y=0
+		  </figure>*/
+		static matrix_type get_matrix(vector3<_SclTy, _BlkTy> Peye) {// project plane(y=0)
+			/*<describ>
+				<idea> similar-triangles </idea>
+				<important> 
+					solve-equation: V.x-Peye.x : P.x-Peye.x = V.y-Peye.y : P.y-Peye.y 
+					solve-equation: Peye.x-V.x : Peye.x-P.x = Peye.y-V.y : Peye.y 
+				</important>
+				<process>
+					 X:   (Peye.x-V.x)     (Peye.y-V.y)
+						 --------------- = ------------
+						  (Peye.x-P.x)      (Peye.y)
+
+					 =>   (Peye.x-V.x) * Peye.y
+						 ----------------------- = (Peye.x-P.x)
+							  (Peye.y-V.y)
+
+					 =>     (Peye.x-V.x) * Peye.y
+						 - ----------------------- + Peye.x = P.x
+							    (Peye.y-V.y)
+
+					 =>     (Peye.x-V.x) * Peye.y    Peye.x*(Peye.y-V.y)
+						 - ----------------------- + -------------------- = P.x    
+							    (Peye.y-V.y)           (Peye.y-V.y)
+
+					 =>   Peye.x*(Peye.y-V.y)-(Peye.x-V.x)*Peye.y
+						 ------------------------------------------ = P.x    
+							           (Peye.y-V.y)
+
+					 =>    -Peye.x*V.y + V.x*Peye.y
+						 ----------------------------- = P.x
+								(Peye.y-V.y)
+			
+					 Z:   -Peye.z*V.y + V.z*Peye.y 
+						 ------------------------- = P.z    
+							     Peye.y-V.y
+				</process>
+				<result>
+					[-Peye.x*V.y + V.x*Peye.y]
+					[            0           ]
+					[-Peye.z*V.y + V.z*Peye.y]
+					[     Peye.y - V.y       ]
+				</result>
+				<reference>
+					is equivalent to <<RealTimeReandering-4th>> page:225
+				</reference>
+			  </describ>*/
+			if (matrix_type::col_major()) {
+				return matrix_type{
+					  Peye[1],   -Peye[0], (_SclTy)0, (_SclTy)0,
+					(_SclTy)0,  (_SclTy)0, (_SclTy)0, (_SclTy)0,
+					(_SclTy)0,   -Peye[2],   Peye[1], (_SclTy)0,
+					(_SclTy)0, (_SclTy)-1, (_SclTy)0,  Peye[1] };
+			} else {
+				return matrix_type{
+					  Peye[1],  (_SclTy)0, (_SclTy)0, (_SclTy)0,
+					 -Peye[0],  (_SclTy)0,  -Peye[2], (_SclTy)0,
+					(_SclTy)0,  (_SclTy)0,   Peye[1], (_SclTy)0,
+					(_SclTy)0, (_SclTy)-1, (_SclTy)0,  Peye[1] };
+			}
+		}
+
+		static matrix_type get_matrix(vector3<_SclTy, _BlkTy> Peye, unit_vector3<_SclTy, _BlkTy> N, _SclTy d) {// project any-plane
+			/*<describ>
+				<process>
+				                d + dot(N,Peye)
+					P = Peye - ----------------(V-Peye)
+					            dot(N,(V-Peye))
+							(d + dot(N,Peye))*(V-Peye)    Peye*dot(N,(V-Peye))
+					P =  - --------------------------- + ---------------------
+					             dot(N,(V-Peye))           dot(N,(V-Peye))
+				</process>
+				<result>
+					[(dot(N,Peye) + d)*Vx - Peye.x*N.x*V.x - Peye.x*N.y*V.y - Peye.x*N.z*V.z - Peye.x*d]
+					[(dot(N,Peye) + d)*Vy - Peye.y*N.x*V.x - Peye.y*N.y*V.y - Peye.y*N.z*V.z - Peye.y*d]
+					[(dot(N,Peye) + d)*Vz - Peye.z*N.x*V.x - Peye.z*N.y*V.y - Peye.z*N.z*V.z - Peye.z*d]
+					[-dot(N,V)+dot(N,Peye)]
+				</result>
+			  </describ>*/
+			const auto N_dot_Peye  = dot(N, Peye);
+			const auto Nx_mul_Peye = Peye * N[0];
+			const auto Ny_mul_Peye = Peye * N[1];
+			const auto Nz_mul_Peye = Peye * N[2];
+			const auto d_mul_Pey   = Peye * d;
+			if ( matrix_type::col_major() ) {
+				return matrix_type{
+					N_dot_Peye+d - Nx_mul_Peye[0],              - Ny_mul_Peye[0],              - Nz_mul_Peye[0], -d_mul_Pey[0],
+					             - Nx_mul_Peye[1], N_dot_Peye+d - Ny_mul_Peye[1],              - Nz_mul_Peye[1], -d_mul_Pey[1],
+					             - Nx_mul_Peye[2],              - Ny_mul_Peye[2], N_dot_Peye+d - Nz_mul_Peye[2], -d_mul_Pey[2],
+					                        -N[0],                         -N[1],                         -N[3],  N_dot_Peye };
+			} else {
+				return matrix_type{
+					N_dot_Peye+d - Nx_mul_Peye[0],              - Nx_mul_Peye[1],              - Nx_mul_Peye[2],       -N[0],
+							     - Ny_mul_Peye[0], N_dot_Peye+d - Ny_mul_Peye[1],              - Ny_mul_Peye[2],       -N[1],
+								 - Nz_mul_Peye[0],              - Nz_mul_Peye[1], N_dot_Peye+d - Nz_mul_Peye[2],       -N[3],
+								   - d_mul_Pey[0],                - d_mul_Pey[1],                - d_mul_Pey[2],  N_dot_Peye };
+			}
+		}
+	};
 
 	// inverse( rotation(theta) ) = rotation(-theta)
 	// inverse( rotation(theta) ) = transpose( rotation(theta) )

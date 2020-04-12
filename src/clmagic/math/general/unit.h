@@ -134,14 +134,34 @@ namespace clmagic {
 		}
 	};
 
-	using degrees = unit_<int64_t, std::ratio<1>>;
-	using radians = unit_<int64_t, std::ratio<3141'59/*rad*/, 18'0000'00/*deg*/>>;
+	using second_ratio = std::ratio<1, 1>/*s*/;
+	using seconds      = unit_<int64_t, second_ratio>;
+	using minuts       = unit_<int64_t, std::ratio_multiply<second_ratio, std::ratio<1/*m*/, 60/*s*/>>>;
+	using hours        = unit_<int64_t, std::ratio_multiply<second_ratio, std::ratio<1/*h*/, 3600/*s*/>>>;
+
+	using kilogram_ratio = std::ratio<1, 1>/*kg*/;
+	using grams          = unit_<int64_t, std::ratio_multiply<kilogram_ratio, std::ratio<1000/*g*/, 1/*kg*/>>>;
+	using kilograms      = unit_<int64_t, kilogram_ratio>;
+	using tons           = unit_<int64_t, std::ratio_multiply<kilogram_ratio, std::ratio<1/*t*/, 1000/*kg*/>>>;
 
 	using meter_ratio = std::ratio<1, 1>/*m*/;
 	using meters      = unit_<int64_t, meter_ratio>;
 	using millimeters = unit_<int64_t, std::ratio_multiply<meter_ratio, std::ratio<1000/*1mm*/, 1/*m*/>>>;
 	using centimeters = unit_<int64_t, std::ratio_multiply<meter_ratio, std::ratio<100/*cm*/,   1/*m*/>>>;
 	using kilometers  = unit_<int64_t, std::ratio_multiply<meter_ratio, std::ratio<1/*km*/,  1000/*m*/>>>;
+
+	using degrees = unit_<int64_t, std::ratio<1>>;
+	using radians = unit_<int64_t, std::ratio<3141'59/*rad*/, 18'0000'00/*deg*/>>;
+
+	using watt_ratio = std::ratio<1, 1>/*W*/;
+	using watts      = unit_<int64_t, watt_ratio>;
+
+	using kelvin_ratio = std::ratio<1, 1>/*K*/;
+	using kelvins      = unit_<int64_t, kelvin_ratio>;
+	
+	using newton_ratio = std::ratio_divide<std::ratio_multiply<kilogram_ratio, meter_ratio>, 
+										   std::ratio_multiply<second_ratio, second_ratio>>/*kg * m/s²*/;
+	using newtons = unit_<int64_t, newton_ratio>;
 
 	
 	template<typename _To, typename _Ty, typename _Ratio>

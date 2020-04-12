@@ -19,6 +19,7 @@ struct __declspec(align(256)) uniform_object {
 struct __declspec(align(256)) uniform_frame {
 	matrix4x4<float, __m128> ViewMatrix = matrix4x4<float, __m128>(1.f);// 0
 	matrix4x4<float, __m128> ProjMatrix = matrix4x4<float, __m128>(1.f);// 64
+	matrix4x4<float, __m128> TempMatrix = matrix4x4<float, __m128>(1.f);// 64
 	vector3<float, __m128> EyePosition  = vector3<float, __m128>();// 128
 	vector2<float, __m128> Resolution   = vector2<float, __m128>();// 144
 	vector4<float, __m128> AmbientLight; // 160
@@ -196,7 +197,7 @@ public:
 	}
 	
 	void build_lights(size_t _Nframes) {
-		directional_light<float> _Dlight0({ 0.5f, 0.5f, 0.5f }, { -0.5f, -1.f, 0.f });
+		directional_light<float> _Dlight0({ 0.5f, 0.5f, 0.5f }, { 0.f, -1.f, 0.f });
 		gDirectionalLights["global"].set(_Dlight0, _Nframes);
 
 		point_light<float> _Plight0({ 0.7f, 0.7f, 0.7f }, { -20.f, 10.f, -20.f }, 30.f);
@@ -260,6 +261,8 @@ public:
 	void build_pipelinestate() {
 		gShaders["VS"] = hlsl::shader_compile(L"shader/color.hlsl", nullptr, "VS", "vs_5_0");
 		gShaders["PS"] = hlsl::shader_compile(L"shader/color.hlsl", nullptr, "PS", "ps_5_0");
+		gShaders["ShadowVS"] = hlsl::shader_compile(L"shader/color.hlsl", nullptr, "ShadowVS", "vs_5_0");
+		gShaders["ShadowPS"] = hlsl::shader_compile(L"shader/color.hlsl", nullptr, "ShadowPS", "ps_5_0");
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC _PSODesc;
 		ZeroMemory(&_PSODesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
@@ -283,6 +286,11 @@ public:
 		_PSODesc2.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 		_PSODesc2.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 		gPipelineStates["opaque_wireframe"] = dx12::packaged_pipeline_state(*md3dDevice.Get(), _PSODesc2);
+
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC _Shadow_PSO = _PSODesc;
+		_Shadow_PSO.VS = gShaders["ShadowVS"].get_dx12();
+		_Shadow_PSO.PS = gShaders["ShadowPS"].get_dx12();
+		gPipelineStates["shadow"] = dx12::packaged_pipeline_state(*md3dDevice.Get(), _Shadow_PSO);
 	}
 
 	virtual void OnResize() override {
@@ -401,6 +409,7 @@ public:
 		auto& _Cbpass = gFrameResources->per_frame.at<uniform_frame>(0);
 		_Cbpass.ViewMatrix  = transpose(_My_view);
 		_Cbpass.ProjMatrix  = transpose(_My_proj);
+		_Cbpass.TempMatrix = transpose(planar_projection<float, __m128>::get_matrix(Peye - vector3<float, __m128>{10.f, 10.f, 10.f}, { 0.f, 1.f, 0.f }, 0.f));
 		_Cbpass.EyePosition = Peye;
 		_Cbpass.DeltaTime   = gt.DeltaTime();
 		_Cbpass.TotalTime   = gt.TotalTime();
@@ -440,7 +449,7 @@ public:
 		_Cmdlist_alloc->Reset();
 		//mCommandList->Reset(_Cmdlist_alloc, gPipelineStates["opaque_wireframe"].get());
 		mCommandList->Reset(_Cmdlist_alloc, gPipelineStates["opaque"].get());
-
+		
 		mCommandList->RSSetViewports(1, &mScreenViewport);
 		mCommandList->RSSetScissorRects(1, &mScissorRect);
 		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -472,6 +481,22 @@ public:
 				mCommandList->IASetVertexBuffers(0, 1, &_Mesh.vertex_view());
 				mCommandList->IASetIndexBuffer(&_Mesh.index_view());
 				mCommandList->DrawIndexedInstanced(_Mesh.index_count, 1, _Mesh.start_index_location, _Mesh.base_vertex_location, 0);
+			}
+
+			_First    = gActors.begin();
+			_Gptr_obj = gFrameResources->per_object->GetGPUVirtualAddress();
+			mCommandList->SetPipelineState(gPipelineStates["shadow"].get());
+			for (; _First != _Last; ++_First, _Gptr_obj += sizeof(uniform_object)) {
+				if (_First->first != "water") {
+					mCommandList->IASetPrimitiveTopology(_First->second.primitive);
+					mCommandList->SetGraphicsRootConstantBufferView(0, _Gptr_obj);
+					mCommandList->SetGraphicsRootConstantBufferView(1, _Gptr_mtl + (*_First).second.pmtl->index * sizeof(uniform_matrial));
+					
+					const auto& _Mesh = *(_First->second.pmesh);
+					mCommandList->IASetVertexBuffers(0, 1, &_Mesh.vertex_view());
+					mCommandList->IASetIndexBuffer(&_Mesh.index_view());
+					mCommandList->DrawIndexedInstanced(_Mesh.index_count, 1, _Mesh.start_index_location, _Mesh.base_vertex_location, 0);
+				}
 			}
 		}
 
@@ -574,10 +599,24 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine,
 #include <complex>
 #include <thread>
 
+
+
 int main() {
 
 	using namespace::clmagic;
-	
+	// ( -10*y + 1000 ) / 100
+	auto _Proj = planar_projection<float>::get_matrix({ 0.f, 100.f, 0.f }, { 0.f, 1.f, 0.f }, 0.f);
+	std::cout << _Proj << std::endl << std::endl;
+	std::cout << planar_projection<float>::get_matrix({ 0.f, 10.f, 0.f }) << std::endl;
+	for (auto x = 5.f; x <= 1000.f; x += 1.f) {
+		matrix<float, 4, 1> V = { 5.f, 55.f, x, 1.f };
+		matrix<float, 4, 1> pV = _Proj * V; 
+		pV *= (1.f / pV.at(3, 0));
+		std::cout << _Augmented_matrix<float, 4, 1, 1, float, float>(V, pV) << std::endl;
+		std::cout << std::endl;
+	}
+
+
 	//degrees _Angle1 = 0;
 	//unit_vector3<float, __m128> _Axis1 = unit_vector3<float, __m128>({0.f, 0.f, 1.f}, true);
 	//vector4<float, __m128> _Vec1 = { 20.f, 5.f, 5.f, 1.f };// [-20, -5, 5, 1]

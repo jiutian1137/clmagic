@@ -24,6 +24,7 @@ cbuffer cbPerPass : register(b2)
 {                        // offset:
     float4x4 ViewMatrix; //   0
     float4x4 ProjMatrix; //  64
+    float4x4 TempMatrix; 
     float3 EyePosition ; // 128 
     float4 Resolution;   // 144 
     float4 AmbientLight; // 160
@@ -80,6 +81,17 @@ float fdir(common_light_source light, float3 L) {
 
 float3 spot_klight(common_light_source light, float distance, float3 L) {
     return light.power * fdist(light, distance) * fdir(light, L);
+}
+
+
+void ShadowVS(float3 Pin : POSITION, float3 Nin : NORMAL, float2 UVin : TEXCOORD, out float4 Pps : SV_POSITION) {
+    float4x4 PVSW = mul(mul(mul(ProjMatrix, ViewMatrix), TempMatrix), WorldMatrix);
+    //float4x4 PVW = mul(mul(ProjMatrix, ViewMatrix), WorldMatrix);
+    Pps = mul(PVSW, float4x1(Pin, 1));
+}
+
+float4 ShadowPS() : SV_Target {
+    return float4(1, 0, 0, 1);
 }
 
 float4 PS(float4 Pps : SV_POSITION, float3 N : NORMAL, float3 P : POSITIONT) : SV_Target
