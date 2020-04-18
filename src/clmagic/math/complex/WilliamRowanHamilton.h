@@ -3,7 +3,7 @@
 #define clmagic_math_complex_WILLIAM_ROWAN_HAMILTON_h_
 #include "../lapack/vector.h"
 #include "../lapack/matrix.h"
-#include "../general//unit.h"
+#include "../general/unit.h"
 #include <string>
 #include <iostream>
 

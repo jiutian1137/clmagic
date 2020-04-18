@@ -104,29 +104,25 @@ namespace clmagic {
 	}
 
 	template<typename _BitTy> inline
-	_BitTy mask_at(size_t _Nx) {// pow(2, _Nx)
+	constexpr _BitTy mask_at(size_t _Nx) {// pow(2, _Nx)
 		return (static_cast<_BitTy>(1) << _Nx);
 	}
 
 	template<typename _BitTy> inline
-	_BitTy mask_until(size_t _Nx) {// [0, _Nx]
+	constexpr _BitTy mask_until(size_t _Nx) {// [0, _Nx]
 		auto _Tmp = mask_at<_BitTy>(_Nx);
 		return ( _Tmp | (_Tmp - static_cast<_BitTy>(1)) );
 	}
 
 	template<typename _BitTy> inline
-	_BitTy mask_n(size_t _Nx) {// _Nx ones in the mask, or [0, _Nx)
+	constexpr _BitTy mask_n(size_t _Nx) {// _Nx ones in the mask, or [0, _Nx)
 		return ( _Nx == 0 ? _BitTy(0) : mask_until<_BitTy>(_Nx - 1) );
 	}
 
 	template<typename _BitTy> inline
-	_BitTy mask_for(size_t _Off, size_t _Nx) {// [_Off, _Nx)
-		return ( _Off >= _Nx ? _BitTy(0) : (mask_n<_BitTy>(_Nx - _Off) << _Off) );// not use assert(...), because possible present (_Off < _Nx)
-	}
-
-	template<typename _BitTy> inline
-	bool is_pow2(_BitTy _X) {// 
-		return (_X & (_X - static_cast<_BitTy>(1)) == 0);
+	constexpr _BitTy mask_for(size_t _Off, size_t _Nx) {// [_Off, _Nx)
+		return ( _Off >= _Nx ? _BitTy(0) : (mask_n<_BitTy>(_Nx - _Off) << _Off) );
+		// not use assert(...), because can happen (_Off < _Nx)
 	}
 
 	template<typename _BitTy> inline
@@ -189,8 +185,6 @@ namespace clmagic {
 	}
 
 
-
-
 	template<typename _Ty, size_t _En, size_t _Mn>
 	class floating_point {
 		static_assert((1 + _En + _Mn) <= sizeof(_Ty) * 8, "error floating type");
@@ -240,6 +234,11 @@ namespace clmagic {
 			static_assert(_Ubits <= _Bits, "error _Bits");
 			const auto _Sign = mask_use(*this, mask_significant(), _Off_significant_bit);
 			return ( *reinterpret_cast<const std::bitset<_Ubits>*>(&_Sign) );
+		}
+
+		template<size_t _Ubits = _Bits>
+		static std::bitset<_Ubits> exponent_bias() {// pow(2, _En-1) - 1
+			return mask_n<std::bitset<_Ubits>>(_En - 1);
 		}
 
 		std::bitset<_Bits> floor() const {

@@ -1,10 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="头文件">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
     <Filter Include="public">
       <UniqueIdentifier>{726b2a59-c3a1-481a-b625-02440beedd56}</UniqueIdentifier>
     </Filter>
@@ -40,6 +36,10 @@
     </Filter>
     <Filter Include="private\optics">
       <UniqueIdentifier>{3715447e-08d5-4735-ad6e-5dba9296a4ef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -95,7 +95,7 @@
       <Filter>private\other</Filter>
     </ClInclude>
     <ClInclude Include="..\src\clmagic\math.h">
-      <Filter>头文件</Filter>
+      <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\src\clmagic\math\calculus.h">
       <Filter>public</Filter>
@@ -117,9 +117,6 @@
     </ClInclude>
     <ClInclude Include="..\src\clmagic\math\lapack\vector.h">
       <Filter>private\lapack</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\general\unit.h">
-      <Filter>private\general</Filter>
     </ClInclude>
     <ClInclude Include="..\src\clmagic\math\lapack\matrix.h">
       <Filter>private\lapack</Filter>
@@ -153,6 +150,9 @@
     </ClInclude>
     <ClInclude Include="..\src\clmagic\math\optics\stylized_optics.h">
       <Filter>private\optics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\math\general\unit.h">
+      <Filter>private\general</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

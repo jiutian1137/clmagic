@@ -13,8 +13,8 @@
 #include "math/general/clmagic.h"
 #include "math/general/general.h"
 #include "math/general/rational.h"
-#include "math/general/real.h"
 #include "math/general/unit.h"
+#include "math/general/real.h"
 
 #include "math/lapack/vector.h"
 #include "math/lapack/matrix.h"

@@ -299,8 +299,13 @@ public:
 	}
 
 	virtual void Update(const GameTimer& gt) override {
-		auto Peye = spherical_coordinate<float>(radius, azimuth, zinith).to_<vector3<float, __m128>>();
-		_My_view = clmagic::LookatLH<float, __m128>::get_matrix(Peye,  unit_vector3<float, __m128>{ -Peye }, unit_vector3<float, __m128>({ 0.f, 1.f, 0.f }, true) );
+		using vector3 = clmagic::vector3<float, __m128>;
+		using vector4 = clmagic::vector4<float, __m128>;
+		using unit_vector3 = clmagic::unit_vector3<float, __m128>;
+		using Lookat = clmagic::LookatLH<float, __m128>;
+
+		auto Peye = spherical_coordinate<float>(radius, azimuth, zinith).to_<vector3>();
+		_My_view  = Lookat::get_matrix(Peye, unit_vector3{ -Peye }, unit_vector3({ 0.f, 1.f, 0.f }, true) );
 	
 		{
 			const float dt = gt.DeltaTime();
@@ -311,12 +316,6 @@ public:
 				_Ref.source.cos_penumbra() = cosf(_Angle);
 				_Ref.commit();
 				MessageBoxA(nullptr, std::to_string(_Angle).c_str(), "tips", MB_OK);
-			}
-			if (GetAsyncKeyState('2') & 0x8000) {
-				auto _Ref   = gSpotLights["test1"].ref(3);
-				auto _Pitch = WilliamRowanHamilton::polar(unit_vector3<float>{1.f, 0.f, 0.f}, degrees(10));
-				_Ref.source.direction() = _Pitch(_Ref.source.direction());
-				_Ref.commit();
 			}
 
 			if (GetAsyncKeyState(VK_LEFT) & 0x8000) {
@@ -409,11 +408,11 @@ public:
 		auto& _Cbpass = gFrameResources->per_frame.at<uniform_frame>(0);
 		_Cbpass.ViewMatrix  = transpose(_My_view);
 		_Cbpass.ProjMatrix  = transpose(_My_proj);
-		_Cbpass.TempMatrix = transpose(planar_projection<float, __m128>::get_matrix(Peye - vector3<float, __m128>{10.f, 10.f, 10.f}, { 0.f, 1.f, 0.f }, 0.f));
+		_Cbpass.TempMatrix = transpose(planar_projection<float, __m128>::get_matrix(Peye - vector3{10.f, 10.f, 10.f}, { 0.f, 1.f, 0.f }, 0.f));
 		_Cbpass.EyePosition = Peye;
 		_Cbpass.DeltaTime   = gt.DeltaTime();
 		_Cbpass.TotalTime   = gt.TotalTime();
-		_Cbpass.AmbientLight = vector4<float, __m128>{ 0.1f, 0.1f, 0.1f, 1.f };
+		_Cbpass.AmbientLight = vector4{ 0.1f, 0.1f, 0.1f, 1.f };
 		
 		/*MessageBoxA(nullptr, to_string(_Pass.view_matrix).c_str(), "view", MB_OK);
 		MessageBoxA(nullptr, to_string(_Pass.proj_matrix).c_str(), "view", MB_OK);*/
@@ -437,8 +436,8 @@ public:
 		// Update the wave vertex buffer with the new solution.
 		auto* _Waves_ptr = gFrameResources->per_frame_wave_vertices->ptr<vertex>(0);
 		for (int i = 0; i < gWaves.VertexCount(); ++i, ++_Waves_ptr) {
-			_Waves_ptr->position0 = reinterpret_cast<const vector3<float>&>(gWaves.Position(i));
-			_Waves_ptr->normal0   = reinterpret_cast<const vector3<float>&>(gWaves.Normal(i));
+			_Waves_ptr->position0 = reinterpret_cast<const clmagic::vector3<float>&>(gWaves.Position(i));
+			_Waves_ptr->normal0   = reinterpret_cast<const clmagic::vector3<float>&>(gWaves.Normal(i));
 		}
 		// Set the dynamic VB of the wave renderitem to the current frame VB.
 		gDynGeometries["wave"].bind_vertex(gFrameResources->per_frame_wave_vertices);
@@ -598,23 +597,24 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine,
 
 #include <complex>
 #include <thread>
-
-
+#include <iomanip>
+#include <variant>
+#include <algorithm>
 
 int main() {
-
 	using namespace::clmagic;
-	// ( -10*y + 1000 ) / 100
-	auto _Proj = planar_projection<float>::get_matrix({ 0.f, 100.f, 0.f }, { 0.f, 1.f, 0.f }, 0.f);
-	std::cout << _Proj << std::endl << std::endl;
-	std::cout << planar_projection<float>::get_matrix({ 0.f, 10.f, 0.f }) << std::endl;
-	for (auto x = 5.f; x <= 1000.f; x += 1.f) {
-		matrix<float, 4, 1> V = { 5.f, 55.f, x, 1.f };
-		matrix<float, 4, 1> pV = _Proj * V; 
-		pV *= (1.f / pV.at(3, 0));
-		std::cout << _Augmented_matrix<float, 4, 1, 1, float, float>(V, pV) << std::endl;
-		std::cout << std::endl;
+	matrix<float, 5, 5, __m128, _COL_MAJOR_> M(1.f);
+	for (auto _First = M.begin(), _Last = M.end(); _First != _Last; ++_First) {
+		*_First = randf(10.f, 30.f);
 	}
+
+	diagonal_matrix<float, 5, 5, __m128, _COL_MAJOR_> Md{ 1.f, 2.f, 3.f, 4.f ,5.f };
+	
+	std::cout << M << std::endl << std::endl;
+	std::cout << Md * M << std::endl;
+
+	std::cin.get();
+	
 
 
 	//degrees _Angle1 = 0;
