@@ -85,8 +85,8 @@ namespace clmagic
 			{
 			const auto _Linearcolor = constexpr_to_vec_3<float>(_RGB);
 
-			const float _Max = constexpr_maxval(_Linearcolor[0], _Linearcolor[1], _Linearcolor[2]);
-			const float _Min = constexpr_minval(_Linearcolor[0], _Linearcolor[1], _Linearcolor[2]);
+			const float _Max = std::max(_Linearcolor[0], std::max(_Linearcolor[1], _Linearcolor[2]));
+			const float _Min = std::min(_Linearcolor[0], std::min(_Linearcolor[1], _Linearcolor[2]));
 
 			hue = _Max == _Min ? 0.0f
 				: _Max == _Linearcolor[0] ? fmod((((_Linearcolor[1] - _Linearcolor[2]) / (_Max - _Min)) * 60.0f) + 360.0f, 360.0f)

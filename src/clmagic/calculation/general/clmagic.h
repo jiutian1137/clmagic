@@ -97,59 +97,9 @@ namespace clmagic {
 	}
 
 	
-	template<typename _OutTy, typename _InTy, typename ..._Tys>
-	void _Shuffle_fill(_out(_OutTy) _Dest, size_t i, _in(_InTy) _Source, size_t s, _Tys... _Args) {
-		_Dest[i] = _Source[s];
-		_Shuffle_fill(_Dest, i + 1, _Source, _Args...);
-	}
+	
 
-	template<typename _OutTy, typename _InTy>
-	void _Shuffle_fill(_out(_OutTy) _Dest, size_t i, _in(_InTy) _Source, size_t s) {
-		_Dest[i] = _Source[s];
-	}
-
-	/* 'shuffle' is often used in vector mathematics
-	@_Example: See #simd_vec<> or #vec_<>
-	*/
-	template<typename _OutTy, typename _InTy>
-	_OutTy shuffle(_in(_InTy) _Source, size_t i0, size_t i1) {
-		return (_OutTy{ _Source[i0], _Source[i1] });
-	}
-
-	template<typename _OutTy, typename _InTy>
-	_OutTy shuffle(_in(_InTy) _Source, size_t i0, size_t i1, size_t i2) {
-		return (_OutTy{ _Source[i0], _Source[i1], _Source[i2] });
-	}
-
-	template<typename _OutTy, typename _InTy>
-	_OutTy shuffle(_in(_InTy) _Source, size_t i0, size_t i1, size_t i2, size_t i3) {
-		return (_OutTy{ _Source[i0], _Source[i1], _Source[i2], _Source[i3] });
-	}
-
-	template<typename _OutTy, typename _InTy>
-	_OutTy shuffle(_in(_InTy) _Source, size_t i0, size_t i1, size_t i2, size_t i3, size_t i4) {
-		return (_OutTy{ _Source[i0], _Source[i1], _Source[i2], _Source[i3], _Source[i4] });
-	}
-
-	template<typename _OutTy, typename _InTy>
-	_OutTy shuffle(_in(_InTy) _Source, size_t i0, size_t i1, size_t i2, size_t i3, size_t i4, size_t i5) {
-		return (_OutTy{ _Source[i0], _Source[i1], _Source[i2], _Source[i3], _Source[i4], _Source[i5] });
-	}
-
-	template<typename _OutTy, typename _InTy, typename ..._Tys>
-	_OutTy shuffle(_in(_InTy) _Source, size_t i0, size_t i1, size_t i2, size_t i3, size_t i4, size_t i5, _Tys... _Selector) {
-		_OutTy _Dest = shuffle<_OutTy>(_Source, i0, i1, i2, i3, i4, i5);
-		_Shuffle_fill(_Dest, 6, _Source, _Selector...);
-		return (_Dest);
-	}
-
-	template<typename _OutTy, typename _InTy, typename ..._Tys>
-	void shuffle(_out(_OutTy) _Dest, _in(_InTy) _Source, _Tys... _Selector) {
-		_Shuffle_fill(_Dest, 0, _Source, _Selector...);
-	}
-
-	template<typename ..._Tys>
-	constexpr size_t types_size_v = std::tuple_size_v<std::tuple<_Tys...>>;
+	
 	
 
 	/*

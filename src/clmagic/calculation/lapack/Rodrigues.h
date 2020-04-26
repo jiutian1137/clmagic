@@ -1,9 +1,17 @@
-﻿#pragma once
-#ifndef clmagic_math_lapack_Rodrigues_h_
-#define clmagic_math_lapack_Rodrigues_h_
+﻿//--------------------------------------------------------------------------------------
+// Copyright (c) (Unknown) Benjamin-Olinde-Rodrigues(1795–1851)
+// All Rights Reserved
+//--------------------------------------------------------------------------------------
+#pragma once
+#ifndef clmagic_calculation_lapack_Rodrigues_h_
+#define clmagic_calculation_lapack_Rodrigues_h_
 #include "matrix.h"
+#include "../real/unit.h"
 
 namespace Rodrigues {
+
+	/*<Biographie>http://mathshistory.st-andrews.ac.uk/Biographies/Rodrigues.html</Biographie>*/
+
 	template<typename _SclTy, size_t _Rows, typename _BlkTy = _SclTy, bool _Major = clmagic::_COL_MAJOR_>
 	struct rotation {// default matrix3x3
 		static_assert(_Rows == 3 || _Rows == 4, "->[::Rodrigues::rotation<_SclTy, _Rows, _Cols, _Major, _BlkTy>");

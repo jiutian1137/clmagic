@@ -603,7 +603,7 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine,
 
 int main() {
 	using namespace::clmagic;
-	matrix<float, 5, 5, __m128, _COL_MAJOR_> M(1.f);
+	/*matrix<float, 5, 5, __m128, _COL_MAJOR_> M(1.f);
 	for (auto _First = M.begin(), _Last = M.end(); _First != _Last; ++_First) {
 		*_First = randf(10.f, 30.f);
 	}
@@ -611,9 +611,18 @@ int main() {
 	diagonal_matrix<float, 5, 5, __m128, _COL_MAJOR_> Md{ 1.f, 2.f, 3.f, 4.f ,5.f };
 	
 	std::cout << M << std::endl << std::endl;
-	std::cout << Md * M << std::endl;
+	std::cout << Md * M << std::endl;*/
+	const auto n1 = 1.33;
+	const auto n2 = 1.00001;
+	std::cout << ::asin(n2 / n1) * (180.0 / 3.14)<< std::endl;
+
+
+	std::vector<int> Arr{3, 2, 3, 5};
+	// x0 x1 x2 x3 x4
+	// |--|--|--|--|
 
 	std::cin.get();
+	
 	
 
 
@@ -631,7 +640,6 @@ int main() {
 	//	//std::cout << _Mat3 << std::endl;
 	//	//std::this_thread::sleep_for(std::chrono::seconds(1));
 	//}
-
 
 	/*const auto bound = 2;
 	for (size_t i = 0; i != 10000; ++i) {

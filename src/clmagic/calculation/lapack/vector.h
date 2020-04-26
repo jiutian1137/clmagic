@@ -6,7 +6,6 @@
 #ifndef clmagic_math_lapack_VECTOR_h_
 #define clmagic_math_lapack_VECTOR_h_
 #include "../general/clmagic.h"// include is_*<>, shuffle<>
-#include "../general/general.h"// include abs() minval() maxval()
 #include "../general/bitset.h"// include ceil(Number, Bound)
 #include "../general/real.h"// include CSTD math
 #include "../general/simd.h"// block_traits<>, simd_operator

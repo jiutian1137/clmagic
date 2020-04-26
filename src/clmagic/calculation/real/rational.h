@@ -1,7 +1,12 @@
-﻿#pragma once
-#ifndef clmagic_math_real_RATIONAL_h_
-#define clmagic_math_real_RATIONAL_h_
-#include "../general/bitset.h"
+﻿//--------------------------------------------------------------------------------------
+// Copyright (c) 2019 LongJiangnan
+// All Rights Reserved
+// Apache Licene 2.0
+//--------------------------------------------------------------------------------------
+#pragma once
+#ifndef clmagic_calculation_real_RATIONAL_h_
+#define clmagic_calculation_real_RATIONAL_h_
+#include "bitset.h"
 #include <ratio>
 #include <string>
 
@@ -136,10 +141,20 @@ namespace clmagic {
 			return !((*this) > _Right);
 		}
 		
+		rational& operator++() {
+			_Num += _Den;
+			return *this;
+		}
+		rational  operator++(int) {
+			auto _Prev = *this;
+			++(*this);
+			return _Prev;
+		}
+		
 		rational operator-() const {
 			return rational(-this->_Num, this->_Den);
 		}
-		rational operator+(const rational& _Right) const {
+		rational  operator+ (const rational& _Right) const {
 			if (this->_Den == 0) {
 				return _Right;
 			} else if(_Right._Den == 0){
@@ -159,7 +174,7 @@ namespace clmagic {
 				*/
 			}
 		}
-		rational operator-(const rational& _Right) const {
+		rational  operator- (const rational& _Right) const {
 			const auto _N1 = this->_Num;
 			const auto _D1 = this->_Den;
 			const auto _N2 = _Right._Num;
@@ -173,7 +188,7 @@ namespace clmagic {
 			   D1*D2
 			*/
 		}
-		rational operator*(const rational& _Right) const {
+		rational  operator* (const rational& _Right) const {
 			const auto _N1 = this->_Num;
 			const auto _D1 = this->_Den;
 			const auto _N2 = _Right._Num;
@@ -188,7 +203,7 @@ namespace clmagic {
 			 D1*D2
 			*/
 		}
-		rational operator/(const rational& _Right) const {
+		rational  operator/ (const rational& _Right) const {
 			return (*this) * rational(_Right._Den, _Right._Num);
 			/*
 			 N1*D2
@@ -196,7 +211,7 @@ namespace clmagic {
 			 D1*N2
 			 */
 		}
-		rational operator%(const rational& _Right) const {
+		rational  operator% (const rational& _Right) const {
 			const auto _N1 = this->_Num;
 			const auto _D1 = this->_Den;
 			const auto _N2 = _Right._Num;
@@ -211,7 +226,6 @@ namespace clmagic {
 			    D1*D2
 			*/
 		}
-		
 		rational& operator+=(const rational& _Right) {
 			(*this) = (*this) + _Right;
 			return *this;
@@ -233,31 +247,31 @@ namespace clmagic {
 			return *this;
 		}
 		
-		rational operator+(integral_type _Integral) const {
+		rational  operator+ (integral_type _Integral) const {
 			const auto _Nx = this->_Num;
 			const auto _Dx = this->_Den;
 			return rational(_Nx + _Dx * _Integral, _Dx);
 		}
-		rational operator-(integral_type _Integral) const {
+		rational  operator- (integral_type _Integral) const {
 			const auto _Nx = this->_Num;
 			const auto _Dx = this->_Den;
 			return rational(_Nx - _Dx * _Integral, _Dx);
 		}
-		rational operator*(integral_type _Integral) const {
+		rational  operator* (integral_type _Integral) const {
 			const auto _Nx = this->_Num;
 			const auto _Dx = this->_Den;
 			const auto _Gy = gcd(_Integral, _Dx);
 			return rational(_Nx * (_Integral / _Gy),
 							_Dx / _Gy);
 		}
-		rational operator/(integral_type _Integral) const {
+		rational  operator/ (integral_type _Integral) const {
 			const auto _Nx = this->_Num;
 			const auto _Dx = this->_Den;
 			const auto _Gx = gcd(_Nx, _Integral);
 			return rational(_Nx / _Gx,
 							_Dx * (_Integral / _Gx));
 		}
-		rational operator%(integral_type _Integral) const {
+		rational  operator% (integral_type _Integral) const {
 			const auto _Nx = this->_Num;
 			const auto _Dx = this->_Den;
 			return rational(_Nx % (_Integral*_Dx), _Dx);
@@ -267,7 +281,18 @@ namespace clmagic {
 				_Dx
 			*/
 		}
-		
+		friend rational operator+(_Ti _Integral, const rational& _R1) {
+			return _R1 + _Integral;
+		}
+		friend rational operator-(_Ti _Integral, const rational& _R1) {
+			return (-_R1 + _Integral);
+		}
+		friend rational operator*(_Ti _Integral, const rational& _R1) {
+			return _R1 * _Integral;
+		}
+		friend rational operator/(_Ti _Integral, const rational& _R1) {
+			return _Integral * rational(_R1._Den, _R1._Num);
+		}
 		rational& operator+=(integral_type _Integral) {
 			(*this) = (*this) + _Integral;
 			return *this;
@@ -287,19 +312,6 @@ namespace clmagic {
 		rational& operator%=(integral_type _Integral) {
 			(*this) = (*this) % _Integral;
 			return *this;
-		}
-
-		friend rational operator+(_Ti _Integral, const rational& _R1) {
-			return _R1 + _Integral;
-		}
-		friend rational operator-(_Ti _Integral, const rational& _R1) {
-			return -_R1 + _Integral;
-		}
-		friend rational operator*(_Ti _Integral, const rational& _R1) {
-			return _R1 * _Integral;
-		}
-		friend rational operator/(_Ti _Integral, const rational& _R1) {
-			return _Integral * rational(_R1._Den, _R1._Num);
 		}
 
 		friend std::ostream& operator<<(std::ostream& _Ostr, const rational& _R1) {
@@ -359,7 +371,7 @@ namespace clmagic {
 							 1 << (_Mn - _Exp)
 				</second>
 			</formula>
-		  </describ>*/
+		</describ>*/
 		using _BitTy = decltype(_Fp.exponent());
 		auto       _Exp      = make_int32(_Fp.exponent() - _Fp.exponent_bias());
 		const auto _Hide     = mask_at<_BitTy>(_Mn);

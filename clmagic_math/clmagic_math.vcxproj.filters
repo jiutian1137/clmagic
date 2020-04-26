@@ -7,20 +7,11 @@
     <Filter Include="private">
       <UniqueIdentifier>{1e07b267-5a80-42c9-908f-671716c32056}</UniqueIdentifier>
     </Filter>
-    <Filter Include="private\lapack">
-      <UniqueIdentifier>{cf94f240-678f-4a10-bf5b-578171c1b451}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="private\complex">
-      <UniqueIdentifier>{2f54a8e4-db44-48d4-8f7e-03a67108b67b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="private\fraction">
       <UniqueIdentifier>{4c70cc89-8eec-45e8-ab67-ab9ac6106529}</UniqueIdentifier>
     </Filter>
     <Filter Include="private\other">
       <UniqueIdentifier>{1539bb76-e55a-4cc7-93d9-0faccbda8fc3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="private\physics">
-      <UniqueIdentifier>{3c229013-ceba-4178-aa9c-f9a248457c65}</UniqueIdentifier>
     </Filter>
     <Filter Include="private\raytracing">
       <UniqueIdentifier>{7556316e-04cb-46e6-9c51-5d991693e3f8}</UniqueIdentifier>
@@ -28,131 +19,103 @@
     <Filter Include="private\general">
       <UniqueIdentifier>{195320ea-db60-469f-9fa5-3d2040ee359b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="private\real">
-      <UniqueIdentifier>{867d2987-3d93-4dcf-9c66-f2d1aced6cac}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="private\calculus">
-      <UniqueIdentifier>{f081f0ee-3657-4e6e-9d82-7c75f511cf48}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="private\optics">
-      <UniqueIdentifier>{3715447e-08d5-4735-ad6e-5dba9296a4ef}</UniqueIdentifier>
-    </Filter>
     <Filter Include="include">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
+    <Filter Include="private\calculus">
+      <UniqueIdentifier>{f081f0ee-3657-4e6e-9d82-7c75f511cf48}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="private\complex">
+      <UniqueIdentifier>{2f54a8e4-db44-48d4-8f7e-03a67108b67b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="private\lapack">
+      <UniqueIdentifier>{cf94f240-678f-4a10-bf5b-578171c1b451}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="private\physic">
+      <UniqueIdentifier>{3c229013-ceba-4178-aa9c-f9a248457c65}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="private\real">
+      <UniqueIdentifier>{35e7819c-d434-469f-8c4b-e2fcb3548aa8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\clmagic\math\fraction.h">
-      <Filter>public</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\illumunation.h">
-      <Filter>public</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\lapack.h">
-      <Filter>public</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\other.h">
-      <Filter>public</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\raytracing.h">
-      <Filter>public</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\lapack\general.inl.h">
-      <Filter>private\lapack</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\lapack\intersect.inl.h">
-      <Filter>private\lapack</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\fraction\gradient.inl.h">
-      <Filter>private\fraction</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\fraction\Perlin.inl.h">
-      <Filter>private\fraction</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\fraction\Perlin_simplex.inl.h">
-      <Filter>private\fraction</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\fraction\value_noise.inl.h">
-      <Filter>private\fraction</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\fraction\Worley.inl.h">
-      <Filter>private\fraction</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\fraction\Worley_cellular.inl.h">
-      <Filter>private\fraction</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\raytracing\intersect.inl.h">
-      <Filter>private\raytracing</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\raytracing\shape.inl.h">
-      <Filter>private\raytracing</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\other\color_space.inl.h">
-      <Filter>private\other</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\other\rect2d.inl.h">
-      <Filter>private\other</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\clmagic\math.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\calculus.h">
-      <Filter>public</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\mstring.h">
-      <Filter>public</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\general\general.h">
-      <Filter>private\general</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\general\clmagic.h">
-      <Filter>private\general</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\general\simd.h">
-      <Filter>private\general</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\general\bitset.h">
-      <Filter>private\general</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\lapack\vector.h">
-      <Filter>private\lapack</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\lapack\matrix.h">
-      <Filter>private\lapack</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\lapack\Euler.h">
-      <Filter>private\lapack</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\lapack\Rodrigues.h">
-      <Filter>private\lapack</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\lapack\geometry.h">
-      <Filter>private\lapack</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\complex\WilliamRowanHamilton.h">
-      <Filter>private\complex</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\calculus\derivative.h">
+    <ClInclude Include="..\src\clmagic\calculation\calculus\derivative.h">
       <Filter>private\calculus</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\general\real.h">
+    <ClInclude Include="..\src\clmagic\calculation\calculus\intergration.h">
+      <Filter>private\calculus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\complex\WilliamRowanHamilton.h">
+      <Filter>private\complex</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\general\clmagic.h">
       <Filter>private\general</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\general\rational.h">
+    <ClInclude Include="..\src\clmagic\calculation\general\general.h">
       <Filter>private\general</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\atmosphere_scattering.h">
-      <Filter>private\physics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\optics\lightsource.h">
-      <Filter>private\optics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\optics\stylized_optics.h">
-      <Filter>private\optics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\math\general\unit.h">
+    <ClInclude Include="..\src\clmagic\calculation\general\simd.h">
       <Filter>private\general</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\lapack\Euler.h">
+      <Filter>private\lapack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\lapack\general.inl.h">
+      <Filter>private\lapack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\lapack\geometry.h">
+      <Filter>private\lapack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\lapack\intersect.inl.h">
+      <Filter>private\lapack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\lapack\matrix.h">
+      <Filter>private\lapack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\lapack\Rodrigues.h">
+      <Filter>private\lapack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\lapack\vector.h">
+      <Filter>private\lapack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\other\color_space.inl.h">
+      <Filter>private\other</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\other\rect2d.inl.h">
+      <Filter>private\other</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\physic\atmosphere_scattering.h">
+      <Filter>private\physic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\physic\optics.h">
+      <Filter>private\physic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\physic\Snell.h">
+      <Filter>private\physic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\real\bitset.h">
+      <Filter>private\real</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\real\rational.h">
+      <Filter>private\real</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\real\real.h">
+      <Filter>private\real</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\real\Stirling.h">
+      <Filter>private\real</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\real\unit.h">
+      <Filter>private\real</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\src\clmagic\calculation\physic\Snell_law.html">
+      <Filter>private\physic</Filter>
+    </None>
   </ItemGroup>
 </Project>

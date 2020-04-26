@@ -1,6 +1,7 @@
 //--------------------------------------------------------------------------------------
 // Copyright (c) 2019 LongJiangnan
 // All Rights Reserved
+// Apache Licene 2.0
 //--------------------------------------------------------------------------------------
 #pragma once
 #ifndef clmagic_math_general_UNIT_h_
@@ -9,9 +10,7 @@
 #include <ratio>
 
 namespace clmagic {
-	/*
-	@_Unit: unit value wrapper class
-	*/
+
 	template<typename _Ti, typename _Ratio>
 	class rational_duration : public rational<_Ti> {
 		using _Mybase = rational<_Ti>;
@@ -20,6 +19,28 @@ namespace clmagic {
 		using ratio         = _Ratio;
 		using integral_type = _Ti;
 		using rational_type = rational<_Ti>;
+		/*<ratio-cast>
+			<idea>unit-convert</idea>
+			<example>
+					   1000[m]           1[km]         1[km]     X
+				X[m] * ------- = X[m] * ------- = X * ------ = ------ [km]
+						1[km]           1000[m]        1000     1000
+
+						1000[m]       1000[m]
+				X[km] * ------- = X * ------- = X*1000[m]
+						 1[km]           1
+			</example>
+			<formula>
+				1[Lm] = 50[m] => std::ratio<1,50> = Lratio
+				1[Rm] = 6[m]  => std::ratio<1,6>  = Rratio
+							1[Lm]     1[Rm]         50     1[Rm]
+				X[Lm] * ------- * ------ = X * ----- * -------
+							50[m]     6[m]          1        6
+
+				=> (X * (1/Lratio) * Rratio)[Rm]
+				=> X * (Rratio/Lratio)[Rm]
+			</formula>
+		</ratio-cast>*/
 
 		rational_duration(integral_type _Val) : _Mybase(_Val) {}
 		
@@ -28,28 +49,7 @@ namespace clmagic {
 		template<typename _Ti2, typename _Lratio>
 		rational_duration(const rational_duration<_Ti2, _Lratio>& _Right)
 			: _Mybase(static_cast<_Ti>(_Right._Num), static_cast<_Ti>(_Right._Den)) {
-			/*<describ>
-				<idea>unit-convert</idea>
-				<example>
-						   1000[m]           1[km]         1[km]     X
-					X[m] * ------- = X[m] * ------- = X * ------ = ------ [km]
-						    1[km]           1000[m]        1000     1000
-
-						    1000[m]       1000[m]
-					X[km] * ------- = X * ------- = X*1000[m]
-						     1[km]           1
-				</example>
-				<formula>
-					1[Lm] = 50[m] => std::ratio<1,50> = Lratio
-					1[Rm] = 6[m]  => std::ratio<1,6>  = Rratio
-						     1[Lm]     1[Rm]         50     1[Rm]
-					X[Lm] * ------- * ------ = X * ----- * -------
-						     50[m]     6[m]          1        6
-
-					=> (X * (1/Lratio) * Rratio)[Rm]
-					=> X * (Rratio/Lratio)[Rm]
-				</formula>
-			  </describ>*/
+			
 			using _Cvt_ratio = std::ratio_divide<_Ratio, _Lratio>;
 			static_cast<_Mybase&>(*this) *= rational<_Ti>(_Cvt_ratio());
 			//static_cast<_Mybase&>(*this) /= rational<_Ti>(_Cvt_ratio);// stdUnit / otherUnit
@@ -72,21 +72,33 @@ namespace clmagic {
 			//static_cast<_Mybase&>(*this) /= rational<_Ti>(_Cvt_ratio);// stdUnit / otherUnit
 			return (*this);
 		}
-	
-		explicit operator float() const { return this->to_floating<float>(); }
-		explicit operator double() const { return this->to_floating<double>(); }
 
-		rational_duration operator+(_Ti _Integral) const {
+		explicit operator float() const { return _Mybase::to_floating<float>(); }
+		explicit operator double() const { return _Mybase::to_floating<double>(); }
+
+		rational_duration  operator+ (_Ti _Integral) const {
 			return rational_duration(static_cast<const _Mybase&>(*this) + _Integral);
 		}
-		rational_duration operator-(_Ti _Integral) const {
+		rational_duration  operator- (_Ti _Integral) const {
 			return rational_duration(static_cast<const _Mybase&>(*this) - _Integral);
 		}
-		rational_duration operator*(_Ti _Integral) const {
+		rational_duration  operator* (_Ti _Integral) const {
 			return rational_duration(static_cast<const _Mybase&>(*this) * _Integral);
 		}
-		rational_duration operator/(_Ti _Integral) const {
+		rational_duration  operator/ (_Ti _Integral) const {
 			return rational_duration(static_cast<const _Mybase&>(*this) / _Integral);
+		}
+		friend rational_duration operator+(_Ti _Integral, const rational_duration& _Right) {
+			return rational_duration(_Integral + static_cast<const _Mybase&>(_Right));
+		}
+		friend rational_duration operator-(_Ti _Integral, const rational_duration& _Right) {
+			return rational_duration(_Integral - static_cast<const _Mybase&>(_Right));
+		}
+		friend rational_duration operator*(_Ti _Integral, const rational_duration& _Right) {
+			return rational_duration(_Integral * static_cast<const _Mybase&>(_Right));
+		}
+		friend rational_duration operator/(_Ti _Integral, const rational_duration& _Right) {
+			return rational_duration(_Integral / static_cast<const _Mybase&>(_Right));
 		}
 		rational_duration& operator+=(_Ti _Integral) {
 			static_cast<_Mybase&>(*this) += _Integral;
@@ -104,18 +116,7 @@ namespace clmagic {
 			static_cast<_Mybase&>(*this) /= _Integral;
 			return *this;
 		}
-		friend rational_duration operator+(_Ti _Integral, const rational_duration& _Right) {
-			return rational_duration(_Integral + static_cast<const _Mybase&>(_Right));
-		}
-		friend rational_duration operator-(_Ti _Integral, const rational_duration& _Right) {
-			return rational_duration(_Integral - static_cast<const _Mybase&>(_Right));
-		}
-		friend rational_duration operator*(_Ti _Integral, const rational_duration& _Right) {
-			return rational_duration(_Integral * static_cast<const _Mybase&>(_Right));
-		}
-		friend rational_duration operator/(_Ti _Integral, const rational_duration& _Right) {
-			return rational_duration(_Integral / static_cast<const _Mybase&>(_Right));
-		}
+		
 		rational_duration& operator+=(const rational_duration& _Right) {
 			static_cast<_Mybase&>(*this) += static_cast<const rational<_Ti>&>(_Right);
 			return *this;
@@ -141,11 +142,12 @@ namespace clmagic {
 		template< typename _Ti2, typename _Ratio2>
 		auto operator/(const rational_duration<_Ti2, _Ratio2>& _Right) const;
 
-		friend std::string to_string(const rational_duration& _Right) {
-			return std::to_string(_Right.to_floating());
+		std::string to_string() const {
+			return std::to_string(_Mybase::to_floating());
 		}
+
 		friend std::ostream& operator<<(std::ostream& _Ostr, const rational_duration& _Right) {
-			return (_Ostr << to_string(_Right));
+			return (_Ostr << _Right.to_string());
 		}
 	};
 
@@ -178,7 +180,11 @@ namespace clmagic {
 										   std::ratio_multiply<second_ratio, second_ratio>>/*kg * m/s²*/;
 	using newtons = rational_duration<int64_t, newton_ratio>;
 
-	
+	template<typename _Ti, typename _Ratio>
+	std::string to_string(const rational_duration<_Ti, _Ratio>& _Unit) {
+		return _Unit.to_string();
+	}
+
 	template<typename _To, typename _Ty, typename _Ratio>
 	_To unit_cast(const rational_duration<_Ty, _Ratio>& _Unit) {
 		return static_cast<_To>(_Unit);
@@ -205,14 +211,17 @@ namespace clmagic {
 	auto rational_duration<_Ti, _Ratio>::operator+(const rational_duration<_Ti2, _Ratio2>& _Right) const {
 		return _Unit_operation<_Ti, _Ti2, _Ratio, _Ratio2>()(*this, _Right, std::plus<>());
 	}
+	
 	template<typename _Ti, typename _Ratio> template< typename _Ti2, typename _Ratio2> inline
 	auto rational_duration<_Ti, _Ratio>::operator-(const rational_duration<_Ti2, _Ratio2>& _Right) const {
 		return _Unit_operation<_Ti, _Ti2, _Ratio, _Ratio2>()(*this, _Right, std::minus<>());
 	}
+	
 	template<typename _Ti, typename _Ratio> template< typename _Ti2, typename _Ratio2> inline
 	auto rational_duration<_Ti, _Ratio>::operator*(const rational_duration<_Ti2, _Ratio2>& _Right) const {
 		return _Unit_operation<_Ti, _Ti2, _Ratio, _Ratio2>()(*this, _Right, std::multiplies<>());
 	}
+	
 	template<typename _Ti, typename _Ratio> template< typename _Ti2, typename _Ratio2> inline
 	auto rational_duration<_Ti, _Ratio>::operator/(const rational_duration<_Ti2, _Ratio2>& _Right) const {
 		return _Unit_operation<_Ti, _Ti2, _Ratio, _Ratio2>()(*this, _Right, std::divides<>());

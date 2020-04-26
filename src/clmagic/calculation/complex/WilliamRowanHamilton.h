@@ -1,26 +1,32 @@
+//--------------------------------------------------------------------------------------
+// Copyright (c) 16.October.1843 William-Rowan-Hamilton(1805–1865)
+// All Rights Reserved
+//--------------------------------------------------------------------------------------
 #pragma once
-#ifndef clmagic_math_complex_WILLIAM_ROWAN_HAMILTON_h_
-#define clmagic_math_complex_WILLIAM_ROWAN_HAMILTON_h_
+#ifndef clmagic_calculation_complex_WILLIAM_ROWAN_HAMILTON_h_
+#define clmagic_calculation_complex_WILLIAM_ROWAN_HAMILTON_h_
 #include "../lapack/vector.h"
 #include "../lapack/matrix.h"
-#include "../general/unit.h"
+#include "../real/unit.h"
 #include <string>
 #include <iostream>
 
 namespace WilliamRowanHamilton {
 
+	/*<Biographie>http://mathshistory.st-andrews.ac.uk/Biographies/Hamilton.html</Biographie>*/
+
 	/*
-	@_Note: memory:{imag, real}, because this can accelerates
-	@_William Rowan Hamilton (1805 - 1865)
-	@_quaternion: w + xi + yj + zk
-		(sin(theta), cos(theta)*axis), theta in [0, Pi], note polar(...)
-
-		matrix3x3:
-		[ 1 - 2(y^2 + z^2),     s(x*y + z*w),     s(x*z - y*w) ]
-		[     s(x*y - z*w), 1 - 2(x^2 + z^2),     s(y*z + x*w) ]
-		[     s(x*z + y*w),     s(y*z - x*w), 1 - 2(x^2 + y^2) ], s = 2/pow(norm(q),2)
-
-
+	<Memory-order>[imag[0], imag[1], imag[2], real]</Memory-order> because this can accelerates
+	<Describ>
+		<mean>w + xi + yj + zk</mean>
+		<mean>[sin(theta), cos(theta)*axis], theta in [0, Pi]</mean> note polar(...)
+		<matrix>
+			matrix3x3:
+			[ 1 - 2(y^2 + z^2),     s(x*y + z*w),     s(x*z - y*w) ]
+			[     s(x*y - z*w), 1 - 2(x^2 + z^2),     s(y*z + x*w) ]
+			[     s(x*z + y*w),     s(y*z - x*w), 1 - 2(x^2 + y^2) ], s = 2/pow(norm(q),2)
+		<matrix>
+	</Describ>
 	*/
 	template<typename _SclTy, typename _BlkTy = _SclTy>
 	struct __declspec(align(std::alignment_of_v<_BlkTy>)) quaternion {
@@ -28,12 +34,10 @@ namespace WilliamRowanHamilton {
 		using imag_type = clmagic::vector3<_SclTy, _BlkTy>;
 
 		quaternion() = default;
-
 		quaternion(const _SclTy& _Real, const _SclTy& _ImX, const _SclTy& _ImY, const _SclTy& _ImZ)
 			: _Mydata{ _ImX, _ImY, _ImZ, _Real } {}
-
 		quaternion(const real_type& _Real, const imag_type& _Imag)
-			: quaternion(_Real, _Imag[0], _Imag[1], _Imag[2]) {}
+			: _Mydata(_Imag[0], _Imag[1], _Imag[2], _Real) {}
 
 		real_type& real() {
 			return _Mydata[3];
@@ -46,6 +50,16 @@ namespace WilliamRowanHamilton {
 		}
 		const imag_type& imag() const {
 			return ( * reinterpret_cast<const imag_type*>(_Mydata) );
+		}
+		std::string to_string() const {
+			std::array<char, 256> _Temp;
+			auto _Last_index = snprintf(_Temp.data(), _Temp.size() - 1,
+				"[%s + i*%s + j*%s + k*%s]",
+				std::to_string(this->real()).c_str(),
+				std::to_string(this->imag()[0]).c_str(),
+				std::to_string(this->imag()[1]).c_str(),
+				std::to_string(this->imag()[2]).c_str());
+			return std::string(&_Temp[0], &_Temp[_Last_index]);
 		}
 
 		quaternion operator+(const quaternion& _Right) const {
@@ -98,6 +112,7 @@ namespace WilliamRowanHamilton {
 			return quaternion(q_real * r_real - dot(q_imag, r_imag),
 				cross3(q_imag, r_imag) + q_real*r_imag + r_real*q_imag);
 		}
+		
 		quaternion operator*(const _SclTy& _Scalar) const {
 			return quaternion(real() * _Scalar, imag() * _Scalar);
 		}
@@ -125,24 +140,18 @@ namespace WilliamRowanHamilton {
 			return reinterpret_cast<const clmagic::vector3<_SclTy, _BlkTy>&>(qpq);
 		}
 
-		friend std::string to_string(const quaternion& _Quat) {
-			std::array<char, 256> _Temp;
-			auto _Last_index = snprintf(_Temp.data(), _Temp.size() - 1,
-				"[%s + i*%s + j*%s + k*%s]",
-				std::to_string(_Quat.real()).c_str(),
-				std::to_string(_Quat.imag()[0]).c_str(),
-				std::to_string(_Quat.imag()[1]).c_str(),
-				std::to_string(_Quat.imag()[2]).c_str() );
-			return std::string(&_Temp[0], &_Temp[_Last_index]);
-		}
 		friend std::ostream& operator<<(std::ostream& _Ostr, const quaternion& _Quat) {
-			return (_Ostr << to_string(_Quat));
+			return (_Ostr << _Quat.to_string());
 		}
 	
 	private:
 		_SclTy _Mydata[4];
 	};
 
+	template<typename _SclTy, typename _BlkTy> inline
+	std::string to_string(const quaternion<_SclTy, _BlkTy>& q) {
+		return q.to_string();
+	}
 
 	template<typename _SclTy, typename _BlkTy> inline
 	quaternion<_SclTy, _BlkTy> identity() {// (0, i*1, j*1, k*1)
@@ -156,13 +165,6 @@ namespace WilliamRowanHamilton {
 		return quaternion<_SclTy, _BlkTy>(cos(theta), sin(theta) * _Axis);
 	}
 	
-	// 1. conj(conj(q)) = q
-	// 2. conj(q + r) = conj(q) + conj(r)
-	// 3. conj(q*r)  = conj(r) * conj(q)
-	template<typename _SclTy, typename _BlkTy> inline
-	quaternion<_SclTy, _BlkTy> conj(const quaternion<_SclTy, _BlkTy>& _Left) {
-		return quaternion<_SclTy, _BlkTy>(_Left.real(), -_Left.imag());
-	}
 
 	template<typename _SclTy, typename _BlkTy> inline
 	_SclTy dot(const quaternion<_SclTy, _BlkTy>& _Left, const quaternion<_SclTy, _BlkTy>& _Right) {
@@ -174,11 +176,19 @@ namespace WilliamRowanHamilton {
 		return sqrt( dot(_Left, _Left) );
 	}
 	
+	// 1. conj(conj(q)) = q
+	// 2. conj(q + r) = conj(q) + conj(r)
+	// 3. conj(q*r)  = conj(r) * conj(q)
+	template<typename _SclTy, typename _BlkTy> inline
+	quaternion<_SclTy, _BlkTy> conj(const quaternion<_SclTy, _BlkTy>& _Left) {
+		return quaternion<_SclTy, _BlkTy>(_Left.real(), -_Left.imag());
+	}
+	
 	template<typename _SclTy, typename _BlkTy> inline
 	quaternion<_SclTy, _BlkTy> inverse(const quaternion<_SclTy, _BlkTy>& _Left) {// 1/norm(q)*conj(q)
-		return static_cast<_SclTy>(1)
+		return ( static_cast<_SclTy>(1)
 			 /*------------------*/ * conj(_Left)
-			     / norm(_Left);
+			     / norm(_Left) );
 	}
 
 	template<typename _SclTy, typename _BlkTy> inline
@@ -205,12 +215,12 @@ namespace WilliamRowanHamilton {
 
 	// q = cos(theta) + axis*sin(theta) = pow(e, axis*theta). 
 
-
-	template<typename _SclTy, size_t _Rows, typename _BlkTy, bool _Major = clmagic::_COL_MAJOR_>
+	/*<Reference>RealTimeRendering-4th-Edition.</Reference>*/
+	template<typename _SclTy, size_t _Rows, typename _BlkTy, bool _Major = ::clmagic::_COL_MAJOR_>
 	struct rotation {/*default matrix3x3*/
 		static_assert(_Rows == 3 || _Rows == 4, "->[::Euler::rotation<_SclTy, _Rows, ...>]");
 
-		using matrix_type = clmagic::square_matrix<_SclTy, _Rows, _BlkTy, _Major>;
+		using matrix_type = ::clmagic::square_matrix<_SclTy, _Rows, _BlkTy, _Major>;
 
 		static matrix_type get_matrix(const quaternion<_SclTy, _BlkTy>& q) {
 			const auto qx = q.imag()[0];
@@ -218,16 +228,17 @@ namespace WilliamRowanHamilton {
 			const auto qz = q.imag()[2];
 			const auto qw = q.real();
 			const auto s  = static_cast<_SclTy>(2)/(qx*qx + qy*qy + qz*qz + qw*qw);
+			
 			if _CONSTEXPR_IF(matrix_type::col_major()) {
 				return matrix_type{
-					_SclTy(1)-s*(qy*qy+qz*qz),        s*(qx*qy-qw*qz),        s*(qx*qz+qw*qy),
-					       s*(qx*qy+qw*qz), _SclTy(1)-s*(qx*qx+qz*qz),        s*(qy*qz-qw*qx),
-						   s*(qx*qz-qw*qy),		   s*(qy*qz+qw*qx), _SclTy(1)-s*(qx*qx+qy*qy) };
+					_SclTy(1)-s*(qy*qy+qz*qz),           s*(qx*qy-qw*qz),           s*(qx*qz+qw*qy),
+					          s*(qx*qy+qw*qz), _SclTy(1)-s*(qx*qx+qz*qz),           s*(qy*qz-qw*qx),
+						      s*(qx*qz-qw*qy),		     s*(qy*qz+qw*qx), _SclTy(1)-s*(qx*qx+qy*qy) };
 			} else {
 				return matrix_type{
-					_SclTy(1)-s*(qy*qy+qz*qz),        s*(qx*qy+qw*qz),        s*(qx*qz-qw*qy),
-					       s*(qx*qy-qw*qz), _SclTy(1)-s*(qx*qx+qz*qz),        s*(qy*qz+qw*qx),
-						   s*(qx*qz+qw*qy),		   s*(qy*qz-qw*qx), _SclTy(1)-s*(qx*qx+qy*qy) };
+					_SclTy(1)-s*(qy*qy+qz*qz),           s*(qx*qy+qw*qz),           s*(qx*qz-qw*qy),
+					          s*(qx*qy-qw*qz), _SclTy(1)-s*(qx*qx+qz*qz),           s*(qy*qz+qw*qx),
+						      s*(qx*qz+qw*qy),		     s*(qy*qz-qw*qx), _SclTy(1)-s*(qx*qx+qy*qy) };
 			}
 		}
 	
@@ -292,9 +303,10 @@ namespace WilliamRowanHamilton {
 		}
 	};
 
+	/*<Reference>RealTimeRendering-4th-Edition.</Reference>*/
 	template<typename _SclTy, typename _BlkTy, bool _Major>
 	struct rotation<_SclTy, 4, _BlkTy, _Major> {/*matrix4x4*/
-		using matrix_type = clmagic::square_matrix<_SclTy, 4, _BlkTy, _Major>;
+		using matrix_type = ::clmagic::square_matrix<_SclTy, 4, _BlkTy, _Major>;
 		
 		static matrix_type get_matrix(const quaternion<_SclTy, _BlkTy>& q) {
 			const auto qx = q.imag()[0];
@@ -302,18 +314,19 @@ namespace WilliamRowanHamilton {
 			const auto qz = q.imag()[2];
 			const auto qw = q.real();
 			const auto s  = static_cast<_SclTy>(2)/(qx*qx + qy*qy + qz*qz + qw*qw);
+
 			if _CONSTEXPR_IF(matrix_type::col_major()) {
 				return matrix_type{
-					_SclTy(1)-s*(qy*qy+qz*qz),        s*(qx*qy-qw*qz),        s*(qx*qz+qw*qy), (_SclTy)0,
-					       s*(qx*qy+qw*qz), _SclTy(1)-s*(qx*qx+qz*qz),        s*(qy*qz-qw*qx), (_SclTy)0,
-						   s*(qx*qz-qw*qy),		   s*(qy*qz+qw*qx), _SclTy(1)-s*(qx*qx+qy*qy), (_SclTy)0,
-					       (_SclTy)0,                 (_SclTy)0,                 (_SclTy)0,          (_SclTy)1 };
+					_SclTy(1)-s*(qy*qy+qz*qz),           s*(qx*qy-qw*qz),           s*(qx*qz+qw*qy), (_SclTy)0,
+					          s*(qx*qy+qw*qz), _SclTy(1)-s*(qx*qx+qz*qz),           s*(qy*qz-qw*qx), (_SclTy)0,
+						      s*(qx*qz-qw*qy),		     s*(qy*qz+qw*qx), _SclTy(1)-s*(qx*qx+qy*qy), (_SclTy)0,
+					                (_SclTy)0,                 (_SclTy)0,                 (_SclTy)0, (_SclTy)1 };
 			} else {
 				return matrix_type{
-					_SclTy(1)-s*(qy*qy+qz*qz),        s*(qx*qy+qw*qz),        s*(qx*qz-qw*qy), (_SclTy)0,
-					       s*(qx*qy-qw*qz), _SclTy(1)-s*(qx*qx+qz*qz),        s*(qy*qz+qw*qx), (_SclTy)0,
-						   s*(qx*qz+qw*qy),		   s*(qy*qz-qw*qx), _SclTy(1)-s*(qx*qx+qy*qy), (_SclTy)0,
-						   (_SclTy)0,                 (_SclTy)0,                 (_SclTy)0,          (_SclTy)1 };
+					_SclTy(1)-s*(qy*qy+qz*qz),           s*(qx*qy+qw*qz),           s*(qx*qz-qw*qy), (_SclTy)0,
+					          s*(qx*qy-qw*qz), _SclTy(1)-s*(qx*qx+qz*qz),           s*(qy*qz+qw*qx), (_SclTy)0,
+						      s*(qx*qz+qw*qy),		     s*(qy*qz-qw*qx), _SclTy(1)-s*(qx*qx+qy*qy), (_SclTy)0,
+						            (_SclTy)0,                 (_SclTy)0,                 (_SclTy)0, (_SclTy)1 };
 			}
 		}
 	
@@ -343,7 +356,6 @@ namespace WilliamRowanHamilton {
 				const auto qz = sqrt( (-M00 - M11 + M22 + M33) / (_SclTy)4 );
 				return quaternion<_SclTy, _BlkTy>(qw, qx, qy, qz);
 			}
-
 		}
 	};
 

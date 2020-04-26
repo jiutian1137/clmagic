@@ -10,29 +10,25 @@
 
 #endif
 
-#include "math/general/clmagic.h"
-#include "math/general/general.h"
-#include "math/general/rational.h"
-#include "math/general/unit.h"
-#include "math/general/real.h"
+#include "calculation/general/clmagic.h"
+#include "calculation/general/general.h"
+#include "calculation/real/bitset.h"
+#include "calculation/real/rational.h"
+#include "calculation/real/unit.h"
+#include "calculation/real/real.h"
+#include "calculation/real/Stirling.h"
 
-#include "math/lapack/vector.h"
-#include "math/lapack/matrix.h"
-#include "math/lapack/geometry.h"
-#include "math/lapack/Euler.h"
-#include "math/lapack/Rodrigues.h"
+#include "calculation/lapack/vector.h"
+#include "calculation/lapack/matrix.h"
+#include "calculation/lapack/Euler.h"
+#include "calculation/lapack/Rodrigues.h"
+#include "calculation/lapack/geometry.h"
 
-#include "math/complex/WilliamRowanHamilton.h"
+#include "calculation/complex/WilliamRowanHamilton.h"
 
-#include "math/physics/atmosphere_scattering.h"
-#include "math/optics/lightsource.h"
+#include "calculation/calculus/derivative.h"
 
-#include "math/calculus.h"
-#include "math/illumunation.h"
-#include "math/raytracing.h"
-#include "math/fraction.h"
-#include "math/other.h"
-#include "math/mstring.h"
+#include "calculation/physic/atmosphere_scattering.h"
 
 
 //#include "math/lapack/general.inl.h"
@@ -45,20 +41,20 @@
 
 //#include "math/complex/quaternion.inl.h"
 
-#include "math/illumunation/illumunation.inl.h"
-
-#include "math/raytracing/shape.inl.h"
-#include "math/raytracing/intersect.inl.h"
-
-#include "math/fraction/Perlin.inl.h"
-//#include "math/fraction/Perlin_simplex.inl.h"
-//#include "math/fraction/Worley.inl.h"
-//#include "math/fraction/Worley_cellular.inl.h"
-//#include "math/fraction/gradient.inl.h"
-//#include "math/fraction/value_noise.inl.h"
-
-#include "math/other/rect2d.inl.h"
-#include "math/other/color_space.inl.h"
+//#include "math/illumunation/illumunation.inl.h"
+//
+//#include "math/raytracing/shape.inl.h"
+//#include "math/raytracing/intersect.inl.h"
+//
+//#include "math/fraction/Perlin.inl.h"
+////#include "math/fraction/Perlin_simplex.inl.h"
+////#include "math/fraction/Worley.inl.h"
+////#include "math/fraction/Worley_cellular.inl.h"
+////#include "math/fraction/gradient.inl.h"
+////#include "math/fraction/value_noise.inl.h"
+//
+//#include "math/other/rect2d.inl.h"
+//#include "math/other/color_space.inl.h"
 
 /*
 	  +-----------+---------------+------------+

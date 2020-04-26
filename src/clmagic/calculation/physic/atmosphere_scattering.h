@@ -1,6 +1,6 @@
 ﻿#pragma once
-#ifndef clmagic_math_PHYSICS_h_
-#define clmagic_math_PHYSICS_h_
+#ifndef clmagic_calculation_physic_ATMOSPHERE_SCATTERING_h_
+#define clmagic_calculation_physic_ATMOSPHERE_SCATTERING_h_
 #include "../lapack/vector.h"
 
 namespace clmagic {

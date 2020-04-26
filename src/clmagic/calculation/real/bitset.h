@@ -1,107 +1,112 @@
 //--------------------------------------------------------------------------------------
 // Copyright (c) 2019 LongJiangnan
 // All Rights Reserved
+// Apache Licene 2.0
 //--------------------------------------------------------------------------------------
 #pragma once
-#ifndef clmagic_math_general_BITSET_h_
-#define clmagic_math_general_BITSET_h_
+#ifndef clmagic_calculation_general_BITSET_h_
+#define clmagic_calculation_general_BITSET_h_
 #include <bitset>
 #include <assert.h>
 
-namespace clmagic {
-	template<size_t _Bits>
-	std::bitset<_Bits>& operator+=(std::bitset<_Bits>& _Left, std::bitset<_Bits> _Right) {
-		auto _Carry = _Left & _Right;
-		for (; _Carry.any(); _Carry = _Left & _Right) {
-			_Left    = _Left ^ _Right;
-			_Right   = _Carry << 1;
-		}
+template<size_t _Bits>
+std::bitset<_Bits>& operator+=(std::bitset<_Bits>& _Left, std::bitset<_Bits> _Right) {
+	auto _Carry = _Left & _Right;
+	for (; _Carry.any(); _Carry = _Left & _Right) {
+		_Left    = _Left ^ _Right;
+		_Right   = _Carry << 1;
+	}
 
-		return (_Left ^= _Right);
-		/*
-		  00110101                      
-		+ 00000001                    
-		= 00110110                     
-		forward_bit = A & B
-		forward_bit <<= 1
-		result = A | forward_bit
+	return (_Left ^= _Right);
+	/*
+		00110101                      
+	+ 00000001                    
+	= 00110110                     
+	forward_bit = A & B
+	forward_bit <<= 1
+	result = A | forward_bit
 
-		  10101111 A
-		+ 00110110 B
-		= 11100101 Result
+		10101111 A
+	+ 00110110 B
+	= 11100101 Result
 		 
-		  10011001 A ^ B        = A2
-		+ 01001100 (A & B) << 1 = B2
-		= 11100101
+		10011001 A ^ B        = A2
+	+ 01001100 (A & B) << 1 = B2
+	= 11100101
 		  
-		  11010101 A2 ^ B2        = A3
-		+ 00010000 (A2 & B2) << 1 = B3
-		= 11100101
+		11010101 A2 ^ B2        = A3
+	+ 00010000 (A2 & B2) << 1 = B3
+	= 11100101
 
-		  11000101 A3 ^ B3        = A4
-		+ 00100000 (A3 & B3) << 1 = B4
-		= 11100101
+		11000101 A3 ^ B3        = A4
+	+ 00100000 (A3 & B3) << 1 = B4
+	= 11100101
 
-		  00000000 A4 & B4
-		  11100101 A4 ^ B4 = Result
-		*/
-	}
+		00000000 A4 & B4
+		11100101 A4 ^ B4 = Result
+	*/
+}
 
-	template<size_t _Bits>
-	std::bitset<_Bits> operator+(const std::bitset<_Bits>& _Left, const std::bitset<_Bits>& _Right) noexcept {
-		auto _A = std::bitset<_Bits>(_Left);
-		return (_A += _Right);
-	}
+template<size_t _Bits>
+std::bitset<_Bits> operator+(const std::bitset<_Bits>& _Left, const std::bitset<_Bits>& _Right) noexcept {
+	auto _A = std::bitset<_Bits>(_Left);
+	return (_A += _Right);
+}
 
-	template<size_t _Bits>
-	std::bitset<_Bits>& operator-=(std::bitset<_Bits>& _Left, std::bitset<_Bits> _Right) {
-		for ( ; ; ) {
-			_Left  = _Left ^ _Right;
-			_Right = _Left & _Right;// (_Left^_Right)&_Right
-			if ( _Right.none() ) {
-				break;
-			}
-			_Right = _Right << 1;
+template<size_t _Bits>
+std::bitset<_Bits>& operator-=(std::bitset<_Bits>& _Left, std::bitset<_Bits> _Right) {
+	for ( ; ; ) {
+		_Left  = _Left ^ _Right;
+		_Right = _Left & _Right;// (_Left^_Right)&_Right
+		if ( _Right.none() ) {
+			break;
 		}
-
-		return (_Left);
-		/*
-		  10100111 A
-		- 10001111 B
-		= 00011000 Result
-		
-		  00101000 A ^ B         = A1
-		- 00010000 (A1 & B) << 1 = B1
-		= 00011000
-
-		  00111000 A1 ^ B1        = A2
-		- 00100000 (A2 & B1) << 1 = B2
-		= 00011000
-
-		  00011000 A2 ^ B2 = A3 = Result
-		  00000000 A3 & B2
-		*/
+		_Right = _Right << 1;
 	}
 
-	template<size_t _Bits>
-	std::bitset<_Bits> operator-(const std::bitset<_Bits>& _Left, const std::bitset<_Bits>& _Right) {
+	return (_Left);
+	/*
+		10100111 A
+	- 10001111 B
+	= 00011000 Result
+		
+		00101000 A ^ B         = A1
+	- 00010000 (A1 & B) << 1 = B1
+	= 00011000
+
+		00111000 A1 ^ B1        = A2
+	- 00100000 (A2 & B1) << 1 = B2
+	= 00011000
+
+		00011000 A2 ^ B2 = A3 = Result
+		00000000 A3 & B2
+	*/
+}
+
+template<size_t _Bits>
+std::bitset<_Bits> operator-(const std::bitset<_Bits>& _Left, const std::bitset<_Bits>& _Right) {
 		auto _A = std::bitset<_Bits>(_Left);
 		return (_A -= (_Right));
 	}
 
+namespace clmagic {
 
+	/*Memory-Operation*/
 	constexpr size_t floor(size_t _Val, size_t _Bound) {
 		return _Val & (~(_Bound - 1));
 	}
 
+	/*Memory-Operation*/
 	constexpr size_t ceil(size_t _Val, size_t _Bound) {
 		const auto _Mask = (_Bound - 1);
 		return (_Val + _Mask) & (~_Mask);
 	}
 
+	/*Memory-Operation*/
 	constexpr size_t trunc(size_t _Val, size_t _Bound) {
 		return _Val & (_Bound - 1);
 	}
+
 
 	template<typename _BitTy> inline
 	constexpr _BitTy mask_at(size_t _Nx) {// pow(2, _Nx)
@@ -258,7 +263,6 @@ namespace clmagic {
 	private:
 		_Ty _Myval;
 	};
-
 
 	using IEEE754_float = floating_point<float, 8, 23>;// (-1)^S * (1+Fraction) * 2^(Exponent-Bias), Bias = 127
 	using IEEE754_double = floating_point<double, 11, 52>;// (-1)^S * (1+Fraction) * 2^(Exponent-Bias), Bias = 1023
