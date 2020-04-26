@@ -1,64 +1,67 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="头文件">
+    <Filter Include="include">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
     <Filter Include="public">
-      <UniqueIdentifier>{26747386-3989-4d08-868b-0d4197652ca9}</UniqueIdentifier>
+      <UniqueIdentifier>{07ea7eae-75d2-421e-a19e-c2da794ee14f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="private">
-      <UniqueIdentifier>{08b8fcee-9c6c-403f-8dec-7fc434b6a05e}</UniqueIdentifier>
+    <Filter Include="GL">
+      <UniqueIdentifier>{7638132d-a4a9-43e5-b0ed-171c28d8b666}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GL\KHR">
+      <UniqueIdentifier>{63af4751-4c3b-45cc-b84a-356a47cfcd94}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\clmagic\opengl.h">
-      <Filter>头文件</Filter>
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\opengl\glsl_shader.h">
+    <ClInclude Include="..\src\clmagic\opengl\glblend.h">
       <Filter>public</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\opengl\plugin.h">
+    <ClInclude Include="..\src\clmagic\opengl\glbuffer.h">
       <Filter>public</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\opengl\glew.h">
+    <ClInclude Include="..\src\clmagic\opengl\gldraw.h">
       <Filter>public</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\opengl\glsl_shader_analysis.h">
+    <ClInclude Include="..\src\clmagic\opengl\glshader.h">
       <Filter>public</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\opengl\glsl_shader.inl.h">
-      <Filter>private</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\opengl\glsl.h">
-      <Filter>public</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\opengl\clmagic_basic.h">
-      <Filter>public</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\opengl\clmagic_math.h">
+    <ClInclude Include="..\src\clmagic\opengl\gltexture.h">
       <Filter>public</Filter>
     </ClInclude>
     <ClInclude Include="..\src\clmagic\opengl\glut.h">
       <Filter>public</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\clmagic\opengl\glvarray.h">
+      <Filter>public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\opengl\noncopyable.h">
+      <Filter>public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\opengl\GL\eglew.h">
+      <Filter>GL</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\opengl\GL\glew.h">
+      <Filter>GL</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\opengl\GL\glxew.h">
+      <Filter>GL</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\opengl\GL\wglew.h">
+      <Filter>GL</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\opengl\GL\KHR\khrplatform.h">
+      <Filter>GL\KHR</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\clmagic\opengl\opengl_util.cpp">
-      <Filter>private</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\clmagic\opengl\plugin.cpp">
-      <Filter>private</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\clmagic\opengl\glsl_shader_analysis.cpp">
-      <Filter>private</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\clmagic\opengl\glsl_shader.cpp">
-      <Filter>private</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\clmagic\opengl\glsl.cpp">
-      <Filter>private</Filter>
+    <ClCompile Include="..\src\clmagic\opengl\GL\glew.c">
+      <Filter>GL</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

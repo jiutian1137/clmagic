@@ -1,8 +1,12 @@
 #pragma once
-#ifndef __CLMAGIC_CORE___OPENGL___H__
-#define __CLMAGIC_CORE___OPENGL___H__
+#ifndef clmagic_OPENGL_h_
+#define clmagic_OPENGL_h_
 
-#include "opengl/opengl_util.h"
-#include "opengl/glsl_shader.h"
+#include "opengl/glshader.h"
+#include "opengl/gltexture.h"
+#include "opengl/glbuffer.h"
+#include "opengl/glvarray.h"
+#include "opengl/gldraw.h"
+#include "opengl/glblend.h"
 
 #endif

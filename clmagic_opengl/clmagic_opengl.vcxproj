@@ -20,22 +20,22 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\clmagic\opengl.h" />
-    <ClInclude Include="..\src\clmagic\opengl\clmagic_basic.h" />
-    <ClInclude Include="..\src\clmagic\opengl\glew.h" />
-    <ClInclude Include="..\src\clmagic\opengl\glsl_shader.h" />
-    <ClInclude Include="..\src\clmagic\opengl\glsl_shader.inl.h" />
-    <ClInclude Include="..\src\clmagic\opengl\glsl_shader_analysis.h" />
-    <ClInclude Include="..\src\clmagic\opengl\glsl.h" />
-    <ClInclude Include="..\src\clmagic\opengl\clmagic_math.h" />
+    <ClInclude Include="..\src\clmagic\opengl\glblend.h" />
+    <ClInclude Include="..\src\clmagic\opengl\glbuffer.h" />
+    <ClInclude Include="..\src\clmagic\opengl\gldraw.h" />
+    <ClInclude Include="..\src\clmagic\opengl\glshader.h" />
+    <ClInclude Include="..\src\clmagic\opengl\gltexture.h" />
     <ClInclude Include="..\src\clmagic\opengl\glut.h" />
-    <ClInclude Include="..\src\clmagic\opengl\plugin.h" />
+    <ClInclude Include="..\src\clmagic\opengl\glvarray.h" />
+    <ClInclude Include="..\src\clmagic\opengl\GL\eglew.h" />
+    <ClInclude Include="..\src\clmagic\opengl\GL\glew.h" />
+    <ClInclude Include="..\src\clmagic\opengl\GL\glxew.h" />
+    <ClInclude Include="..\src\clmagic\opengl\GL\KHR\khrplatform.h" />
+    <ClInclude Include="..\src\clmagic\opengl\GL\wglew.h" />
+    <ClInclude Include="..\src\clmagic\opengl\noncopyable.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\clmagic\opengl\glsl.cpp" />
-    <ClCompile Include="..\src\clmagic\opengl\glsl_shader.cpp" />
-    <ClCompile Include="..\src\clmagic\opengl\glsl_shader_analysis.cpp" />
-    <ClCompile Include="..\src\clmagic\opengl\opengl_util.cpp" />
-    <ClCompile Include="..\src\clmagic\opengl\plugin.cpp" />
+    <ClCompile Include="..\src\clmagic\opengl\GL\glew.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
