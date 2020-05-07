@@ -13,9 +13,6 @@
     <Filter Include="private\other">
       <UniqueIdentifier>{1539bb76-e55a-4cc7-93d9-0faccbda8fc3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="private\raytracing">
-      <UniqueIdentifier>{7556316e-04cb-46e6-9c51-5d991693e3f8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="private\general">
       <UniqueIdentifier>{195320ea-db60-469f-9fa5-3d2040ee359b}</UniqueIdentifier>
     </Filter>
@@ -38,13 +35,13 @@
     <Filter Include="private\real">
       <UniqueIdentifier>{35e7819c-d434-469f-8c4b-e2fcb3548aa8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="private\cg">
+      <UniqueIdentifier>{7556316e-04cb-46e6-9c51-5d991693e3f8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\clmagic\math.h">
       <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\calculation\calculus\derivative.h">
-      <Filter>private\calculus</Filter>
     </ClInclude>
     <ClInclude Include="..\src\clmagic\calculation\calculus\intergration.h">
       <Filter>private\calculus</Filter>
@@ -91,9 +88,6 @@
     <ClInclude Include="..\src\clmagic\calculation\physic\atmosphere_scattering.h">
       <Filter>private\physic</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\calculation\physic\optics.h">
-      <Filter>private\physic</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\clmagic\calculation\physic\Snell.h">
       <Filter>private\physic</Filter>
     </ClInclude>
@@ -109,8 +103,29 @@
     <ClInclude Include="..\src\clmagic\calculation\real\Stirling.h">
       <Filter>private\real</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\calculation\real\unit.h">
+    <ClInclude Include="..\src\clmagic\calculation\calculus\differentiation.h">
+      <Filter>private\calculus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\physic\reflection.h">
+      <Filter>private\physic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\real\radians.h">
       <Filter>private\real</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\real\unit_cast.h">
+      <Filter>private\real</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\physic\Schlick.h">
+      <Filter>private\physic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\cg\microfacet.h">
+      <Filter>private\cg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\cg\reflectance.h">
+      <Filter>private\cg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\cg\rendering.h">
+      <Filter>private\cg</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

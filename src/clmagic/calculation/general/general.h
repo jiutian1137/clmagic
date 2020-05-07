@@ -1,6 +1,7 @@
 ﻿//--------------------------------------------------------------------------------------
 // Copyright (c) 2019 LongJiangnan
 // All Rights Reserved
+// Apache Licene 2.0
 //--------------------------------------------------------------------------------------
 #pragma once
 #ifndef clmagic_calculation_general_GENERAL_h_
@@ -15,128 +16,174 @@
 #include <algorithm>
 #include <functional>
 #include <initializer_list>
+#include "clmagic.h"
 
 namespace clmagic {
 
-/*- - - - - - - - - - - - - - - - - - has_arguments - - - - - - - - - - - - - - - - -*/
-template <typename... _Types>
-struct _Arg_types : public std::bool_constant<true> /* default true */ {
-};
+#define _Return_generate_object(TYPE, NAME, ...) \
+TYPE NAME;                                       \
+__VA_ARGS__;                                     \
+return NAME
 
-template <>
-struct _Arg_types<> : public std::bool_constant<false> {
-	/* empty argument list, containers only void argument */
-};
+	/* f(x)
+	   1. _Ty (_Ty or const _Ty or const _Ty&)
+	   2. is not same std::function<>
+	   3. cannot is Lambda-express, because it affect optimization
+	*/
+	/*template<typename _Ty>
+	class function {
+		int _Mytype;
+		union {
+			_Ty(*_Myptr0)(_Ty);
+			_Ty(*_Myptr1)(const _Ty&);
+		};
 
-//template <>
-//struct _Arg_types<void> : public std::bool_constant<false> {
-//	using first_argument_type = void;/* argument type: void */
-//};
+	public:
+		function() : _Mytype(-1), _Myptr0(nullptr) {}
+		function(_Ty(f)(_Ty)) : _Mytype(0), _Myptr0(f) {}
+		function(_Ty(f)(const _Ty&)) : _Mytype(1), _Myptr1(f) {}
 
-template<typename _Ty1>
-struct _Arg_types<_Ty1> : public std::bool_constant<true> {
-	using first_argument_type = _Ty1;
-};
+		_Ty operator()(_Ty x) const {
+			switch (_Mytype) {
+				case 0: return _Myptr0(x);
+				case 1: return _Myptr1(x);
+				default: return static_cast<_Ty>(0);
+			}
+		}
+	};*/
 
-template<typename _Ty1, typename _Ty2>
-struct _Arg_types<_Ty1, _Ty2> : public std::bool_constant<true> {
-	using first_argument_type  = _Ty1;
-	using second_argument_type = _Ty2;
-};
+	/*- - - - - - - - - - - - - - - - - - has_arguments - - - - - - - - - - - - - - - - -*/
+	template <typename... _Types>
+	struct _Arg_types : public std::bool_constant<true> /* default true */ {
+	};
 
-template<typename _Ty1, typename _Ty2, typename _Ty3>
-struct _Arg_types<_Ty1, _Ty2, _Ty3> : public std::bool_constant<true> {
-	using first_argument_type  = _Ty1;
-	using second_argument_type = _Ty2;
-	using third_argument_type  = _Ty3;
-};
+	template <>
+	struct _Arg_types<> : public std::bool_constant<false> {
+		/* empty argument list, containers only void argument */
+	};
 
-template<typename _Fty>
-struct has_arguments : public _Arg_types<>/* default empty arguments list */ {
-};
+	//template <>
+	//struct _Arg_types<void> : public std::bool_constant<false> {
+	//	using first_argument_type = void;/* argument type: void */
+	//};
 
-#define _GET_FUNCTION_IMPL2(CALL_OPT, X1, X2, X3) \
-template<typename _Ret, typename... _Types>   \
-struct has_arguments<_Ret CALL_OPT(_Types...)> : public _Arg_types<_Types...> { \
-}; 
+	template<typename _Fty>
+	struct has_arguments : public _Arg_types<>/* default empty arguments list */ {
+	};
 
-_NON_MEMBER_CALL(_GET_FUNCTION_IMPL2, X1, X2, X3)
-#undef _GET_FUNCTION_IMPL2
+	#define _GET_FUNCTION_IMPL2(CALL_OPT, X1, X2, X3) \
+	template<typename _Ret, typename... _Types>   \
+	struct has_arguments<_Ret CALL_OPT(_Types...)> : public _Arg_types<_Types...> { \
+	}; 
 
-template <typename _Ret, typename... _Types>
-struct has_arguments<_Ret (__cdecl *)(_Types...)> : public _Arg_types<_Types...> {
-};
+	_NON_MEMBER_CALL(_GET_FUNCTION_IMPL2, X1, X2, X3)
+	#undef _GET_FUNCTION_IMPL2
 
-template <typename _Ret, typename _Cla, typename... _Types>
-struct has_arguments<_Ret(_Cla::*)(_Types...)> : public _Arg_types<_Types...> {
-};
+	template <typename _Ret, typename... _Types>
+	struct has_arguments<_Ret (__cdecl *)(_Types...)> : public _Arg_types<_Types...> {};
 
-/* don't used to lambda express */
-template<typename _Fty>
-constexpr bool has_arguments_v = has_arguments<_Fty>::value;
+	template <typename _Ret, typename _Cla, typename... _Types>
+	struct has_arguments<_Ret (_Cla::*)(_Types...)> : public _Arg_types<_Types...> {};
+
+	//template <typename _Ty>
+	//struct has_arguments<::clmagic::function<_Ty>> : public _Arg_types<_Ty> {};
+
+	/* don't used to Lambda-express */
+	template<typename _Fty>
+	constexpr bool has_arguments_v = has_arguments<_Fty>::value;
 
 
+	/*- - - - - - - - - - - - - - - - - - - - - - shuffle - - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _OutTy, typename _InTy, typename ..._Tys>
+	void _Shuffle_fill(_OutTy& _Dest, size_t _Dest_index, const _InTy& _Source, size_t _Source_index, _Tys... _Args) {
+		_Dest[_Dest_index] = _Source[_Source_index];
+		_Shuffle_fill(_Dest, _Dest_index + 1, _Source, _Args...);
+	}
 
-/*- - - - - - - - - - - - - - - - - - shuffle - - - - - - - - - - - - - - - - -*/
-template<typename _OutTy, typename _InTy, typename ..._Tys>
-void _Shuffle_fill(_OutTy& _Dest, size_t _Dest_index, const _InTy& _Source, size_t _Source_index, _Tys... _Args) {
-	_Dest[_Dest_index] = _Source[_Source_index];
-	_Shuffle_fill(_Dest, _Dest_index + 1, _Source, _Args...);
-}
+	template<typename _OutTy, typename _InTy>
+	void _Shuffle_fill(_OutTy& _Dest, size_t _Dest_index, const _InTy& _Source, size_t _Source_index) {
+		_Dest[_Dest_index] = _Source[_Source_index];
+	}
 
-template<typename _OutTy, typename _InTy>
-void _Shuffle_fill(_OutTy& _Dest, size_t _Dest_index, const _InTy& _Source, size_t _Source_index) {
-	_Dest[_Dest_index] = _Source[_Source_index];
-}
+	/* 'shuffle' is often used in vector mathematics
+	auto Demo = shuffle<vector3>(_Vec, 1, 0, 1);
+	*/
+	template<typename _OutTy, typename _InTy>
+	_OutTy shuffle(const _InTy& _Source, size_t i0) {
+		return _OutTy{ _Source[i0] };
+	}
 
-/* 'shuffle' is often used in vector mathematics
-auto Demo = shuffle<vector3>(_Vec, 1, 0, 1);
-*/
-template<typename _OutTy, typename _InTy>
-_OutTy shuffle(const _InTy& _Source, size_t i0) {
-	return _OutTy{ _Source[i0] };
-}
+	template<typename _OutTy, typename _InTy>
+	_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1) {
+		return _OutTy{ _Source[i0], _Source[i1] };
+	}
 
-template<typename _OutTy, typename _InTy>
-_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1) {
-	return _OutTy{ _Source[i0], _Source[i1] };
-}
+	template<typename _OutTy, typename _InTy>
+	_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2) {
+		return _OutTy{ _Source[i0], _Source[i1], _Source[i2] };
+	}
 
-template<typename _OutTy, typename _InTy>
-_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2) {
-	return _OutTy{ _Source[i0], _Source[i1], _Source[i2] };
-}
+	template<typename _OutTy, typename _InTy>
+	_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2, size_t i3) {
+		return _OutTy{ _Source[i0], _Source[i1], _Source[i2], _Source[i3] };
+	}
 
-template<typename _OutTy, typename _InTy>
-_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2, size_t i3) {
-	return _OutTy{ _Source[i0], _Source[i1], _Source[i2], _Source[i3] };
-}
+	template<typename _OutTy, typename _InTy>
+	_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2, size_t i3, size_t i4) {
+		return _OutTy{ _Source[i0], _Source[i1], _Source[i2], _Source[i3], _Source[i4] };
+	}
 
-template<typename _OutTy, typename _InTy>
-_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2, size_t i3, size_t i4) {
-	return _OutTy{ _Source[i0], _Source[i1], _Source[i2], _Source[i3], _Source[i4] };
-}
+	template<typename _OutTy, typename _InTy>
+	_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2, size_t i3, size_t i4, size_t i5) {
+		return _OutTy{ _Source[i0], _Source[i1], _Source[i2], _Source[i3], _Source[i4], _Source[i5] };
+	}
 
-template<typename _OutTy, typename _InTy>
-_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2, size_t i3, size_t i4, size_t i5) {
-	return _OutTy{ _Source[i0], _Source[i1], _Source[i2], _Source[i3], _Source[i4], _Source[i5] };
-}
+	template<typename _OutTy, typename _InTy, typename ..._Tys>
+	_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2, size_t i3, size_t i4, size_t i5, _Tys... _Selector) {
+		_OutTy _Dest = shuffle<_OutTy>(_Source, i0, i1, i2, i3, i4, i5);
+		_Shuffle_fill(_Dest, 6, _Source, _Selector...);
+		return (_Dest);
+	}
 
-template<typename _OutTy, typename _InTy, typename ..._Tys>
-_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2, size_t i3, size_t i4, size_t i5, _Tys... _Selector) {
-	_OutTy _Dest = shuffle<_OutTy>(_Source, i0, i1, i2, i3, i4, i5);
-	_Shuffle_fill(_Dest, 6, _Source, _Selector...);
-	return (_Dest);
-}
+	template<typename _OutTy, typename _InTy, typename ..._Tys>
+	void shuffle(const _InTy& _Source, _OutTy& _Dest, _Tys... _Selector) {
+		_Shuffle_fill(_Dest, 0, _Source, _Selector...);
+	}
 
-template<typename _OutTy, typename _InTy, typename ..._Tys>
-void shuffle(const _InTy& _Source, _OutTy& _Dest, _Tys... _Selector) {
-	_Shuffle_fill(_Dest, 0, _Source, _Selector...);
-}
+	template<typename ..._Tys>
+	constexpr size_t types_size_v = std::tuple_size_v<std::tuple<_Tys...>>;
 
-template<typename ..._Tys>
-constexpr size_t types_size_v = std::tuple_size_v<std::tuple<_Tys...>>;
 
+	/*- - - - - - - - - - - - - - - - - - is_support_scalar_operator - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty>
+	constexpr bool is_support_scalar_operator = false;
+
+	template<typename _Ty>
+	struct _Unsupport_scalar {
+		using scalar_type = _Ty;
+	};
+
+	template<typename _Ty>
+	struct _Support_scalar {
+		using scalar_type = typename _Ty::scalar_type;
+	};
+
+	template<typename _Ty>
+	using scalar_type = typename std::conditional_t<is_support_scalar_operator<_Ty>,
+		_Support_scalar<_Ty>, _Unsupport_scalar<_Ty> >::scalar_type;
+
+
+	template<typename Iter>
+	std::string to_string(Iter _First, Iter _Last) {
+		using std::to_string;
+		std::string _Str = "[";
+		for (; _First != _Last; ++_First) {
+			_Str += to_string(*_First);
+			_Str += ' ';
+		}
+		_Str.back() = ']';
+		return _Str;
+	}
 
 
 	/*
@@ -206,386 +253,377 @@ constexpr size_t types_size_v = std::tuple_size_v<std::tuple<_Tys...>>;
 	};
 
 
-template<typename _Ty> inline
-const _Ty& constexpr_clamp(const _Ty& _Lhs, const _Ty& _Lowval, const _Ty& _Upval) {// _Lhs clamp to [_Lowval, _Upval]
-	return (std::min(std::max(_Lhs, _Lowval), _Upval));
-}
-
-
-using std::max;
-using std::min;
-
-
-/*<Reference>Thomas-Calculus.Section5.2</Reference>*/
-/*<other-formula>
-	sum([](double k){ return k; }, 1, n);
-		equal n*(n+1)/2;
-	sum([](double k){ return pow(k,2); }, 1, n);
-		equal n*(n+1)(2*n+1)/6;
-	sum([](double k){ return pow(k,3); }, 1, n);
-		equal pow( n*(n+1)/2, 2 );
-</other-formula>*/
-template<typename _Ty, typename _Fn>
-auto sum(_Fn _Func, _Ty _Index_start, _Ty _Index_end) {
-	assert(_Index_start <= _Index_end);
-	using _TyOut = decltype(_Func(_Index_start));
-
-	_TyOut _Result = _Func(_Index_start);
-	++_Index_start;
-
-	for (; _Index_start <= _Index_end; ++_Index_start) {
-		_Result += _Func(_Index_start);
+	template<typename _Ty> inline
+	const _Ty& constexpr_clamp(const _Ty& _Lhs, const _Ty& _Lowval, const _Ty& _Upval) {// _Lhs clamp to [_Lowval, _Upval]
+		return (std::min(std::max(_Lhs, _Lowval), _Upval));
 	}
-	return _Result;
-}
 
-template<typename _Ty, typename _Fn>
-auto left_Riemann_sum(_Fn _Func, _Ty _Index_start, _Ty _Index_end, _Ty dx) {// [ _Index_start, _Index_end )
-	assert(_Index_start <= _Index_end);
-	using _TyOut = decltype(_Func(_Index_start));
 
-	_TyOut _Result = _Func(_Index_start) * dx;
-	_Index_start  += dx;
+	using std::max;
+	using std::min;
 
-	while (_Index_start < _Index_end) {
-		_Result      += _Func(_Index_start) * dx;
-		_Index_start += dx;
+
+	/*<Reference>Thomas-Calculus.Section5.2</Reference>*/
+	/*<other-formula>
+		sum([](double k){ return k; }, 1, n);
+			equal n*(n+1)/2;
+		sum([](double k){ return pow(k,2); }, 1, n);
+			equal n*(n+1)(2*n+1)/6;
+		sum([](double k){ return pow(k,3); }, 1, n);
+			equal pow( n*(n+1)/2, 2 );
+	</other-formula>*/
+	template<typename _Ty, typename _Fn>
+	auto sum(_Fn _Func, _Ty _Index_start, _Ty _Index_end) {// [ _Index_start, _Index_end ]
+		assert(_Index_start <= _Index_end);
+		using _TyOut = decltype(_Func(_Index_start));
+
+		_TyOut _Result = _Func(_Index_start);
+		++_Index_start;
+
+		for (; _Index_start <= _Index_end; ++_Index_start) {
+			_Result += _Func(_Index_start);
+		}
+		return _Result;
 	}
-	return _Result;
-}
 
-template<typename _Ty, typename _Fn>
-auto right_Riemann_sum(_Fn _Func, _Ty _Index_start, _Ty _Index_end, _Ty dx) {// ( _Index_start, _Index_end ]
-	assert(_Index_start <= _Index_end);
-	using _TyOut = decltype(_Func(_Index_start));
-
-	_Index_start  += dx;
-	_TyOut _Result = _Func(_Index_start) * dx;
-
-	while (_Index_start < _Index_end) {
-		_Index_start += dx;
-		_Result      += _Func(_Index_start) * dx;
-	}
-	return _Result;
-}
+	template<typename _Ty, typename _Fn>
+	auto left_Riemann_sum(_Fn _Func, _Ty _Index_start, _Ty _Index_end, _Ty dx) {// [ _Index_start, _Index_end )
+		assert( dx != static_cast<_Ty>(0) );
+		using _TyOut = decltype(_Func(_Index_start));
 	
-template<typename _Ty, typename _Fn>
-auto middle_Riemann_sum(_Fn _Func, _Ty _Index_start, _Ty _Index_end, _Ty dx) {
-	assert(_Index_start <= _Index_end);
-	using _TyOut = decltype(_Func(_Index_start));
+		if( dx <= _Index_end - _Index_start ){
+			_TyOut _Result = _Func(_Index_start) * dx;
+			_Index_start  += dx;
 
-	_Index_start += dx / 2;
-
-	_TyOut _Result = _Func(_Index_start) * dx;
-	_Index_start  += dx;
-
-	while (_Index_start <= _Index_end) {
-		_Result      += _Func(_Index_start) * dx;
-		_Index_start += dx;
-	}
-	return _Result;
-}
-
-template<typename _Ty, typename _Fn>
-auto product(_Fn _Func, _Ty _Index_start, _Ty _Index_end) {
-	assert(_Index_start <= _Index_end);
-
-	using _TyOut = decltype(_Func(_Index_start));
-	_TyOut _Result = _Func(_Index_start); 
-	++_Index_start;
-
-	for (; _Index_start <= _Index_end; ++_Index_start) {
-		_Result *= _Func(_Index_start);
-	}
-	return _Result;
-}
-
-
-template<typename _Ty>
-std::vector<_Ty> set_number(_in(_Ty) _First, _in(_Ty) _Last) {	// return [_First, _Last)
-	auto _Vec = std::vector<_Ty>(_Last - _First);
-	for (_Ty i = _First; i < _Last; ++i) {
-		_Vec[i] = i;
-	}
-	return (_Vec);
-}
-
-template<typename _Ty>
-_Ty factorial(_Ty n, _Ty i = static_cast<_Ty>(1)) {	// ∏[i,n]: i
-	return (n > i ? (n * factorial(n-1, i)) : i);
-}
-
-template<typename _Ty>
-_Ty Stirling(_Ty n) 
-	{	// sqrt(2*Pi*n) * pow(n/e, n)
-	return (static_cast<_Ty>(sqrt(6.283 * n) * pow(n / 2.718, n)));
-	}
-
-/*<traits>
-	<input-domain>
-		n in [0, infinite)
-		i in [0, n]
-	</input-domain>
-
-	<fisrt>
-					n-i+1   n-(i-1)+1		  n-1+1
-		C(n, i) = ------ * --------- *.... * -------
-						i		  i-1				1
-	</first>
-	<second>
-			            factorial(n)
-		C(n, i) = --------------------------
-			        factorial(n-i)*factorial(i)
-	</second>
-	<fourth>
-		n-1
-		ΣC(n, i) = pow(2, n)
-		i=0
-	</fourth>
-
-	<example>
-		for(int n = 0; n < 10; ++n){
-			for(int i = 0; i <= n; ++i){
-				std::cout << binomial_coefficient(n, i) << " ";
-				//std::cout << factorial(n) / (factorial(n - i) * factorial(i)) << " ";
+			while (_Index_start < _Index_end) {
+				_Result      += _Func(_Index_start) * dx;
+				_Index_start += dx;
 			}
-			std::cout << '\n';
+			return _Result;
+		} else {// 
+			return static_cast<_TyOut>(0);
 		}
-	</example>
-</traits>*/
-template<typename _Ty = size_t>
-_Ty binomial_coefficient(size_t n, size_t i) {
-	static auto _Lookup_table = std::vector<unsigned long long>{
-		1,
-		1, 1,
-		1, 2, 1,
-		1, 3, 3, 1,
-		1, 4, 6, 4, 1,
-		1, 5, 10, 10, 5, 1
-	};
+	}
 
-	static auto _Lookup_index = std::vector<size_t>{
-		0,  /* 1 elements */
-		1,  /* 2 elements */
-		3,  /* 3 elements */
-		6,  /* 4 elements */
-		10, /* 5 elements */
-		15  /* n + 1 elements */
-	};
+	template<typename _Ty, typename _Fn>
+	auto right_Riemann_sum(_Fn _Func, _Ty _Index_start, _Ty _Index_end, _Ty dx) {// ( _Index_start, _Index_end ]
+		assert( dx != static_cast<_Ty>(0) );
+		using _TyOut = decltype(_Func(_Index_start));
+	
+		if ( dx <= _Index_end - _Index_start ) {
+			_Index_start  += dx;
+			_TyOut _Result = _Func(_Index_start) * dx;
 
-	if (n < _Lookup_index.size()) {	// exist lookup table
-		return (static_cast<_Ty>(_Lookup_table[_Lookup_index[n] + i]));
-	} else {	// compute lookup table
-		for (size_t k = _Lookup_index.size(); k <= n; ++k) {
+			while (_Index_start < _Index_end) {
+				_Index_start += dx;
+				_Result      += _Func(_Index_start) * dx;
+			}
+			return _Result;
+		} else {
+			return static_cast<_TyOut>(0);
+		}
+	}
 
-			_Lookup_index.push_back(_Lookup_table.size());      /* insert index */
-			_Lookup_table.insert(_Lookup_table.end(), k + 1, 1);/* insert n+1 elemtns into end */
-			/*<table>
-			line   graph: 
-			Prev   [1, 3, 3, 1]     
-			Curt   [1, 1, 1, 1, 1]
-			</table>*/
+	template<typename _Ty, typename _Fn>
+	auto middle_Riemann_sum(_Fn _Func, _Ty _Index_start, _Ty _Index_end, _Ty dx) {
+		assert( dx != static_cast<_Ty>(0) );
+		using _TyOut = decltype(_Func(_Index_start));
 
-			unsigned long long* _Prev_ptr = &_Lookup_table[_Lookup_index[k - 1]];
-			unsigned long long* _Curt_ptr = &_Lookup_table[_Lookup_index[k]];
-			_Curt_ptr += 1; /* first element is 1 */
-			/*<table>
-			line graph 
-				_Prev_ptr
-				    |
-			Prev [1, 3, 3, 1]
-				    _Curt_ptr
-				        |
-			Curt [1, 1, 1, 1, 1]
-			</table>*/
+		if (dx <= _Index_end - _Index_start) {
+			_Index_start += dx / 2;
 
-			do {
-				*_Curt_ptr = *_Prev_ptr + *(_Prev_ptr + 1);
-				++_Prev_ptr; ++_Curt_ptr;
-			/*<table>
-			line graph 
-				        _Prev_ptr
-				        |
-			Prev [1- - -3, 3, 1]
-					\	|
-          				\  | _Curt_ptr
-						\|  |
-			Curt [1,    4, 1, 1, 1]
-			</table>*/
-			} while (*_Prev_ptr != 1);
-				
-			/*<table>
-			line graph
-						_Prev_ptr
+			_TyOut _Result = _Func(_Index_start) * dx;
+			_Index_start  += dx;
+
+			while (_Index_start < _Index_end) {
+				_Result      += _Func(_Index_start) * dx;
+				_Index_start += dx;
+			}
+			return _Result;
+		} else {
+			return static_cast<_TyOut>(0);
+		}
+	}
+
+	template<typename _Ty, typename _Fn>
+	auto product(_Fn _Func, _Ty _Index_start, _Ty _Index_end) {
+		assert(_Index_start <= _Index_end);
+		using _TyOut = decltype(_Func(_Index_start));
+
+		_TyOut _Result = _Func(_Index_start); 
+		++_Index_start;
+
+		for (; _Index_start <= _Index_end; ++_Index_start) {
+			_Result *= _Func(_Index_start);
+		}
+		return _Result;
+	}
+
+
+	template<typename _Ty>
+	std::vector<_Ty> set_number(const _Ty& _First, const _Ty& _Last) {	// return [_First, _Last)
+		auto _Vec = std::vector<_Ty>(_Last - _First);
+		for (_Ty i = _First; i < _Last; ++i) {
+			_Vec[i] = i;
+		}
+		return (_Vec);
+	}
+
+
+	template<typename _Ty>
+	_Ty factorial(_Ty n, _Ty i = static_cast<_Ty>(1)) {	// ∏[i,n]: i
+		return (n > i ? (n * factorial(n-1, i)) : i);
+	}
+
+	/*<traits>
+		<input-domain>
+			n in [0, infinite)
+			i in [0, n]
+		</input-domain>
+
+		<fisrt>
+						n-i+1   n-(i-1)+1		  n-1+1
+			C(n, i) = ------ * --------- *.... * -------
+							i		  i-1				1
+		</first>
+		<second>
+							factorial(n)
+			C(n, i) = --------------------------
+						factorial(n-i)*factorial(i)
+		</second>
+		<fourth>
+			n-1
+			ΣC(n, i) = pow(2, n)
+			i=0
+		</fourth>
+
+		<example>
+			for(int n = 0; n < 10; ++n){
+				for(int i = 0; i <= n; ++i){
+					std::cout << binomial_coefficient(n, i) << " ";
+					//std::cout << factorial(n) / (factorial(n - i) * factorial(i)) << " ";
+				}
+				std::cout << '\n';
+			}
+		</example>
+	</traits>*/
+	template<typename _Ty = size_t>
+	_Ty binomial_coefficient(size_t n, size_t i) {
+		static auto _Lookup_table = std::vector<unsigned long long>{
+			1,
+			1, 1,
+			1, 2, 1,
+			1, 3, 3, 1,
+			1, 4, 6, 4, 1,
+			1, 5, 10, 10, 5, 1
+		};
+
+		static auto _Lookup_index = std::vector<size_t>{
+			0,  /* 1 elements */
+			1,  /* 2 elements */
+			3,  /* 3 elements */
+			6,  /* 4 elements */
+			10, /* 5 elements */
+			15  /* n + 1 elements */
+		};
+
+		if (n < _Lookup_index.size()) {	// exist lookup table
+			return (static_cast<_Ty>(_Lookup_table[_Lookup_index[n] + i]));
+		} else {	// compute lookup table
+			for (size_t k = _Lookup_index.size(); k <= n; ++k) {
+
+				_Lookup_index.push_back(_Lookup_table.size());      /* insert index */
+				_Lookup_table.insert(_Lookup_table.end(), k + 1, 1);/* insert n+1 elemtns into end */
+				/*<table>
+				line   graph: 
+				Prev   [1, 3, 3, 1]     
+				Curt   [1, 1, 1, 1, 1]
+				</table>*/
+
+				unsigned long long* _Prev_ptr = &_Lookup_table[_Lookup_index[k - 1]];
+				unsigned long long* _Curt_ptr = &_Lookup_table[_Lookup_index[k]];
+				_Curt_ptr += 1; /* first element is 1 */
+				/*<table>
+				line graph 
+					_Prev_ptr
+						|
+				Prev [1, 3, 3, 1]
+						_Curt_ptr
 							|
-			Prev [1, 3, 3, 1]
-						    _Curt_ptr
-							    |
-			Curt [1, 4, 6, 4, 1]
-			</table>*/
+				Curt [1, 1, 1, 1, 1]
+				</table>*/
+
+				do {
+					*_Curt_ptr = *_Prev_ptr + *(_Prev_ptr + 1);
+					++_Prev_ptr; ++_Curt_ptr;
+				/*<table>
+				line graph 
+							_Prev_ptr
+							|
+				Prev [1- - -3, 3, 1]
+						\	|
+          					\  | _Curt_ptr
+							\|  |
+				Curt [1,    4, 1, 1, 1]
+				</table>*/
+				} while (*_Prev_ptr != 1);
+				
+				/*<table>
+				line graph
+							_Prev_ptr
+								|
+				Prev [1, 3, 3, 1]
+								_Curt_ptr
+									|
+				Curt [1, 4, 6, 4, 1]
+				</table>*/
+			}
+			return (static_cast<_Ty>(_Lookup_table[_Lookup_index[n] + i]));
 		}
-		return (static_cast<_Ty>(_Lookup_table[_Lookup_index[n] + i]));
 	}
-}
 
-template<typename _Ty>
-_Ty binomial(const _Ty& _A, const _Ty& _B, size_t n, size_t i) {
-	/*	(A + B)^n
-		n=2: A² + 2AB + B²
-		n=3: A³ + 3A²B + 3AB² + B³
-		n=4: A⁴ + 4A³B + 6A²B² + 4AB³ + B⁴         (A⁴ + 3A³B + 3A²B² + AB³ + A³B + 3A²B² + 3AB³ + B⁴)
-		n=5: A⁵ + 5A⁴B + 10A³B + 10AB³ + 5AB⁴ + B⁵  (A⁵ + 4A⁴B + 6A³B² + 4A²B³ + AB⁴ + A⁴B + 4A³B² + 6A²B³ + 4AB⁴ + B⁵)
+	template<typename _Ty>
+	_Ty binomial(const _Ty& _A, const _Ty& _B, size_t n, size_t i) {
+		/*	(A + B)^n
+			n=2: A² + 2AB + B²
+			n=3: A³ + 3A²B + 3AB² + B³
+			n=4: A⁴ + 4A³B + 6A²B² + 4AB³ + B⁴         (A⁴ + 3A³B + 3A²B² + AB³ + A³B + 3A²B² + 3AB³ + B⁴)
+			n=5: A⁵ + 5A⁴B + 10A³B + 10AB³ + 5AB⁴ + B⁵  (A⁵ + 4A⁴B + 6A³B² + 4A²B³ + AB⁴ + A⁴B + 4A³B² + 6A²B³ + 4AB⁴ + B⁵)
+		*/
+		if (i == 0) {
+			return ((_Ty)pow(_A, n));
+		} else if (i != n) {
+			return (binomial_coefficient<_Ty>(n, i) * (_Ty)pow(_A, n - i) * (_Ty)pow(_B, i));
+		} else {
+			return ((_Ty)pow(_B, n));
+		}
+	}
+
+
+	template<typename _Ty>
+	struct range_ {
+		_Ty _Mymin, _Mymax;
+
+		range_() { /* empty */ }
+		range_(const _Ty& _Minval, const _Ty& _Maxval) : _Mymin(_Minval), _Mymax(_Maxval) { }
+
+		bool exclude(const _Ty& _Val) const {
+			return ( _Val < _Mymin || _Val > _Mymax );
+		}
+
+		bool include(const _Ty& _Val) const {
+			return ( !this->exclude(_Val) );
+		}
+
+		template<typename _Fn1, typename _Fn2>
+		bool exclude(const _Ty& _Val, _Fn1 _Func1, _Fn2 _Func2) const {
+			return ( _Val < _Func1(_Mymin) || _Val > _Func2(_Mymax) );
+		}
+
+		template<typename _Fn1, typename _Fn2>
+		bool include(const _Ty& _Val, _Fn1 _Func1, _Fn2 _Func2) const {
+			return ( !this->exclude(_Val, _Func1, _Func2) );
+		}
+
+		_Ty range() const {
+			return (_Mymax - _Mymin);
+		}
+
+		_Ty remap(const _Ty& _Val) const {
+			return ( (_Val - _Mymin) / range() );
+		}
+	};
+
+	using _CSTD abs;
+
+	template<typename _Ty, typename _Ty2>
+	bool approach_equal(const _Ty& _Lhs, const _Ty& _Rhs, const _Ty2& _Thresould) {	
+		// @_Require: ( @abs ) and ( operator-(rhs) ) and ( operator<=(rhs) )
+		return (abs(_Lhs - _Rhs) <= _Thresould);
+	}
+	
+	/*- - - - - - - - - - - - - - - - - clamp - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ty>
+	_Ty clamp(const _Ty& _Val, const _Ty& _Lowval, const _Ty& _Upval) {// _Val clamp to [_Lowval, _Upval]
+		return ( min( max(_Val, _Lowval), _Upval ) );
+	}
+	template<typename _Ty>
+	_Ty positive(const _Ty& x) {// max(x, 0)
+		return max(x, static_cast<_Ty>(0));
+	}
+	template<typename _Ty>
+	_Ty negative(const _Ty& x) {// min(x, 0)
+		return min(x, static_cast<_Ty>(0));
+	}
+	template<typename _Ty>
+	_Ty saturate(const _Ty& x) {// x clamp to [0, 1]
+		return clamp( x, static_cast<_Ty>(0), static_cast<_Ty>(1) );
+	}
+	
+	template<typename _Ty, typename _Ty2>
+	_Ty lerp(const _Ty& A, const _Ty& B, const _Ty2& t) {// (1-t)*A + t*B
+		return (A + (B - A) * t);
+	}
+	template<typename _Ty>
+	_Ty lerp(const _Ty& A, const _Ty& B, bool _IsB) {	// [0, 1] map to [A, B]
+		return (_IsB ? B : A);
+	}
+	template<typename _Ty, typename _Ty2>
+	_Ty mix(const _Ty& A, const _Ty& B, const _Ty2& t) {// (1-t)*A + t*B
+		return lerp(A, B, t);
+	}
+
+	template<typename _Ty>
+	_Ty is_positive(const _Ty& x) {
+		return ( x > static_cast<_Ty>(0) ? 
+			static_cast<_Ty>(1) : 
+			static_cast<_Ty>(0) );
+	}
+
+
+	template<typename _Ty>
+	_Ty fract(const _Ty& _Val) {	// @_Require: ( @floor ) and ( operator-(rhs) )
+		return ( _Val - floor(_Val) );
+	}
+
+	
+	/* t0 = [-B-√(B^2-4AC)]/2A, 
+		t1 = [-B+√(B^2-4AC)]/2A 
 	*/
-	if (i == 0) {
-		return ((_Ty)pow(_A, n));
-	} else if (i != n) {
-		return (binomial_coefficient<_Ty>(n, i) * (_Ty)pow(_A, n - i) * (_Ty)pow(_B, i));
-	} else {
-		return ((_Ty)pow(_B, n));
-	}
-}
+	template<typename _Ty> 
+	bool quadratic(const _Ty& A, const _Ty& B, const _Ty& C, _Ty& t0, _Ty& t1) {// return false if(B^2-4AC < 0)
+	
+		using _SclTy = scalar_type<_Ty>;
 
-
-template<typename _Ty>
-struct range_ {
-	_Ty _Mymin, _Mymax;
-
-	range_() { /* empty */ }
-	range_(_in(_Ty) _Minval, _in(_Ty) _Maxval) : _Mymin(_Minval), _Mymax(_Maxval) { }
-
-	bool exclude(_in(_Ty) _Val) const {
-		return ( _Val < _Mymin || _Val > _Mymax );
-	}
-
-	bool include(_in(_Ty) _Val) const {
-		return ( !this->exclude(_Val) );
-	}
-
-	template<typename _Fn1, typename _Fn2>
-	bool exclude(_in(_Ty) _Val, _Fn1 _Func1, _Fn2 _Func2) const {
-		return ( _Val < _Func1(_Mymin) || _Val > _Func2(_Mymax) );
-	}
-
-	template<typename _Fn1, typename _Fn2>
-	bool include(_in(_Ty) _Val, _Fn1 _Func1, _Fn2 _Func2) const {
-		return ( !this->exclude(_Val, _Func1, _Func2) );
-	}
-
-	_Ty range() const {
-		return (_Mymax - _Mymin);
-	}
-
-	_Ty remap(_in(_Ty) _Val) const {
-		return ( (_Val - _Mymin) / range() );
-	}
-};
-
-
-template<typename _Ty, typename _Ty2>
-bool approach_equal(const _Ty& _Lhs, const _Ty& _Rhs, const _Ty2& _Thresould) {	
-	// @_Require: ( @abs ) and ( operator-(rhs) ) and ( operator<=(rhs) )
-	return (abs(_Lhs - _Rhs) <= _Thresould);
-}
-
-template<typename _Ty>
-const _Ty& clamp(const _Ty& _Lhs, const _Ty& _Lowval, const _Ty& _Upval) {// _Lhs clamp to [_Lowval, _Upval]
-	return ( min( max(_Lhs, _Lowval), _Upval ) );
-	}
-
-template<typename _Ty>
-_Ty saturate(const _Ty& _Val) {// _Val clamp to [0, 1]
-	return clamp( _Val, static_cast<_Ty>(0), static_cast<_Ty>(1) );
-}
-
-template<typename _Ty>
-_Ty fract(const _Ty& _Val) {	// @_Require: ( @floor ) and ( operator-(rhs) )
-	return ( _Val - floor(_Val) );
-}
-
-template<typename _Ty, typename _Ty2>
-_Ty lerp(const _Ty& A, const _Ty& B, const _Ty2& t) {// (1-t)*A + t*B
-	return ( A + (B - A) * t );
-}
-
-template<typename _Ty>
-_Ty lerp(const _Ty& A, const _Ty& B, bool _IsB) {	// [0, 1] map to [A, B]
-	return (_IsB ? B : A);
-}
-
-template<typename _Ty, typename _Ty2>
-_Ty mix(const _Ty& A, const _Ty& B, const _Ty2& t) {// (1-t)*A + t*B
-	return lerp(A, B, t);
-}
-
-/* t0 = [-B-√(B^2-4AC)]/2A, 
-	t1 = [-B+√(B^2-4AC)]/2A 
-*/
-template<typename _Ty> 
-bool quadratic(const _Ty& A, const _Ty& B, const _Ty& C, _Ty& t0, _Ty t1) {// return false if(B^2-4AC < 0)
-	/*  A*t^2 + B*t + C = 0
-
-				B*t    C 
-		t^2 + --- + --- = 0
-				A     A
-
-				B         C
-		t^2 + ---*t = - ---
-				A         A
-		  
-				B        B           C      B
-		t^2 + ---*t + (----)^2 = - --- + (----)^2
-				A        2A          A      2A
-
-				B			  C*4A    B*B     
-		(t + ----)^2 = - ------ -------- 
-				2A		  A*4A    4A^2
-
-            	B			B^2 - 4AC         
-		(t + ----)^2 = -----------
-				2A		  4A^2
-            
-				B		     B^2 - 4AC
-		t + ---- = ±√(-----------)
-				2A	  	       2A*2A
-
-				B		  √(B^2 - 4AC)
-		t + ---- = ±---------------
-				2A	  	        2A
-				-B ±√(B^2 - 4AC)
-		t = --------------------
-					2A
-	*/
-	using T = scalar_type<_Ty>;
-
-	auto discrim = B * B - static_cast<T>(4) * A * C;
-	if ( discrim < static_cast<_Ty>(0) ) {
-		return ( false );
-	} else {
-		discrim = sqrt(discrim);
-		auto q  = ( B < static_cast<_Ty>(0) ) 
-			? static_cast<T>(-0.5) * (B - discrim)
-			: static_cast<T>(-0.5) * (B + discrim);
-		t0 = q / A;
-		t1 = C / q;
+		auto discrim = B * B - static_cast<_SclTy>(4) * A * C;
+		if ( discrim < static_cast<_Ty>(0) ) {
+			return ( false );
+		} else {
+			discrim = sqrt(discrim);
+			auto q  = ( B < static_cast<_Ty>(0) ) 
+				? static_cast<_SclTy>(-0.5) * (B - discrim)
+				: static_cast<_SclTy>(-0.5) * (B + discrim);
+			t0 = q / A;
+			t1 = C / q;
 			
+			return ( true );
+		}
+	}
+
+	/* t0 = 0
+	   t1 = -B/A
+	*/
+	template<typename _Ty>
+	bool quadratic(const _Ty& A, const _Ty& B, _Ty& t0, _Ty& t1) {
+		/* A*x^2 + B*x = 0
+			x*(A*x + B) = 0
+			t0 = 0
+			t1 = (A*x+B=0) = -B/A
+		*/
+		t0 = _Ty(0);
+		t1 = -B / A;
 		return ( true );
 	}
-}
-
-/* t0 = 0
-   t1 = -B/A
-*/
-template<typename _Ty>
-bool quadratic(const _Ty& A, const _Ty& B, _Ty& t0, _Ty t1) {
-	/* A*x^2 + B*x = 0
-		x*(A*x + B) = 0
-		t0 = 0
-		t1 = (A*x+B=0) = -B/A
-	*/
-	t0 = _Ty(0);
-	t1 = -B / A;
-	return ( true );
-}
 
 	/* 
 	x^2 + y^2 + z^2 - r^2 = 0 

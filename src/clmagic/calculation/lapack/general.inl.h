@@ -1,6 +1,7 @@
 ﻿//--------------------------------------------------------------------------------------
 // Copyright (c) 2019 LongJiangnan
 // All Rights Reserved
+// Apache Licene 2.0
 //--------------------------------------------------------------------------------------
 #pragma once
 #ifndef clmagic_math_lapack_GENERAL_inl_h_

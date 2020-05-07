@@ -1,11 +1,16 @@
+//--------------------------------------------------------------------------------------
+// Copyright (c) 2019 LongJiangnan
+// All Rights Reserved
+// Apache Licene 2.0
+//--------------------------------------------------------------------------------------
 #pragma once
-#ifndef clmagic_math_calculus_DERIVATIVE_h_
-#define clmagic_math_calculus_DERIVATIVE_h_
+#ifndef clmagic_calculation_calculus_DIFFERENTIATION_h_
+#define clmagic_calculation_calculus_DIFFERENTIATION_h_
 
 namespace clmagic {
 
-	template<typename _Ty, typename _Func>
-	_Ty slope(_Func f, const _Ty& x0, const _Ty& x1) {
+	template<typename _Ty, typename _Fn>
+	_Ty slope(_Fn f, const _Ty& x0, const _Ty& x1) {
 		const auto dy = f(x1) - f(x0);
 		const auto dx = x1 - x0;
 		return dy / dx;
@@ -15,7 +20,6 @@ namespace clmagic {
 			   x1 - x0
 		  </another>*/
 	}
-
 
 
 	/*<Differentiation-Rule>
@@ -58,8 +62,8 @@ namespace clmagic {
 	if dF(..) exist at every point in the domain F(..)
 		we say F(..) is Differentiable
 	*/
-	template<typename _Ty, typename _Func>
-	_Ty derivative(_Func f, const _Ty& x, const _Ty& h) {
+	template<typename _Ty, typename _Fn>
+	_Ty derivative(_Fn f, const _Ty& x, const _Ty& h) {
 		const auto dfx = f(x + h) - f(x);
 		const auto dx  = h;
 		return dfx / dx;

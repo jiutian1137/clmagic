@@ -96,31 +96,6 @@ namespace clmagic {
 		return ((N & _Mask) == 0 ? true : false);
 	}
 
-	
-	
-
-	
-	
-
-	/*
-	@_template scalar type
-	*/
-	template<typename _Ty>
-		constexpr bool is_support_scalar_operator = false;
-
-	template<typename _Ty>
-	struct _Unsupport_scalar {
-		using scalar_type = _Ty;
-	};
-
-	template<typename _Ty>
-	struct _Support_scalar {
-		using scalar_type = typename _Ty::scalar_type;
-	};
-
-	template<typename _Ty>
-	using scalar_type = typename std::conditional_t<is_support_scalar_operator<_Ty>,
-			_Support_scalar<_Ty>, _Unsupport_scalar<_Ty> >::scalar_type;
 
 
 	template<typename _Ty>

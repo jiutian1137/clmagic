@@ -108,8 +108,8 @@ namespace clmagic {
 		rational& operator=(std::initializer_list<integral_type> _Ilist) {
 			assert(_Ilist.size() == 2);
 			auto _First = _Ilist.begin();
-			this->_Num = *_First++;
-			this->_Den = *_First;
+			this->_Num  = *_First++;
+			this->_Den  = *_First;
 			return *this;
 		}
 		
@@ -281,18 +281,6 @@ namespace clmagic {
 				_Dx
 			*/
 		}
-		friend rational operator+(_Ti _Integral, const rational& _R1) {
-			return _R1 + _Integral;
-		}
-		friend rational operator-(_Ti _Integral, const rational& _R1) {
-			return (-_R1 + _Integral);
-		}
-		friend rational operator*(_Ti _Integral, const rational& _R1) {
-			return _R1 * _Integral;
-		}
-		friend rational operator/(_Ti _Integral, const rational& _R1) {
-			return _Integral * rational(_R1._Den, _R1._Num);
-		}
 		rational& operator+=(integral_type _Integral) {
 			(*this) = (*this) + _Integral;
 			return *this;
@@ -312,6 +300,18 @@ namespace clmagic {
 		rational& operator%=(integral_type _Integral) {
 			(*this) = (*this) % _Integral;
 			return *this;
+		}
+		friend rational operator+(_Ti _Integral, const rational& _R1) {
+			return _R1 + _Integral;
+		}
+		friend rational operator-(_Ti _Integral, const rational& _R1) {
+			return (-_R1 + _Integral);
+		}
+		friend rational operator*(_Ti _Integral, const rational& _R1) {
+			return _R1 * _Integral;
+		}
+		friend rational operator/(_Ti _Integral, const rational& _R1) {
+			return _Integral * rational(_R1._Den, _R1._Num);
 		}
 
 		friend std::ostream& operator<<(std::ostream& _Ostr, const rational& _R1) {

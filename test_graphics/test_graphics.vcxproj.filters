@@ -64,7 +64,10 @@
     <ClInclude Include="Waves.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shader\color.hlsl">
+    <None Include="shader\norm.hlsl">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="shader\Header.hlsl">
       <Filter>shader</Filter>
     </None>
     <None Include="shader\LightingUtil.hlsl">

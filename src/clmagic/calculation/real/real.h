@@ -54,15 +54,45 @@ namespace clmagic {
 	}
 
 
+	constexpr double constant_Pi = static_cast<double>(3.14159);
+	constexpr double constant_e = static_cast<double>(2.71828);
+
 	/* - - - - - - - numeric calculate - - - - - - - - - */
 	using _CSTD abs;
 	using _CSTD trunc;
 	using _CSTD floor;
 	using _CSTD round;
 
-	inline int32_t mod(int32_t _X, int32_t _Y) { return _X % _Y; }
-	inline float   mod(float   _X, float   _Y) { return (_X - _Y * (floor(_X / _Y))); }
-	inline double  mod(double  _X, double  _Y) { return (_X - _Y * (floor(_X / _Y))); }
+	template<typename _Ty = void>
+	struct _Real_modulus {
+		_Ty operator()(const _Ty& a, const _Ty& b) const {
+			return (a % b);
+		}
+	};
+
+	template<>
+	struct _Real_modulus<float> {
+		float operator()(float a, float b) const {
+			return _CSTD fmod(a, b);
+		}
+	};
+
+	template<>
+	struct _Real_modulus<double> {
+		double operator()(double a, double b) const {
+			return _CSTD fmod(a, b);
+		}
+	};
+
+	template<>
+	struct _Real_modulus<void> {
+		template<typename _Ty>
+		auto operator()(_Ty& a, _Ty&& b) -> decltype(_Real_modulus<_Ty>()(a, b)) const {
+			return _Real_modulus<_Ty>()(a, b);
+		}
+	};
+	
+	using _CSTD fmod;
 
 	using _CSTD pow;
 	using _CSTD sqrt;
@@ -84,7 +114,6 @@ namespace clmagic {
 		_X = _X * (1.5 - xhalf * _X * _X);
 		return _X;
 	}
-
 	inline float  invcbrt(float  _X) { return (1.f / cbrt(_X)); }
 	inline double invcbrt(double _X) { return (1.0 / cbrt(_X)); }
 
@@ -194,6 +223,18 @@ namespace clmagic {
 		dst[1] = v0[2] * v1[0] - v0[0] * v1[2];
 		dst[2] = v0[0] * v1[1] - v0[1] * v1[0];
 	}
+
+#define _Real_wrapper_operator( CNAME, VAR )                             \
+	CNAME  operator+ (CNAME _Right) const { return (VAR + _Right.VAR); } \
+	CNAME  operator- (CNAME _Right) const { return (VAR - _Right.VAR); } \
+	CNAME  operator* (CNAME _Right) const { return (VAR * _Right.VAR); } \
+	CNAME  operator/ (CNAME _Right) const { return (VAR / _Right.VAR); } \
+	CNAME  operator% (CNAME _Right) const { return (::clmagic::_Real_modulus<>()(VAR, _Right.VAR)); } \
+	CNAME& operator+=(CNAME _Right) { *this = *this + _Right; return *this; } \
+	CNAME& operator-=(CNAME _Right) { *this = *this + _Right; return *this; } \
+	CNAME& operator*=(CNAME _Right) { *this = *this + _Right; return *this; } \
+	CNAME& operator/=(CNAME _Right) { *this = *this + _Right; return *this; } \
+	CNAME& operator%=(CNAME _Right) { *this = *this + _Right; return *this; }
 
 }// namespace clmagic
 

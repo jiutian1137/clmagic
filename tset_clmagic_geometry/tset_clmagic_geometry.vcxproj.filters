@@ -20,9 +20,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="color.hlsl" />
+    <FxCompile Include="norm.hlsl" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="LightingUtil.hlsl" />
+    <None Include="Header.hlsl" />
   </ItemGroup>
 </Project>

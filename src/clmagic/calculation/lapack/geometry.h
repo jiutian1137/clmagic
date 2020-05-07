@@ -1,6 +1,11 @@
-﻿#pragma once
-#ifndef clmagic_math_lapack_GEOMETRY_h_
-#define clmagic_math_lapack_GEOMETRY_h_
+﻿//--------------------------------------------------------------------------------------
+// Copyright (c) 2019 LongJiangnan
+// All Rights Reserved
+// Apache Licene 2.0
+//--------------------------------------------------------------------------------------
+#pragma once
+#ifndef clmagic_calculation_lapack_GEOMETRY_h_
+#define clmagic_calculation_lapack_GEOMETRY_h_
 #include "vector.h"
 #include "matrix.h"
 #include "Euler.h"
@@ -8,13 +13,13 @@
 #include "../complex/WilliamRowanHamilton.h"
 
 namespace clmagic {
-	template<typename _SclTy>
+	template<typename _Ts>
 	struct spherical_coordinate {
 		spherical_coordinate()
-			: radius(static_cast<_SclTy>(0)), azimuth(static_cast<_SclTy>(0)), zenith(static_cast<_SclTy>(0)) {}
+			: radius(static_cast<_Ts>(0)), azimuth(static_cast<_Ts>(0)), zenith(static_cast<_Ts>(0)) {}
 		
-		spherical_coordinate(_SclTy _Radius, radians _Azimuth, radians _Zenith)
-			: radius(_Radius), azimuth(static_cast<_SclTy>(_Azimuth)), zenith(static_cast<_SclTy>(_Zenith)) {}
+		spherical_coordinate(_Ts _Radius, radians<_Ts> _Azimuth, radians<_Ts> _Zenith)
+			: radius(_Radius), azimuth(static_cast<_Ts>(_Azimuth)), zenith(static_cast<_Ts>(_Zenith)) {}
 		
 		template<typename _VecTy>
 		spherical_coordinate(const _VecTy& XYZ) {		
@@ -37,30 +42,29 @@ namespace clmagic {
 				  Y|  /Z
 				   | /
 				   |/
-			-------+--------X
+			-------+--------X start
 				  /|
 				 / |
 				   |
-			XZ_radius = cos(Pi/2 - zenith) = sin(zenith)
+			XZ_radius = sin(Pi/2 - zenith) = cos(zenith)
 			*/
-			const auto XZ_radius = radius * sin(zenith);
+			const auto XZ_radius = radius * cos(zenith);
 			return _VecTy{ XZ_radius * cos(azimuth),
-						   radius    * cos(zenith), 
+						   radius * sin(zenith),
 						   XZ_radius * sin(azimuth) };
 		}
 
-		_SclTy radius;
-		_SclTy azimuth;
-		_SclTy zenith;
+		_Ts radius;
+		_Ts azimuth;
+		_Ts zenith;
 	};
 
-
-	template<typename _SclTy>
+	template<typename _Ts>
 	struct cylindrical_coordinate {
 		cylindrical_coordinate()
-			: radius(static_cast<_SclTy>(0)), azimuth(static_cast<_SclTy>(0)), height(static_cast<_SclTy>(0)) {}
+			: radius(static_cast<_Ts>(0)), azimuth(static_cast<_Ts>(0)), height(static_cast<_Ts>(0)) {}
 
-		cylindrical_coordinate(_SclTy _Radius, radians _Azimuth, _SclTy _Height)
+		cylindrical_coordinate(_Ts _Radius, radians<_Ts> _Azimuth, _Ts _Height)
 			: radius(_Radius), azimuth(_Azimuth), height(_Height) {}
 
 		template<typename _VecTy>
@@ -78,77 +82,86 @@ namespace clmagic {
 			return _VecTy{ radius*cos(azimuth), height, radius*sin(azimuth) };
 		}
 
-		_SclTy radius;
-		_SclTy azimuth;
-		_SclTy height;
+		_Ts radius;
+		_Ts azimuth;
+		_Ts height;
+	};
+
+	enum Coordinates{
+		_LH_,
+		_RH_
 	};
 
 
-	template<typename _SclTy, typename _BlkTy = _SclTy, bool _Major = _COL_MAJOR_>
-	struct PerspectiveLH {
-		using matrix_type = matrix4x4<_SclTy, _BlkTy, _Major, normal_matrix_tag>;
+	/*- - - - - - - - - - - - - - - - - - perspective - - - - - - - - - - - - - - -*/
+	template<typename _Tm, int _Cd = Coordinates::_LH_>
+	struct perspective {};
+
+	template<typename _Ts, typename _Tb, bool _Major>
+	struct perspective< matrix4x4<_Ts, _Tb, _Major>, _LH_ > {// perspective_left_hand
+		using matrix_type = matrix4x4<_Ts, _Tb, _Major>;
 
 		/* @_fov: virtical field of angle
 		   @_r: aspect, window-width/window-height
 		   @_n: near-plane Z, must grater 0.000002
 		   @_f: far-plane Z
 		*/
-		static matrix_type get_matrix(radians fov, _SclTy r, _SclTy n, _SclTy f) {
-			/*
-				w/h = _Aspect
-				w/1 = _Aspect
-				w = _Aspect = r, if w=1 h=? result same of above...
+		static matrix_type get_matrix(radians<_Ts> fov, _Ts aspect, _Ts n, _Ts f) {
+			/* aspect = w/h
+			   => w = aspect*h
+			   => h = w/aspect
+
+			   w = 1
+			   h = 1/aspect
 			*/
-			const auto d  = (_SclTy)1 / tan(static_cast<_SclTy>(fov / 2));// cot(fov/2)
+			const auto d  = 1 / tan( static_cast<_Ts>(fov)/2 );// cot(fov/2)
 			const auto fn = f / (f - n);
 			/* A*z+B = (z-n)*f/(f-n)
 					 = z*(f/(f-n)]) + -n*(f/(f-n))
 			*/
 			if _CONSTEXPR_IF(matrix_type::col_major()) {
 				return matrix_type{
-					 d / r, (_SclTy)0, (_SclTy)0, (_SclTy)0,
-					(_SclTy)0,      d, (_SclTy)0, (_SclTy)0,
-					(_SclTy)0, (_SclTy)0,     fn,  -n*fn,
-					(_SclTy)0, (_SclTy)0, (_SclTy)1, (_SclTy)0 };
+					d/aspect, (_Ts)0, (_Ts)0, (_Ts)0,
+					(_Ts)0,        d, (_Ts)0, (_Ts)0,
+					(_Ts)0,   (_Ts)0,     fn,  -n*fn,
+					(_Ts)0,   (_Ts)0, (_Ts)1, (_Ts)0 };
 			} else {
 				return matrix_type{
-					 d / r, (_SclTy)0, (_SclTy)0, (_SclTy)0,
-					(_SclTy)0,      d, (_SclTy)0, (_SclTy)0,
-					(_SclTy)0, (_SclTy)0,     fn, (_SclTy)1,
-					(_SclTy)0, (_SclTy)0,  -n*fn, (_SclTy)0 };
+					d/aspect, (_Ts)0, (_Ts)0, (_Ts)0,
+					(_Ts)0,        d, (_Ts)0, (_Ts)0,
+					(_Ts)0,   (_Ts)0,     fn, (_Ts)1,
+					(_Ts)0,   (_Ts)0,  -n*fn, (_Ts)0 };
 			}
 		}
-	
-		static matrix_type get_matrix(_SclTy w, _SclTy h, _SclTy n, _SclTy f) {
-			/*
-				h/2 / n = tan(fov/2)
-				h/(2n)  = tan(fov/2)
-				2n/h    = d
+		static matrix_type get_matrix(_Ts w, _Ts h, _Ts n, _Ts f) {
+			/* h/2 / n = tan(fov/2)
+			   => h/(2n)  = tan(fov/2)
+			   => 2n/h    = d
 
-				w/h=r
-				w=r*h
-				d/r = 2n/h/r
-				    = 2n/(h*r)
-					= 2n/w
+			   w/h=aspect
+			   => w=aspect*h
+			   d/aspect = (2n/h) / aspect
+			   => d/aspect = 2n/(h*aspect)
+			   => d/aspect = 2n / w
 			*/
-			const auto n_m2 = static_cast<_SclTy>(2) * n;
+			const auto n_m2 = ((_Ts)2) * n;
 			const auto fn   = f / (f - n);
 			if _CONSTEXPR_IF(matrix_type::col_major()) {
 				return matrix_type{
-					n_m2/w, (_SclTy)0, (_SclTy)0, (_SclTy)0,
-					(_SclTy)0, n_m2/h, (_SclTy)0, (_SclTy)0,
-					(_SclTy)0, (_SclTy)0,     fn,  -n/fn,
-					(_SclTy)0, (_SclTy)0, (_SclTy)1, (_SclTy)0 };
+					n_m2/w, (_Ts)0, (_Ts)0, (_Ts)0,
+					(_Ts)0, n_m2/h, (_Ts)0, (_Ts)0,
+					(_Ts)0, (_Ts)0,     fn,  -n/fn,
+					(_Ts)0, (_Ts)0, (_Ts)1, (_Ts)0 };
 			} else {
 				return matrix_type{
-					n_m2/w, (_SclTy)0, (_SclTy)0, (_SclTy)0,
-					(_SclTy)0, n_m2/h, (_SclTy)0, (_SclTy)0,
-					(_SclTy)0, (_SclTy)0,     fn, (_SclTy)1,
-					(_SclTy)0, (_SclTy)0,  -n/fn, (_SclTy)0 };
+					n_m2/w, (_Ts)0, (_Ts)0, (_Ts)0,
+					(_Ts)0, n_m2/h, (_Ts)0, (_Ts)0,
+					(_Ts)0, (_Ts)0,     fn, (_Ts)1,
+					(_Ts)0, (_Ts)0,  -n/fn, (_Ts)0 };
 			}
 		}
 
-		static _SclTy get_Znear(const matrix_type& M) {
+		static _Ts get_Znear(const matrix_type& M) {
 			if _CONSTEXPR_IF(_Major == _COL_MAJOR_) {
 				// M[2][3] = -Znear*M[2][2]
 				// Znear   = -M[2][3] / M[2][2]
@@ -157,8 +170,7 @@ namespace clmagic {
 				return -(M.at(3, 2) / M.at(2, 2));
 			}
 		}
-
-		static _SclTy get_Zfar(const matrix_type& _Matrix, const _SclTy _Znear) {
+		static _Ts get_Zfar(const matrix_type& _Matrix, const _Ts _Znear) {
 			/* M[2][2] = fn = _Zfar / (_Zfar - _Znear)
 			M[2][2] * (_Zfar - _Znear)     = _Zfar
 			M[2][2]*_Zfar - M[2][2]*_Znear = _Zfar
@@ -167,110 +179,119 @@ namespace clmagic {
 			( - M[2][2]*_Znear)/(1-M[2][2])= _Zfar
 			*/
 			const auto fn = _Matrix.at(2, 2);
-			return ((-fn*_Znear) / ((_SclTy)1 - fn));
+			return ((-fn*_Znear) / (((_Ts)1) - fn));
 		}
-
-		static _SclTy get_Zfar(const matrix_type& _Matrix) {
+		static _Ts get_Zfar(const matrix_type& _Matrix) {
 			return get_Zfar(_Matrix, get_Znear(_Matrix));
 		}
-	
-		static std::pair<_SclTy, _SclTy> get_Zrange(const matrix_type& _Matrix) {
+		static std::pair<_Ts, _Ts> get_Zrange(const matrix_type& _Matrix) {
 			const auto _Znear = get_Znear(_Matrix);
 			const auto _Zfar  = get_Zfar(_Matrix, _Znear);
-			return std::pair<_SclTy, _SclTy>{ _Znear, _Zfar };
+			return std::pair<_Ts, _Ts>{ _Znear, _Zfar };
 		}
 	
 		// Lh == RH
-		static _SclTy get_aspect(const matrix_type& M) {
-			// d / r = M[0][0]
-			// M[1][1] / r = M[0][0], r = M[1][1]/M[0][0]
-			return M.at(1, 1) / M.at(0, 0);
-		}
-	
-		static radians get_fov(const matrix_type& M) {// get virtical_field_of_angle
-			/* d = 1 / tan(_Fov / 2)
-			  1/d = tan(_Fov / 2)
-			  atan(1/d) = _Fov / 2
-			  atan(1/d)*2 = _Fov
-			  atan(1/M[1][1])*2 = _Fov
+		static _Ts get_aspect(const matrix_type& M) {
+			/* M11 = d, M00 = d/r
+			   => r = d * (r/d)
+			   => r = M11/M00
 			*/
-			const auto fov1_2 = radians(cvtfloating_rational<intmax_t>( atan((_SclTy)1 / M.at(1,1)) ));
-			return (fov1_2 * 2);
+			return M.at(1,1) / M.at(0,0);
 		}
-		
-		static radians get_foh(radians fov, _SclTy aspect) {
-			const auto foh_1_2 = radians(cvtfloating_rational<intmax_t>(
-				atan(aspect * tan(static_cast<_SclTy>(fov / 2)))
-			) );
-			return (foh_1_2 * 2);
+		static radians<_Ts> get_fov(const matrix_type& M) {// get virtical_field_of_angle
+			/* d = 1 / tan(_Fov / 2)
+			  => 1/d = tan(_Fov / 2)
+			  => atan(1/d)*2 = _Fov
+			  M11 = d
+			  => atan(1/M11)*2 = _Fov
+			*/
+			const auto M11 = M.at(1, 1);
+			return atan( ((_Ts)1) / M11 ) * ((_Ts)2);
 		}
-
-		static radians get_foh(const matrix_type& M) {
+		static radians<_Ts> get_foh(radians<_Ts> fov, _Ts aspect) {
+			return atan( aspect * tan(((_Ts)fov) / ((_Ts)2)) ) * ((_Ts)2);
+		}
+		static radians<_Ts> get_foh(const matrix_type& M) {
 			return get_foh(get_fov(M), get_aspect(M));
 		}
 	};
 
-	template<typename _SclTy, typename _BlkTy = _SclTy, bool _Major = _COL_MAJOR_>
-	struct PerspectiveRH : public PerspectiveLH<_SclTy, _BlkTy, _Major> {
-		using matrix_type = matrix4x4<_SclTy, _BlkTy, _Major, normal_matrix_tag>;
+	template<typename _Ts, typename _Tb, bool _Major>
+	struct perspective< matrix4x4<_Ts, _Tb, _Major>, _RH_ > : public perspective< matrix4x4<_Ts, _Tb, _Major>, _LH_ > {// perspective_right_hand
+		using matrix_type = matrix4x4<_Ts, _Tb, _Major>;
 
-		static matrix_type get_matrix(radians fov,  _SclTy aspect, _SclTy Znear, _SclTy Zfar) {
-			auto r  = aspect;
-			auto d  = (_SclTy)1 / tan(static_cast<_SclTy>(fov / 2));
-			auto fn = Zfar / (Znear - Zfar);
-			if _CONSTEXPR_IF(_Major == _COL_MAJOR_) {
+		static matrix_type get_matrix(radians<_Ts> fov, _Ts aspect, _Ts n, _Ts f) {
+			auto d  = ((_Ts)1) / tan( ((_Ts)fov)/((_Ts)2) );// cot(fov/2)
+			auto fn = f / (n - f);
+			if _CONSTEXPR_IF( matrix_type::col_major() ) {
 				return matrix_type{
-					 d / r, (_SclTy)0,  (_SclTy)0, (_SclTy)0,
-					(_SclTy)0,      d,  (_SclTy)0, (_SclTy)0,
-					(_SclTy)0, (_SclTy)0,      fn, Znear*fn,
-					(_SclTy)0, (_SclTy)0, (_SclTy)-1, (_SclTy)0 };
+					d/aspect, (_Ts)0,  (_Ts)0, (_Ts)0,
+					(_Ts)0,        d,  (_Ts)0, (_Ts)0,
+					(_Ts)0,   (_Ts)0,      fn,   n*fn,
+					(_Ts)0,   (_Ts)0, (_Ts)-1, (_Ts)0 };
 			} else {
 				return matrix_type{
-					 d / r, (_SclTy)0,   (_SclTy)0, (_SclTy)0,
-					(_SclTy)0,      d,   (_SclTy)0, (_SclTy)0,
-					(_SclTy)0, (_SclTy)0,       fn, (_SclTy)-1,
-					(_SclTy)0, (_SclTy)0, Znear*fn, (_SclTy)0 };
+					d/aspect, (_Ts)0, (_Ts)0, (_Ts)0,
+					(_Ts)0,        d, (_Ts)0, (_Ts)0,
+					(_Ts)0,   (_Ts)0,     fn, (_Ts)-1,
+					(_Ts)0,   (_Ts)0,   n*fn, (_Ts)0 };
+			}
+		}
+		static matrix_type get_matrix(_Ts w, _Ts h, _Ts n, _Ts f) {
+			const auto n_m2 = ((_Ts)2) * n;
+			const auto fn   = f / (n - f);
+			if _CONSTEXPR_IF(matrix_type::col_major()) {
+				return matrix_type{
+					n_m2/w, (_Ts)0,  (_Ts)0, (_Ts)0,
+					(_Ts)0, n_m2/h,  (_Ts)0, (_Ts)0,
+					(_Ts)0, (_Ts)0,      fn,   n*fn,
+					(_Ts)0, (_Ts)0, (_Ts)-1, (_Ts)0 };
+			}
+			else {
+				return matrix_type{
+					n_m2/w, (_Ts)0, (_Ts)0, (_Ts)0,
+					(_Ts)0, n_m2/h, (_Ts)0, (_Ts)0,
+					(_Ts)0, (_Ts)0,     fn, (_Ts)-1,
+					(_Ts)0, (_Ts)0,   n*fn, (_Ts)0 };
 			}
 		}
 	
-		static _SclTy get_Znear(const matrix_type& M) {
+		static _Ts get_Znear(const matrix_type& M) {
 			if _CONSTEXPR_IF(_Major == _COL_MAJOR_) {
-				// M[2][3] = _Znear*M[2][2]
-				// _Znear  = M[2][3] / M[2][2]
-				return (M.at(2, 3) / M.at(2, 2));
+				/* M23 = n*fn, M22 = fn
+				   => n = M23/M22
+				*/
+				return (M.at(2,3) / M.at(2,2));
 			} else {
-				return (M.at(3, 2) / M.at(2, 2));
+				return (M.at(3,2) / M.at(2,2));
 			}
 		}
-
-		static _SclTy get_Zfar(const matrix_type& M, const _SclTy Znear) {
-			/* M[2][2] = fn = _Zfar / (_Znear - _Zfar)
-			M[2][2] * (_Znear - _Zfar)     = _Zfar
-			M[2][2]*_Znear - M[2][2]*_Zfar = _Zfar
-				            M[2][2]*_Znear = _Zfar + M[2][2]*_Zfar
-				            M[2][2]*_Znear = _Zfar(1 + M[2][2])
-			M[2][2]*_Znear / (1 + M[2][2]) = _Zfar
+		static _Ts get_Zfar(const matrix_type& M, const _Ts Znear) {
+			/* <idea> Sovle: M22 = fn = f/(n-f) </idea>
+			=> f = M22 * (n - f)
+			=> f = M22*n - M22*f
+			=> f(1+M22) = M22*n
+			=> f = M22*n/(1+M22) or f = fn*n/(1+fn)
 			*/
 			const auto fn = M.at(2, 2);
-			return (fn * Znear / ((_SclTy)1 + fn));
+			return ( fn * Znear / (((_Ts)1) + fn) );
 		}
-
-		static _SclTy get_Zfar(const matrix_type& M) {
+		static _Ts get_Zfar(const matrix_type& M) {
 			return get_Zfar(M, get_Znear(M));
 		}
-	
-		static std::pair<_SclTy, _SclTy> get_Zrange(const matrix_type& M) {
+		static std::pair<_Ts, _Ts> get_Zrange(const matrix_type& M) {
 			const auto _Znear = get_Znear(M);
 			const auto _Zfar  = get_Zfar(M, _Znear);
-			return std::pair<_SclTy, _SclTy>{ _Znear, _Zfar };
+			return std::pair<_Ts, _Ts>{ _Znear, _Zfar };
 		}
 	};
 
+	/*- - - - - - - - - - - - - - - - - - planar_projection - - - - - - - - - - - - - - -*/
 	/*@_planar_projection: convert V to P in the Plane
 	*/
-	template<typename _SclTy, typename _BlkTy = _SclTy, bool _Major = _COL_MAJOR_>
+	template<typename _Ts, typename _Tb = _Ts, bool _Major = _COL_MAJOR_>
 	struct planar_projection {
-		using matrix_type = matrix4x4<_SclTy, _BlkTy, _Major, normal_matrix_tag>;
+		using matrix_type = matrix4x4<_Ts, _Tb, _Major, normal_matrix_tag>;
 		
 		/*<figure>
 				. <-- Peye
@@ -282,7 +303,7 @@ namespace clmagic {
 			ssssssss\     \     \
 			=========================y=0
 		  </figure>*/
-		static matrix_type get_matrix(vector3<_SclTy, _BlkTy> Peye) {// project plane(y=0)
+		static matrix_type get_matrix(vector3<_Ts, _Tb> Peye) {// project plane(y=0)
 			/*<describ>
 				<idea> similar-triangles </idea>
 				<important> 
@@ -330,20 +351,20 @@ namespace clmagic {
 			  </describ>*/
 			if (matrix_type::col_major()) {
 				return matrix_type{
-					  Peye[1],   -Peye[0], (_SclTy)0, (_SclTy)0,
-					(_SclTy)0,  (_SclTy)0, (_SclTy)0, (_SclTy)0,
-					(_SclTy)0,   -Peye[2],   Peye[1], (_SclTy)0,
-					(_SclTy)0, (_SclTy)-1, (_SclTy)0,  Peye[1] };
+					Peye[1], -Peye[0], (_Ts)0,  (_Ts)0,
+					(_Ts)0,   (_Ts)0,  (_Ts)0,  (_Ts)0,
+					(_Ts)0,  -Peye[2], Peye[1], (_Ts)0,
+					(_Ts)0,   (_Ts)-1, (_Ts)0,  Peye[1] };
 			} else {
 				return matrix_type{
-					  Peye[1],  (_SclTy)0, (_SclTy)0, (_SclTy)0,
-					 -Peye[0],  (_SclTy)0,  -Peye[2], (_SclTy)0,
-					(_SclTy)0,  (_SclTy)0,   Peye[1], (_SclTy)0,
-					(_SclTy)0, (_SclTy)-1, (_SclTy)0,  Peye[1] };
+					 Peye[1], (_Ts)0,  (_Ts)0,  (_Ts)0,
+					-Peye[0], (_Ts)0, -Peye[2], (_Ts)0,
+					 (_Ts)0,  (_Ts)0,  Peye[1], (_Ts)0,
+					 (_Ts)0,  (_Ts)-1, (_Ts)0,  Peye[1] };
 			}
 		}
 
-		static matrix_type get_matrix(vector3<_SclTy, _BlkTy> Peye, unit_vector3<_SclTy, _BlkTy> N, _SclTy d) {// project any-plane
+		static matrix_type get_matrix(vector3<_Ts, _Tb> Peye, unit_vector3<_Ts, _Tb> N, _Ts d) {// project any-plane
 			/*<describ>
 				<process>
 				                d + dot(N,Peye)
@@ -381,110 +402,169 @@ namespace clmagic {
 		}
 	};
 
+	/*- - - - - - - - - - - - - - - - - - rotation - - - - - - - - - - - - - - -*/
+	template<typename _Tm>
+	struct rotation { };
+
 	// inverse( rotation(theta) ) = rotation(-theta)
 	// inverse( rotation(theta) ) = transpose( rotation(theta) )
 	// reflection() = rotation( Pi/2 )
-	template<typename _SclTy, size_t _Rows, typename _BlkTy = _SclTy, bool _Major = _COL_MAJOR_>
-	struct rotation : public ::Rodrigues::rotation<_SclTy, _Rows, _BlkTy, _Major>,
-		::Euler::rotation<_SclTy, _Rows, _BlkTy, _Major>, 
-		::WilliamRowanHamilton::rotation<_SclTy, _Rows, _BlkTy, _Major> {
-		using matrix_type  = ::clmagic::square_matrix<_SclTy, _Rows, _BlkTy, _Major, clmagic::normal_matrix_tag>;
-		using unit_vector3 = ::clmagic::unit_vector3<_SclTy, _BlkTy>;
-		using quaternion   = ::WilliamRowanHamilton::quaternion<_SclTy, _BlkTy>;
+	template<typename _Ts, size_t _Rows, typename _Tb, bool _Major>
+	struct rotation< square_matrix< _Ts, _Rows, _Tb, _Major> > : 
+		public ::Rodrigues::rotation< clmagic::square_matrix< _Ts, _Rows, _Tb, _Major> >, 
+		::Euler::rotation< clmagic::square_matrix< _Ts, _Rows, _Tb, _Major> >, 
+		::WilliamRowanHamilton::rotation< clmagic::square_matrix< _Ts, _Rows, _Tb, _Major> > {
+		using matrix_type  = ::clmagic::square_matrix<_Ts, _Rows, _Tb, _Major>;
+		using quaternion   = ::WilliamRowanHamilton::quaternion<_Ts, _Tb>;
 
-		static matrix_type get_matrix(unit_vector3 axis, radians angle) {
-			return ::Rodrigues::rotation<_SclTy, _Rows, _BlkTy, _Major>::get_matrix(axis, angle);
+		static matrix_type get_matrix(unit_vector3<_Ts, _Tb> axis, radians<_Ts> angle) {
+			return ::Rodrigues::rotation<matrix_type>::get_matrix(axis, angle);
 		}
 
 		static matrix_type get_matrix(quaternion q) {
-			return ::WilliamRowanHamilton::rotation<_SclTy, _Rows, _BlkTy, _Major>::get_matrix(q);
+			return ::WilliamRowanHamilton::rotation<matrix_type>::get_matrix(q);
 		}
 	};
 
+	/*- - - - - - - - - - - - - - - - - - translation - - - - - - - - - - - - - - -*/
+	template<typename _Tm>
+	struct translation {};
+
 	// inverse( translation(x,y,z) ) = translation(-x,-y,-z)
-	template<typename _SclTy, typename _BlkTy = _SclTy, bool _Major = _COL_MAJOR_>
-	struct translation {
-		using matrix_type = matrix4x4<_SclTy, _BlkTy, _Major, normal_matrix_tag>;
+	template<typename _Ts, typename _Tb, bool _Major>
+	struct translation< matrix4x4<_Ts, _Tb, _Major> > {
+		using matrix_type = matrix4x4<_Ts, _Tb, _Major>;
 
-		static matrix_type get_matrix(_SclTy x, _SclTy y, _SclTy z) {
+		static matrix_type get_matrix(_Ts x, _Ts y, _Ts z) {
 			if _CONSTEXPR_IF(matrix_type::col_major()) {
 				return matrix_type{
-					(_SclTy)1, (_SclTy)0, (_SclTy)0,     x,
-					(_SclTy)0, (_SclTy)1, (_SclTy)0,     y,
-					(_SclTy)0, (_SclTy)0, (_SclTy)1,     z, 
-					(_SclTy)0, (_SclTy)0, (_SclTy)0, (_SclTy)1 };
+					(_Ts)1, (_Ts)0, (_Ts)0,     x,
+					(_Ts)0, (_Ts)1, (_Ts)0,     y,
+					(_Ts)0, (_Ts)0, (_Ts)1,     z, 
+					(_Ts)0, (_Ts)0, (_Ts)0, (_Ts)1 };
 			} else {
 				return matrix_type{
-					(_SclTy)1, (_SclTy)0, (_SclTy)0, (_SclTy)0,
-					(_SclTy)0, (_SclTy)1, (_SclTy)0, (_SclTy)0,
-					(_SclTy)0, (_SclTy)0, (_SclTy)1, (_SclTy)0,
-					     x,      y,      z, (_SclTy)1 };
+					(_Ts)1, (_Ts)0, (_Ts)0, (_Ts)0,
+					(_Ts)0, (_Ts)1, (_Ts)0, (_Ts)0,
+					(_Ts)0, (_Ts)0, (_Ts)1, (_Ts)0,
+					     x,      y,      z, (_Ts)1 };
 			}
 		}
-
-		static matrix_type get_matrix(const matrix_type& M, _SclTy x, _SclTy y, _SclTy z) {
-			/* @_node: col-major-order
-			M*TM(x,y,z,1) = E*TM(x1,y1,z1,1)
-			M*TM(x,y,z,1) = TM(x1,y1,z1,1)
-
-			[rx ux fx 0]   [1 0 0 x]   [rx ux fx rx*x+ux*y+fx*z]
-			[ry uy fy 0]   [0 1 0 y]   [ry uy fy ry*x+uy*y+fy*z]
-			[rz uz fz 0] * [0 0 1 z] = [rz uz fz rz*x+uz*y+fz*z]
-			[ 0  0  0 1]   [0 0 0 1]   [ 0  0  0       1       ]
-
-			row-major-order:
-			[      rx             ry            rz             0 ]
-			[      ux             uy            uz             0 ]
-			[      fx             fy            fz             0 ]
-			[rx*x+ux*y+fx*z ry*x+uy*y+fy*z rz*x+uz*y+fz*z      1 ]
+		static matrix_type get_matrix(const matrix_type& M, _Ts x, _Ts y, _Ts z) {
+			/*
+			<idea>
+				M*TM(x,y,z,1) = E*TM(x1,y1,z1,1)
+				M*TM(x,y,z,1) = TM(x1,y1,z1,1)
+			</idea>
+			<col-major-order>
+				[rx ux fx 0]   [1 0 0 x]   [rx ux fx rx*x+ux*y+fx*z]
+				[ry uy fy 0]   [0 1 0 y]   [ry uy fy ry*x+uy*y+fy*z]
+				[rz uz fz 0] * [0 0 1 z] = [rz uz fz rz*x+uz*y+fz*z]
+				[ 0  0  0 1]   [0 0 0 1]   [ 0  0  0       1       ]
+			</col-major-order>
+			<row-major-order>
+				[1 0 0 0]   [rx ry rz 0]   [rx ry rz 0]
+				[0 1 0 0]   [ux uy uz 0]   [ux uy uz 0]
+				[0 0 1 0] * [fx fy fz 0] = [fx fy fz 0]
+				[x y z 1]   [ 0  0  0 1]   [rx*x+ux*y+fx*z ry*x+uy*y+fy*z rz*x+uz*y+fz*z 1]
+			</row-major-order>
 			*/
-			if _CONSTEXPR_IF(matrix_type::col_major()) {
-				/*const auto rx = M.ref(0), ry = M.ref(4), rz = M.ref(8);
-				const auto ux = M.ref(1), uy = M.ref(5), uz = M.ref(9);
-				const auto fx = M.ref(2), fy = M.ref(6), fz = M.ref(10);
+			if _CONSTEXPR_IF( matrix_type::col_major() ) {
+				const auto rx = M.ref(0), ry = M.ref(4), rz = M.ref(8);// col(0)
+				const auto ux = M.ref(1), uy = M.ref(5), uz = M.ref(9);// col(1)
+				const auto fx = M.ref(2), fy = M.ref(6), fz = M.ref(10);// col(2)
 				return matrix_type{
-					  rx,     ux,     fx,   rx*x+ux*y+fx*z,
-					  ry,     uy,     fy,   ry*x+uy*y+fy*z,
-					  rz,     uz,     fz,   rz*x+uz*y+fz*z,
-					(_SclTy)0, (_SclTy)0, (_SclTy)0,      (_SclTy)1 };*/
-				return (M * get_matrix(x, y, z));
+					    rx,     ux,     fx,   rx*x+ux*y+fx*z,
+					    ry,     uy,     fy,   ry*x+uy*y+fy*z,
+					    rz,     uz,     fz,   rz*x+uz*y+fz*z,
+					(_Ts)0, (_Ts)0, (_Ts)0,           (_Ts)1 };
+				/*<another> (M * get_matrix(x, y, z)) </another>*/
 			} else {
-				/*const auto rx = _Axis.ref(0), ry = _Axis.ref(1), rz = _Axis.ref(2);
-				const auto ux = _Axis.ref(4), uy = _Axis.ref(5), uz = _Axis.ref(6);
-				const auto fx = _Axis.ref(8), fy = _Axis.ref(9), fz = _Axis.ref(10);
+				const auto rx = M.ref(0), ry = M.ref(1), rz = M.ref(2);// row(0)
+				const auto ux = M.ref(4), uy = M.ref(5), uz = M.ref(6);// row(1)
+				const auto fx = M.ref(8), fy = M.ref(9), fz = M.ref(10);// row(2)
 				return matrix_type{
-					      rx,             ry,             rz,       (_SclTy)0,
-					      ux,             uy,             uz,       (_SclTy)0,
-					      fx,             fy,             fz,       (_SclTy)0,
-					rx*x+ux*y+fx*z, ry*x+uy*y+fy*z, rz*x+uz*y+fz*z, (_SclTy)1 };*/
-				return (get_matrix(x,y,z) * M);
+					      rx,             ry,             rz,       (_Ts)0,
+					      ux,             uy,             uz,       (_Ts)0,
+					      fx,             fy,             fz,       (_Ts)0,
+					rx*x+ux*y+fx*z, ry*x+uy*y+fy*z, rz*x+uz*y+fz*z, (_Ts)1 };
+				/*<another> (get_matrix(x, y, z) * M) </another>*/
 			}
 		}
-
-		static matrix_type get_matrix(const matrix_type& _Axis, vector3<_SclTy, _BlkTy> pos) {
+		static matrix_type get_matrix(const matrix_type& _Axis, vector3<_Ts, _Tb> pos) {
 			return get_matrix(_Axis, pos[0], pos[1], pos[2]);
 		}
 	};
 
+	/*- - - - - - - - - - - - - - - - - - scaling - - - - - - - - - - - - - - -*/
+	template<typename _Tm>
+	struct scaling {};
 
-	template<typename _SclTy, typename _BlkTy = _SclTy>
-	struct scaling {
-		using matrix_type = ::clmagic::diagonal_matrix<_SclTy, 4, 4, _BlkTy, _COL_MAJOR_>;
+	template<typename _Ts, typename _Tb, bool _Major>
+	struct scaling< matrix3x3<_Ts, _Tb, _Major> > {
+		using matrix_type = ::clmagic::matrix3x3<_Ts, _Tb, _Major>;
 
-		static matrix_type get_matrix(_SclTy x, _SclTy y, _SclTy z) {
-			return matrix_type{ x, y, z, (_SclTy)1 };
-		}
-
-		static matrix_type get_matrix(_SclTy s) {
-			return matrix_type{ (_SclTy)1, (_SclTy)1, (_SclTy)1, ((_SclTy)1) / s };
+		static matrix_type get_matrix(_Ts x, _Ts y, _Ts z) {
+			return matrix_type{ 
+				  x,    (_Ts)0, (_Ts)0, 
+				(_Ts)0,   y,    (_Ts)0,
+				(_Ts)0, (_Ts)0,   z 
+			};
 		}
 	};
 
-	template<typename _SclTy, typename _BlkTy = _SclTy, bool _Major = _COL_MAJOR_>
-	struct rigid_body_transform {
-		using translation = ::clmagic::translation<_SclTy, _BlkTy, _Major>;
-		using rotation    = ::clmagic::rotation<_SclTy, 4, _BlkTy, _Major>;
-		using matrix_type = ::clmagic::matrix4x4<_SclTy, _BlkTy, _Major>;
+	template<typename _Ts, typename _Tb, bool _Major>
+	struct scaling< matrix4x4<_Ts, _Tb, _Major> > {
+		using matrix_type = ::clmagic::matrix4x4<_Ts, _Tb, _Major>;
+
+		static matrix_type get_matrix(_Ts x, _Ts y, _Ts z) {
+			return matrix_type{
+				  x,    (_Ts)0, (_Ts)0, (_Ts)0,
+				(_Ts)0,   y,    (_Ts)0, (_Ts)0,
+				(_Ts)0, (_Ts)0,   z,    (_Ts)0,
+				(_Ts)0, (_Ts)0, (_Ts)0, (_Ts)1
+			};
+		}
+		static matrix_type get_matrix(_Ts s) {
+			return matrix_type{
+				(_Ts)1, (_Ts)0, (_Ts)0, (_Ts)0,
+				(_Ts)0, (_Ts)1, (_Ts)0, (_Ts)0,
+				(_Ts)0, (_Ts)0, (_Ts)1, (_Ts)0,
+				(_Ts)0, (_Ts)0, (_Ts)0, ((_Ts)1) / s
+			};
+		}
+	};
+
+	template<typename _Ts, typename _Tb, bool _Major>
+	struct scaling< diagonal_matrix<_Ts, 3, 3, _Tb, _Major> > {
+		using matrix_type = clmagic::diagonal_matrix<_Ts, 3, 3, _Tb, _Major>;
+
+		static matrix_type get_matrix(_Ts x, _Ts y, _Ts z) {
+			return matrix_type{ x, y, z };
+		}
+	};
+
+	template<typename _Ts, typename _Tb, bool _Major>
+	struct scaling< diagonal_matrix<_Ts, 4, 4, _Tb, _Major> > {
+		using matrix_type = clmagic::diagonal_matrix<_Ts, 4, 4, _Tb, _Major>;
+
+		static matrix_type get_matrix(_Ts x, _Ts y, _Ts z) {
+			return matrix_type{ x, y, z, (_Ts)1 };
+		}
+		static matrix_type get_matrix(_Ts s) {
+			return matrix_type{ (_Ts)1, (_Ts)1, (_Ts)1, ((_Ts)1) / s };
+		}
+	};
+
+	/*- - - - - - - - - - - - - - - - - - rigid_body_transform - - - - - - - - - - - - - - -*/
+	template<typename _Tm>
+	struct rigid_body_transform {};
+
+	template<typename _Ts, typename _Tb, bool _Major>
+	struct rigid_body_transform< matrix4x4<_Ts, _Tb, _Major> > {
+		using matrix_type = ::clmagic::matrix4x4<_Ts, _Tb, _Major>;
+		using translation = ::clmagic::translation< matrix_type >;
+		using rotation    = ::clmagic::rotation< matrix_type >;
 
 		/* inverse( rigid_body )
 		 = inverse( translation(t)*rotation )
@@ -497,46 +577,48 @@ namespace clmagic {
 		 [fx fy fz 0]           [0 0 1 -z]   [fx fy fz dot(f,-t)]
 		 [0  0  0  1]           [0 0 0  1]   [0  0  0       1   ]
 		*/
-		static matrix_type inverse(const unit_vector3<_SclTy, _BlkTy>& r, const unit_vector3<_SclTy, _BlkTy>& u, const unit_vector3<_SclTy, _BlkTy>& f, const vector3<_SclTy, _BlkTy>& t) {
-			const vector3<_SclTy, _BlkTy> neg_t = -t;
+		static matrix_type inverse(const unit_vector3<_Ts, _Tb>& r, const unit_vector3<_Ts, _Tb>& u, const unit_vector3<_Ts, _Tb>& f, const vector3<_Ts, _Tb>& t) {
+			const vector3<_Ts, _Tb> neg_t = -t;
 			if _CONSTEXPR_IF(matrix_type::col_major()) {
 				return matrix_type{
 					  r[0],   r[1],   r[2], dot(neg_t, r),
 					  u[0],   u[1],   u[2], dot(neg_t, u),
 					  f[0],   f[1],   f[2], dot(neg_t, f),
-					(_SclTy)0, (_SclTy)0, (_SclTy)0,    (_SclTy)1 };
+					(_Ts)0, (_Ts)0, (_Ts)0,    (_Ts)1 };
 			} else {
 				return matrix_type{
-					    r[0],         u[0],        f[0],      (_SclTy)0,
-					    r[1],         u[1],        f[1],      (_SclTy)0,
-					    r[2],         u[2],        f[2],      (_SclTy)0,
-					dot(neg_t,r), dot(neg_t,u), dot(neg_t,f), (_SclTy)1 };
+					    r[0],         u[0],        f[0],      (_Ts)0,
+					    r[1],         u[1],        f[1],      (_Ts)0,
+					    r[2],         u[2],        f[2],      (_Ts)0,
+					dot(neg_t,r), dot(neg_t,u), dot(neg_t,f), (_Ts)1 };
 			}
 		}
-
 		static matrix_type inverse(const matrix_type& M) {
 			if _CONSTEXPR_IF(matrix_type::col_major()) {
-				const auto r = unit_vector3<_SclTy, _BlkTy>({ M.at(0,0), M.at(1,0), M.at(2,0) }, true);
-				const auto u = unit_vector3<_SclTy, _BlkTy>({ M.at(0,1), M.at(1,1), M.at(2,1) }, true);
-				const auto f = unit_vector3<_SclTy, _BlkTy>({ M.at(0,2), M.at(1,2), M.at(2,2) }, true);
-				const auto t =      vector3<_SclTy, _BlkTy>({ M.at(0,3), M.at(1,3), M.at(2,3) });
+				const auto r = unit_vector3<_Ts, _Tb>({ M.at(0,0), M.at(1,0), M.at(2,0) }, true);
+				const auto u = unit_vector3<_Ts, _Tb>({ M.at(0,1), M.at(1,1), M.at(2,1) }, true);
+				const auto f = unit_vector3<_Ts, _Tb>({ M.at(0,2), M.at(1,2), M.at(2,2) }, true);
+				const auto t =      vector3<_Ts, _Tb>({ M.at(0,3), M.at(1,3), M.at(2,3) });
 				return inverse(r, u, f, t);
 			} else {
-				const auto r = unit_vector3<_SclTy, _BlkTy>({ M.at(0,0), M.at(0,1), M.at(0,2) }, true);
-				const auto u = unit_vector3<_SclTy, _BlkTy>({ M.at(1,0), M.at(1,1), M.at(1,2) }, true);
-				const auto f = unit_vector3<_SclTy, _BlkTy>({ M.at(2,0), M.at(2,1), M.at(2,2) }, true);
-				const auto t =      vector3<_SclTy, _BlkTy>({ M.at(3,0), M.at(3,1), M.at(3,2) });
+				const auto r = unit_vector3<_Ts, _Tb>({ M.at(0,0), M.at(0,1), M.at(0,2) }, true);
+				const auto u = unit_vector3<_Ts, _Tb>({ M.at(1,0), M.at(1,1), M.at(1,2) }, true);
+				const auto f = unit_vector3<_Ts, _Tb>({ M.at(2,0), M.at(2,1), M.at(2,2) }, true);
+				const auto t =      vector3<_Ts, _Tb>({ M.at(3,0), M.at(3,1), M.at(3,2) });
 				return inverse(r, u, f, t);
 			}
 		}
 	};
 
+	/*- - - - - - - - - - - - - - - - - - look_at - - - - - - - - - - - - - - -*/
+	template<typename _Tm, int _Cd = Coordinates::_LH_>
+	struct look_at {};
 
-	template<typename _SclTy, typename _BlkTy = _SclTy, bool _Major = _COL_MAJOR_>
-	struct LookatLH {
-		using matrix_type = matrix4x4<_SclTy, _BlkTy, _Major, normal_matrix_tag>;
-		using vector3      = clmagic::vector3<_SclTy, _BlkTy>;
-		using unit_vector3 = clmagic::unit_vector3<_SclTy, _BlkTy>;
+	template<typename _Ts, typename _Tb, bool _Major>
+	struct look_at< matrix4x4<_Ts, _Tb, _Major>, Coordinates::_LH_ > {
+		using matrix_type  = clmagic::matrix4x4<_Ts, _Tb, _Major>;
+		using vector3      = clmagic::vector3<_Ts, _Tb>;
+		using unit_vector3 = clmagic::unit_vector3<_Ts, _Tb>;
 
 		static matrix_type get_matrix(vector3 Peye, unit_vector3 f, unit_vector3 u) {
 			/* decompose M = QR, col-major-order
@@ -550,33 +632,18 @@ namespace clmagic {
 			*/
 			auto r = unit_vector3(cross3(u, f));
 			     u = unit_vector3(cross3(f, r), true);
-			return rigid_body_transform<_SclTy, _BlkTy, _Major>::inverse(r, u, f, Peye);
-			/*const auto Pneg = -Peye;
-
-			if _CONSTEXPR_IF(matrix_type::col_major()) {
-				return matrix_type{
-					r[0],     r[1],   r[2], dot(Pneg, r),
-					u[0],     u[1],   u[2], dot(Pneg, u),
-					f[0],     f[1],   f[2], dot(Pneg, f),
-					(_SclTy)0, (_SclTy)0, (_SclTy)0,       (_SclTy)1 };
-			} else {
-				return matrix_type{
-					r[0],         u[0],         f[0],      (_SclTy)0,
-					r[1],         u[1],         f[1],      (_SclTy)0,
-					r[2],         u[2],         f[2],      (_SclTy)0,
-					dot(Pneg,r), dot(Pneg,u), dot(Pneg,f), (_SclTy)1 };
-			}*/
+			return rigid_body_transform<matrix_type>::inverse(r, u, f, Peye);
 		}
 	};
 
-	template<typename _SclTy, typename _BlkTy = _SclTy, bool _Major = _COL_MAJOR_>
-	struct LookatRH {
-		using matrix_type = matrix4x4<_SclTy, _BlkTy, _Major, normal_matrix_tag>;
-		using vector3      = clmagic::vector3<_SclTy, _BlkTy>;
-		using unit_vector3 = clmagic::unit_vector3<_SclTy, _BlkTy>;
+	template<typename _Ts, typename _Tb, bool _Major>
+	struct look_at< matrix4x4<_Ts, _Tb, _Major>, Coordinates::_RH_ > {
+		using matrix_type  = clmagic::matrix4x4<_Ts, _Tb, _Major, normal_matrix_tag>;
+		using vector3      = clmagic::vector3<_Ts, _Tb>;
+		using unit_vector3 = clmagic::unit_vector3<_Ts, _Tb>;
 
 		static matrix_type get_matrix(vector3 Peye, unit_vector3 f, unit_vector3 u) {
-			return LookatLH<_SclTy, _Major, _BlkTy>::get_matrix(Peye, -f, u);
+			return look_at<matrix_type, Coordinates::_LH_>::get_matrix(Peye, -f, u);
 		}
 	};
 

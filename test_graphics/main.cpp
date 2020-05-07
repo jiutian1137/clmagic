@@ -27,12 +27,11 @@ struct __declspec(align(256)) uniform_frame {
 	float DeltaTime = 0.f; // 180
 };
 
-struct __declspec(align(256)) uniform_matrial {
-	vector4<float> diffuse;
-	vector3<float> fresnelR0;
-	float          roughness;
+struct __declspec(align(256)) uniform_RENDERING {
+	environment<float>  Env;
+	light_source<float> Lights[1];
+	surface<float>      Mtl;
 };
-
 
 struct vertex {
 	clmagic::vector3<float> position0;
@@ -44,42 +43,30 @@ struct vertex {
 struct frame_resource : public dx12::basic_frame_resource {
 	frame_resource() = default;
 
-	frame_resource(ID3D12Device& _Device, D3D12_COMMAND_LIST_TYPE _Type, const Waves& _Wave, size_t _Nobj, size_t _Nmtl, 
-		size_t _Ndl, size_t _Npl, size_t _Nsl) : dx12::basic_frame_resource(_Device, _Type) {
+	frame_resource(ID3D12Device& _Device, D3D12_COMMAND_LIST_TYPE _Type, const Waves& _Wave, size_t _Nobj) : dx12::basic_frame_resource(_Device, _Type) {
 		// array of descriptor
-		per_object = dx12::packaged_resource_upload_heap(_Device,
+		cb_PER_OBJECT = dx12::packaged_resource_upload_heap(_Device,
 			CD3DX12_RESOURCE_DESC::Buffer(_Nobj * clmagic::ceil(sizeof(uniform_object), 256)));
-		per_material = dx12::packaged_resource_upload_heap(_Device,
-			CD3DX12_RESOURCE_DESC::Buffer(_Nmtl * clmagic::ceil(sizeof(uniform_matrial), 256)));
 
 		// single descriptor
-		per_frame = dx12::packaged_resource_upload_heap(_Device, 
+		cb_PER_FRAME = dx12::packaged_resource_upload_heap(_Device,
 			CD3DX12_RESOURCE_DESC::Buffer(sizeof(uniform_frame)));
-
-		size_t _Perlight_size = sizeof(common_light_source<float, __m128>);
-		directional_light = dx12::packaged_resource_upload_heap(_Device,
-			CD3DX12_RESOURCE_DESC::Buffer(_Ndl * _Perlight_size));
-		point_light = dx12::packaged_resource_upload_heap(_Device, 
-			CD3DX12_RESOURCE_DESC::Buffer(_Npl * _Perlight_size));
-		spot_light = dx12::packaged_resource_upload_heap(_Device, 
-			CD3DX12_RESOURCE_DESC::Buffer(_Nsl * _Perlight_size));
+		cb_RENDERING = dx12::packaged_resource_upload_heap(_Device,
+			CD3DX12_RESOURCE_DESC::Buffer(sizeof(uniform_RENDERING)));
 
 		per_frame_wave_vertices = std::make_shared<dx12::packaged_resource_upload_heap>(_Device,
 			CD3DX12_RESOURCE_DESC::Buffer(_Wave.VertexCount() * sizeof(vertex)) );
 	}
 
-	dx12::packaged_resource_upload_heap per_object;
-	dx12::packaged_resource_upload_heap per_material;
-	dx12::packaged_resource_upload_heap per_frame;
-	dx12::packaged_resource_upload_heap directional_light;
-	dx12::packaged_resource_upload_heap point_light;
-	dx12::packaged_resource_upload_heap spot_light;
+	dx12::packaged_resource_upload_heap cb_PER_OBJECT;
+	dx12::packaged_resource_upload_heap cb_PER_FRAME;
+	dx12::packaged_resource_upload_heap cb_RENDERING;
 	std::shared_ptr<dx12::packaged_resource_upload_heap> per_frame_wave_vertices;
 };
 
 struct material {
 	size_t index = -1;
-	concurrent_resource<uniform_matrial> data;
+	surface<float> data;
 };
 
 struct actor {
@@ -106,7 +93,7 @@ public:
 
 		// 1.
 		gWaves = Waves(256, 256, 1.f, 0.03f, 6.0f, 0.2f);
-		size_t _Nframe = 3;
+		size_t _Nframe = 1;
 
 		build_geometry();
 		build_material(_Nframe);
@@ -182,35 +169,29 @@ public:
 	}
 
 	void build_material(size_t _Nframes) {
-		uniform_matrial _Temp;
-		_Temp.diffuse   = { 0.2f, 0.6f, 0.2f, 1.0f };
-		_Temp.fresnelR0 = { 0.01f, 0.01f, 0.01f };
-		_Temp.roughness = 0.125f;
-		gMaterials["grass"].data.set(_Temp, _Nframes);
+		surface<float> _Grass;
+		_Grass.subsurface_albedo  = { 0.2f, 0.6f, 0.2f };
+		_Grass.subsurface_albedo  = { 0, 0, 0 };
+		_Grass.reflect_value      = { 0.913,0.922,0.924 };
+		_Grass.roughness          = 0.125f;
+		gMaterials["grass"].data  = _Grass;
 		gMaterials["grass"].index = 0;
 
-		_Temp.diffuse   = { 0.f, 0.2f, 0.6f, 1.f };
-		_Temp.fresnelR0 = { 0.1f, 0.1f, 0.1f };
-		_Temp.roughness = 0.f;
-		gMaterials["water"].data.set(_Temp, _Nframes);
+		surface<float> _Water;
+		_Water.subsurface_albedo  = { 0.f, 0.2f, 0.6f };
+		_Water.reflect_value      = { 0.1f, 0.1f, 0.1f };
+		_Water.roughness          = 0.f;
+		gMaterials["water"].data  = _Water;
 		gMaterials["water"].index = 1;
 	}
 	
 	void build_lights(size_t _Nframes) {
-		directional_light<float> _Dlight0({ 0.5f, 0.5f, 0.5f }, { 0.f, -1.f, 0.f });
-		gDirectionalLights["global"].set(_Dlight0, _Nframes);
-
-		point_light<float> _Plight0({ 0.7f, 0.7f, 0.7f }, { -20.f, 10.f, -20.f }, 30.f);
-		gPointLights["test1"].set(_Plight0, _Nframes);
-
-		spot_light<float> _Slight0 = spot_light<float>(
-			{1.f, 0.f, 0.f}, 
-			{ 10.f, 100.f, 10.f }, 
-			200.f, 
-			{ -0.3f, -1.f, 0.f },
-			cosf(1.0f),
-			cosf(0.8f));
-		gSpotLights["test1"].set(_Slight0, _Nframes);
+		gLights["light0"].color     = { 0.5f, 0.5f, 0.5f };
+		gLights["light0"].intensity = 100.f;
+		gLights["light0"].position  = { 0.5f, 50.f, 0.5f };
+		gLights["light0"].direction = { 0.f, -1.f, 0.f };
+		gLights["light0"].penumbra = 6.28;
+		gLights["light0"].umbra    = 6.28;
 	}
 	
 	void build_object(size_t _Nframes) {
@@ -228,16 +209,8 @@ public:
 	}
 
 	void build_framesource(size_t _Nframes) {
-		const size_t _Size_actor            = gActors.size();
-		const size_t _Size_material         = gMaterials.size();
-		const size_t _Size_directionallight = gDirectionalLights.size();
-		const size_t _Size_pointlight       = gPointLights.size();
-		const size_t _Size_spotlight        = gSpotLights.size();
 		for (size_t i = 0; i != _Nframes; ++i) {
-			gFrameResources.expend_cycle(frame_resource( *md3dDevice.Get(), mCommandList->GetType(),
-				gWaves, 
-				_Size_actor, _Size_material, 
-				_Size_directionallight, _Size_pointlight, _Size_spotlight ));
+			gFrameResources.expend_cycle(frame_resource( *md3dDevice.Get(), mCommandList->GetType(), gWaves, gActors.size() ));
 		}
 	}
 
@@ -247,22 +220,19 @@ public:
 		gInputlayout.push_back("TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA);
 
 		// 4.
-		std::vector<D3D12_ROOT_PARAMETER> _Parameters(6);
+		std::vector<D3D12_ROOT_PARAMETER> _Parameters(3);
 		CD3DX12_ROOT_PARAMETER::InitAsConstantBufferView(_Parameters[0], 0);
 		CD3DX12_ROOT_PARAMETER::InitAsConstantBufferView(_Parameters[1], 1);
 		CD3DX12_ROOT_PARAMETER::InitAsConstantBufferView(_Parameters[2], 2);
-		CD3DX12_ROOT_PARAMETER::InitAsConstantBufferView(_Parameters[3], 3);
-		CD3DX12_ROOT_PARAMETER::InitAsConstantBufferView(_Parameters[4], 4);
-		CD3DX12_ROOT_PARAMETER::InitAsConstantBufferView(_Parameters[5], 5);
 		std::vector<D3D12_STATIC_SAMPLER_DESC> _Samplers;
 		gRootSignature = dx12::packaged_root_signature(*md3dDevice.Get(), _Parameters, _Samplers);
 	}
 
 	void build_pipelinestate() {
-		gShaders["VS"] = hlsl::shader_compile(L"shader/color.hlsl", nullptr, "VS", "vs_5_0");
-		gShaders["PS"] = hlsl::shader_compile(L"shader/color.hlsl", nullptr, "PS", "ps_5_0");
-		gShaders["ShadowVS"] = hlsl::shader_compile(L"shader/color.hlsl", nullptr, "ShadowVS", "vs_5_0");
-		gShaders["ShadowPS"] = hlsl::shader_compile(L"shader/color.hlsl", nullptr, "ShadowPS", "ps_5_0");
+		gShaders["VS"] = hlsl::shader_compile(L"shader/norm.hlsl", nullptr, "VS", "vs_5_0");
+		gShaders["PS"] = hlsl::shader_compile(L"shader/norm.hlsl", nullptr, "PS", "ps_5_0");
+		/*gShaders["ShadowVS"] = hlsl::shader_compile(L"shader/color.hlsl", nullptr, "ShadowVS", "vs_5_0");
+		gShaders["ShadowPS"] = hlsl::shader_compile(L"shader/color.hlsl", nullptr, "ShadowPS", "ps_5_0");*/
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC _PSODesc;
 		ZeroMemory(&_PSODesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
@@ -286,59 +256,22 @@ public:
 		_PSODesc2.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 		_PSODesc2.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 		gPipelineStates["opaque_wireframe"] = dx12::packaged_pipeline_state(*md3dDevice.Get(), _PSODesc2);
-
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC _Shadow_PSO = _PSODesc;
-		_Shadow_PSO.VS = gShaders["ShadowVS"].get_dx12();
-		_Shadow_PSO.PS = gShaders["ShadowPS"].get_dx12();
-		gPipelineStates["shadow"] = dx12::packaged_pipeline_state(*md3dDevice.Get(), _Shadow_PSO);
 	}
 
 	virtual void OnResize() override {
 		_Mybase::OnResize();
-		_My_proj = clmagic::PerspectiveLH<float, __m128>::get_matrix(clmagic::degrees(40), AspectRatio(), 13.f, 10000.f);
+		_My_proj = clmagic::perspective<matrix4x4<float,__m128>>::get_matrix(radians<float>(degrees<float>(40)), AspectRatio(), 13.f, 10000.f);
 	}
 
 	virtual void Update(const GameTimer& gt) override {
-		using vector3 = clmagic::vector3<float, __m128>;
-		using vector4 = clmagic::vector4<float, __m128>;
+		using vector3      = clmagic::vector3<float, __m128>;
+		using vector4      = clmagic::vector4<float, __m128>;
 		using unit_vector3 = clmagic::unit_vector3<float, __m128>;
-		using Lookat = clmagic::LookatLH<float, __m128>;
+		using matrix4x4    = clmagic::matrix4x4<float, __m128>;
 
-		auto Peye = spherical_coordinate<float>(radius, azimuth, zinith).to_<vector3>();
-		_My_view  = Lookat::get_matrix(Peye, unit_vector3{ -Peye }, unit_vector3({ 0.f, 1.f, 0.f }, true) );
+		auto Peye = _My_eyepos.to_<vector3>();
+		_My_view  = look_at<matrix4x4>::get_matrix(Peye, unit_vector3{ -Peye }, unit_vector3({ 0.f, 1.f, 0.f }, true) );
 	
-		{
-			const float dt = gt.DeltaTime();
-			if (GetAsyncKeyState('1') & 0x8000) {
-				auto _Ref = gSpotLights["test1"].ref(3);
-				auto _Angle = acosf(_Ref.source.cos_penumbra());
-				     _Angle -= 0.1f;
-				_Ref.source.cos_penumbra() = cosf(_Angle);
-				_Ref.commit();
-				MessageBoxA(nullptr, std::to_string(_Angle).c_str(), "tips", MB_OK);
-			}
-
-			if (GetAsyncKeyState(VK_LEFT) & 0x8000) {
-				auto _Ref = gPointLights["test1"].ref(3);
-				_Ref.source.position()[0] -= 10.f;
-				_Ref.commit();
-			}
-			if (GetAsyncKeyState(VK_RIGHT) & 0x8000) {
-				auto _Ref = gPointLights["test1"].ref(3);
-				_Ref.source.position()[0] += 10.f;
-				_Ref.commit();
-			}
-			if (GetAsyncKeyState(VK_DOWN) & 0x8000) {
-				auto _Ref = gPointLights["test1"].ref(3);
-				_Ref.source.position()[2] -= 10.f;
-				_Ref.commit();
-			}
-			if (GetAsyncKeyState(VK_UP) & 0x8000) {
-				auto _Ref = gPointLights["test1"].ref(3);
-				_Ref.source.position()[2] += 10.f;
-				_Ref.commit();
-			}
-		}
 
 		gFrameResources.turn();// !!!!!
 		if (gFrameResources->fence != 0 && mFence->GetCompletedValue() < gFrameResources->fence) {
@@ -352,7 +285,7 @@ public:
 		{
 			auto       _First = gActors.begin();
 			const auto _Last  = gActors.end();
-			auto       _Dest  = gFrameResources->per_object.begin<uniform_object>();
+			auto       _Dest  = gFrameResources->cb_PER_OBJECT.begin<uniform_object>();
 			for (; _First != _Last; ++_First, ++_Dest) {
 				if ( _First->second.world_matrix.updated() ) {
 					_Dest->world_matrix = transpose( _First->second.world_matrix.get() );
@@ -360,55 +293,10 @@ public:
 			}
 		}
 
-		// update matrix's update
-		{
-			auto       _First = gMaterials.begin();
-			const auto _Last  = gMaterials.end();
-			auto       _Dest  = gFrameResources->per_material.begin<uniform_matrial>();
-			for ( ; _First != _Last; ++_First, ++_Dest) {
-				if (_First->second.data.updated()) {
-					*_Dest = _First->second.data.get();
-				}
-			}
-		}
-		
-		// update lights
-		{
-			auto       _First = gDirectionalLights.begin();
-			const auto _Last  = gDirectionalLights.end();
-			auto*      _Dest  = gFrameResources->directional_light.begin<common_light_source<float>>();
-			for (; _First != _Last; ++_First, ++_Dest) {
-				if (_First->second.updated()) {
-					*_Dest = _First->second.get();
-				}
-			}
-		}
-		{
-			auto       _First = gPointLights.begin();
-			const auto _Last  = gPointLights.end();
-			auto*      _Dest  = gFrameResources->point_light.begin<common_light_source<float>>();
-			for (; _First != _Last; ++_First, ++_Dest) {
-				if (_First->second.updated()) {
-					*_Dest = _First->second.get();
-				}
-			}
-		}
-		{
-			auto       _First = gSpotLights.begin();
-			const auto _Last  = gSpotLights.end();
-			auto*      _Dest  = gFrameResources->spot_light.ptr<common_light_source<float>>();
-			for (; _First != _Last; ++_First, ++_Dest) {
-				if (_First->second.updated()) {
-					*_Dest = _First->second.get();
-				}
-			}
-		}
-
-
-		auto& _Cbpass = gFrameResources->per_frame.at<uniform_frame>(0);
+		auto& _Cbpass = gFrameResources->cb_PER_FRAME.at<uniform_frame>(0);
 		_Cbpass.ViewMatrix  = transpose(_My_view);
 		_Cbpass.ProjMatrix  = transpose(_My_proj);
-		_Cbpass.TempMatrix = transpose(planar_projection<float, __m128>::get_matrix(Peye - vector3{10.f, 10.f, 10.f}, { 0.f, 1.f, 0.f }, 0.f));
+		_Cbpass.TempMatrix  = transpose(planar_projection<float, __m128>::get_matrix(Peye - vector3{10.f, 10.f, 10.f}, { 0.f, 1.f, 0.f }, 0.f));
 		_Cbpass.EyePosition = Peye;
 		_Cbpass.DeltaTime   = gt.DeltaTime();
 		_Cbpass.TotalTime   = gt.TotalTime();
@@ -460,21 +348,25 @@ public:
 		mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 
 		mCommandList->SetGraphicsRootSignature(gRootSignature.get());
-		mCommandList->SetGraphicsRootConstantBufferView(2, gFrameResources->per_frame->GetGPUVirtualAddress());
-		mCommandList->SetGraphicsRootConstantBufferView(3, gFrameResources->directional_light->GetGPUVirtualAddress());
-		mCommandList->SetGraphicsRootConstantBufferView(4, gFrameResources->point_light->GetGPUVirtualAddress());
-		mCommandList->SetGraphicsRootConstantBufferView(5, gFrameResources->spot_light->GetGPUVirtualAddress());
+		mCommandList->SetGraphicsRootConstantBufferView(1, gFrameResources->cb_PER_FRAME->GetGPUVirtualAddress());
 
 		// draw
 		{
 			auto       _First    = gActors.begin();
 			const auto _Last     = gActors.end();
-			auto       _Gptr_obj = gFrameResources->per_object->GetGPUVirtualAddress();
-			auto       _Gptr_mtl = gFrameResources->per_material->GetGPUVirtualAddress();
+			auto       _Gptr_obj = gFrameResources->cb_PER_OBJECT->GetGPUVirtualAddress();
+			auto&      _Rendering_zzzz = gFrameResources->cb_RENDERING;
 			for (; _First != _Last; ++_First, _Gptr_obj += sizeof(uniform_object)) {
 				mCommandList->IASetPrimitiveTopology(_First->second.primitive);
 				mCommandList->SetGraphicsRootConstantBufferView(0, _Gptr_obj);
-				mCommandList->SetGraphicsRootConstantBufferView(1, _Gptr_mtl + (*_First).second.pmtl->index * sizeof(uniform_matrial));
+				auto& _Rendering = _Rendering_zzzz.at<uniform_RENDERING>(0);
+				_Rendering.Env.particles_ratio = 0.f;
+				_Rendering.Env.particles_color = vector3<float>(0.f);
+				_Rendering.Lights[0] = gLights["light0"];
+				_Rendering.Mtl.subsurface_albedo = _First->second.pmtl->data.subsurface_albedo;
+				_Rendering.Mtl.reflect_value = _First->second.pmtl->data.reflect_value;
+				_Rendering.Mtl.roughness = _First->second.pmtl->data.roughness;
+				mCommandList->SetGraphicsRootConstantBufferView(2, _Rendering_zzzz->GetGPUVirtualAddress());
 
 				const auto& _Mesh = *(_First->second.pmesh);
 				mCommandList->IASetVertexBuffers(0, 1, &_Mesh.vertex_view());
@@ -482,7 +374,7 @@ public:
 				mCommandList->DrawIndexedInstanced(_Mesh.index_count, 1, _Mesh.start_index_location, _Mesh.base_vertex_location, 0);
 			}
 
-			_First    = gActors.begin();
+			/*_First    = gActors.begin();
 			_Gptr_obj = gFrameResources->per_object->GetGPUVirtualAddress();
 			mCommandList->SetPipelineState(gPipelineStates["shadow"].get());
 			for (; _First != _Last; ++_First, _Gptr_obj += sizeof(uniform_object)) {
@@ -496,7 +388,7 @@ public:
 					mCommandList->IASetIndexBuffer(&_Mesh.index_view());
 					mCommandList->DrawIndexedInstanced(_Mesh.index_count, 1, _Mesh.start_index_location, _Mesh.base_vertex_location, 0);
 				}
-			}
+			}*/
 		}
 
 		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -529,15 +421,18 @@ public:
 	virtual void OnMouseMove(WPARAM btnState, int x, int y) override{ 
 		using namespace::clmagic;
 		if (btnState & MK_LBUTTON) {
-			auto dx = degrees(cvtfloating_rational<intmax_t>(0.10f * static_cast<float>(x - _My_LastMousePos.x)));
-			auto dy = degrees(cvtfloating_rational<intmax_t>(0.10f * static_cast<float>(y - _My_LastMousePos.y)));
-			zinith  += dy;
-			azimuth += dx;
-			zinith = clmagic::clamp(zinith, degrees(18), degrees(162));
+			auto dx = degrees<float>(0.10f * static_cast<float>(x - _My_LastMousePos.x));
+			auto dy = degrees<float>(0.10f * static_cast<float>(y - _My_LastMousePos.y));
+			_My_eyepos.zenith  += radians<float>(dy).num;
+			_My_eyepos.azimuth += radians<float>(dx).num;
+			_My_eyepos.zenith = clamp( _My_eyepos.zenith, unit_cast<degrees_ratio, radians_ratio>(18.f), unit_cast<degrees_ratio, radians_ratio>(162.f) );
 		} else if(btnState & MK_RBUTTON){
-			float dx = 0.25f * static_cast<float>(x - _My_LastMousePos.x);
-			float dy = 0.25f * static_cast<float>(y - _My_LastMousePos.y);
-			radius += dx - dy;
+			float dx = 0.001f * static_cast<float>(x - _My_LastMousePos.x);
+			float dy = 0.001f * static_cast<float>(y - _My_LastMousePos.y);
+			//_My_eyepos.radius += dx - dy;
+			gLights["light0"].penumbra -= dy;
+			gLights["light0"].umbra    -= dx;
+			gLights["light0"].umbra = min(gLights["light0"].umbra, gLights["light0"].penumbra);
 		}
 
 		_My_LastMousePos.x = x;
@@ -557,21 +452,16 @@ private:
 	dx12::packaged_root_signature gRootSignature;
 	std::unordered_map<std::string, Texture>      gTextures;
 	std::unordered_map<std::string, material > gMaterials;
-	std::unordered_map<std::string, concurrent_resource<common_light_source<float>> > gDirectionalLights;
-	std::unordered_map<std::string, concurrent_resource<common_light_source<float>> > gPointLights;
-	std::unordered_map<std::string, concurrent_resource<common_light_source<float>> > gSpotLights;
+	std::unordered_map < std::string, light_source<float>> gLights;
 	std::unordered_map<std::string, hlsl::shader> gShaders;
-	std::vector<Light>                            gLights;
 	std::unordered_map<std::string, dx12::packaged_pipeline_state> gPipelineStates;
 
 	matrix4x4<float, __m128> _My_view;
 	matrix4x4<float, __m128> _My_proj;
 
-	clmagic::degrees zinith  = 45;
-	clmagic::degrees azimuth = 0;
-	float            radius = 50.f;
-	degrees          sun_theta = 270;
-	degrees          sun_phi = 90;
+	spherical_coordinate<float> _My_eyepos = spherical_coordinate<float>(100.f, radians<float>(0), radians<float>(3.14159f / 4.0f));
+	degrees<float> sun_theta = 270;
+	degrees<float> sun_phi = 90;
 	POINT _My_LastMousePos;
 };
 
@@ -580,8 +470,6 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine,
 #if defined(DEBUG) | defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
-
-
 
 	try {
 		ShapeApp _App(hInstance);
@@ -601,6 +489,12 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine,
 #include <variant>
 #include <algorithm>
 
+
+template<typename _Ty>
+void fffff(_Ty&&) {
+	
+}
+
 int main() {
 	using namespace::clmagic;
 	/*matrix<float, 5, 5, __m128, _COL_MAJOR_> M(1.f);
@@ -616,11 +510,49 @@ int main() {
 	const auto n2 = 1.00001;
 	std::cout << ::asin(n2 / n1) * (180.0 / 3.14)<< std::endl;
 
+	vector3<double> F0 = { 0.913,0.922,0.924 };
+	unit_vector3<double> N  = { 0, 1, 0 };
 
-	std::vector<int> Arr{3, 2, 3, 5};
-	// x0 x1 x2 x3 x4
-	// |--|--|--|--|
+	/*const int count   = 1000;
+	const auto dphi   = 6.28 / static_cast<double>(count);
+	const auto dtheta = 3.141592/2 / static_cast<double>(count);
+	 auto Rv = 0.0;
+	 std::cout << integrate_n([](double theta) { return cos(theta); }, 0.0, 1.57, 1000) << std::endl;*/
+	/* const auto f = [](double theta) { return cos(theta) * sin(theta); };
+	 std::cout << integrate_n( [f](double dphi) { return integrate_n(f, 0.0, 1.57, 100); }, 0.0, 6.28, 100) << std::endl;
+	 std::cout << integrate_n( [f](double dphi) { return integrate_n(f, 0.0, 1.57, 1000); }, 0.0, 6.28, 1000) << std::endl;
+	 std::cout << integrate_n( [f](double dphi) { return integrate_n(f, 0.0, 1.57, 2000); }, 0.0, 6.28, 2000) << std::endl;*/
 
+
+	const auto rad = revolution<float>(1);
+	const auto deg = degrees<float>(rad);
+	std::cout << rad.num << std::endl;
+	std::cout << deg.num << std::endl;
+	std::cout << radians<float>(deg) + deg << std::endl;
+
+	auto PPP = clmagic::perspective<matrix4x4<float, __m128>>::get_matrix(static_cast<radians<float>>(degrees<float>(40.0f)), 0.7f, 13.f, 10000.f);
+	std::cout << PPP << std::endl;
+	// Pi * BRDF(l,v) * Clight * dot(n,l)
+	
+	//for(double theta = 0.0f; theta <= 3.141592/2; theta += dtheta){
+	//	for (double phi = 0.f; phi <= 6.28; phi += dphi) {
+	//		//std::cout << "phi:" << phi << "\ttheta:" << theta << std::endl;
+	//		const auto L = spherical_coordinate<double>(1.0, phi, theta).to_<vector3<double>>();
+	//		const auto dl = sin(theta) * dtheta * dphi;
+	//		Rv += dot(N, L)* dl;
+	//	}
+	//}
+	//std::cout << Rv << std::endl;
+
+	/*
+	const auto f = [](double x) { return 2.0 / (x* x); };
+	const auto a = -2.0;
+	const auto b = -1.0;
+	std::cout << clmagic::integrate_n(f, a, b, 50) << std::endl;
+	std::cout << clmagic::integrate_n(f, a, b, 100) << std::endl;
+	std::cout << clmagic::integrate_n(f, a, b, 500) << std::endl;
+	std::cout << clmagic::integrate_n(f, a, b, 1000) << std::endl;
+	*/
 	std::cin.get();
 	
 	
@@ -650,8 +582,8 @@ int main() {
 	using std::chrono::milliseconds;
 	using std::chrono::steady_clock;
 	using std::chrono::duration_cast;
-	const auto _Axis = rotation<float, 4, float>::get_matrix(unit_vector3<float>{ 2.f, 3.f, 1.f }, 2);
-	const auto _Axis2 = rotation<float, 4, float>::get_matrix(unit_vector3<float>{ 2.f, 3.f, 1.f }, 2);
+	const auto _Axis  = rotation< matrix4x4<float> >::get_matrix(unit_vector3<float>{ 2.f, 3.f, 1.f }, 2);
+	const auto _Axis2 = rotation< matrix4x4<float> >::get_matrix(unit_vector3<float>{ 2.f, 3.f, 1.f }, 2);
 
 	for (size_t i = 1000; i != -1; --i) {
 		std::cout << i << std::endl;
@@ -661,13 +593,13 @@ int main() {
 
 	milliseconds _Start1 = duration_cast<milliseconds>(steady_clock::now().time_since_epoch());
 	for (size_t i = 0; i != _Test_count; ++i) {
-		auto _CC = translation<float, float, true>::get_matrix(_Axis, 10.f, 20.f, 30.f);
+		auto _CC = translation< matrix4x4<float> >::get_matrix(_Axis, 10.f, 20.f, 30.f);
 	}
 	milliseconds _End1 = duration_cast<milliseconds>(steady_clock::now().time_since_epoch());
 
 	milliseconds _Start2 = duration_cast<milliseconds>(steady_clock::now().time_since_epoch());
 	for (size_t i = 0; i != _Test_count; ++i) {
-		auto _CC = translation<float, float, false>::get_matrix(_Axis2, 10.f, 20.f, 30.f);
+		auto _CC = translation< matrix4x4<float> >::get_matrix(_Axis2, 10.f, 20.f, 30.f);
 	}
 	milliseconds _End2 = duration_cast<milliseconds>(steady_clock::now().time_since_epoch());
 
@@ -675,8 +607,8 @@ int main() {
 	std::cout << "row-major: "<<(_End2 - _Start2).count() << std::endl;
 	matrix<float, 4, 1> _CCCC = { 1.f, 2.f, 3.f, 1.f };
 	matrix<float, 1, 4, float, false> _CCCC2 = { 1.f, 2.f, 3.f, 1.f };
-	std::cout << translation<float, float, true>::get_matrix(matrix<float, 4, 4>(1.f), 10.f, 20.f, 30.f)* _CCCC << std::endl;
-	std::cout << _CCCC2 * translation<float, float, false>::get_matrix(matrix<float, 4, 4>(1.f), 10.f, 20.f, 30.f) << std::endl;
+	std::cout << translation<matrix4x4<float>>::get_matrix(matrix<float, 4, 4>(1.f), 10.f, 20.f, 30.f)* _CCCC << std::endl;
+	std::cout << _CCCC2 * translation<matrix4x4<float, float, false>>::get_matrix(matrix<float, 4, 4>(1.f), 10.f, 20.f, 30.f) << std::endl;
 
 	return 0;
 }

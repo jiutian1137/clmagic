@@ -12,10 +12,12 @@
 
 #include "calculation/general/clmagic.h"
 #include "calculation/general/general.h"
+
 #include "calculation/real/bitset.h"
 #include "calculation/real/rational.h"
-#include "calculation/real/unit.h"
 #include "calculation/real/real.h"
+#include "calculation/real/radians.h"
+#include "calculation/real/unit_cast.h"
 #include "calculation/real/Stirling.h"
 
 #include "calculation/lapack/vector.h"
@@ -26,9 +28,14 @@
 
 #include "calculation/complex/WilliamRowanHamilton.h"
 
-#include "calculation/calculus/derivative.h"
+#include "calculation/calculus/differentiation.h"
+#include "calculation/calculus/intergration.h"
+
+#include "calculation/cg/reflectance.h"
+#include "calculation/cg/rendering.h"
 
 #include "calculation/physic/atmosphere_scattering.h"
+
 
 
 //#include "math/lapack/general.inl.h"
