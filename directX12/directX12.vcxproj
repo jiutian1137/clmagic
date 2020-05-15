@@ -138,11 +138,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\clmagic\directX12\d3dx12.h" />
     <ClInclude Include="..\src\clmagic\directX12\directX12.h" />
     <ClInclude Include="..\src\clmagic\directX12\dxcore.h" />
-    <ClInclude Include="..\src\clmagic\directX12\enum_string.h" />
-    <ClInclude Include="..\src\clmagic\directX12\frame_resource.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\D3D12_INPUT_LAYOUT_DESC.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\d3dx12.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\enum_string.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12DescriptorHeap.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Fence.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Heap.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12PipelineState.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Resource.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12RootSignature.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\uncopyable.h" />
+    <ClInclude Include="..\src\clmagic\directX12\Frame_Resource.h" />
     <ClInclude Include="..\src\clmagic\directX12\hlsl.h" />
     <ClInclude Include="..\src\clmagic\directX12\mesh.h" />
   </ItemGroup>

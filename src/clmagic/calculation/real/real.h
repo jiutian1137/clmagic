@@ -17,6 +17,8 @@ namespace clmagic {
 	using real_t = double;
 #endif
 
+#define SCALAR _Ts
+
 	constexpr float constexpr_trunc(float _Real) {
 		return (static_cast<float>(static_cast<int>(_Real)));
 	}

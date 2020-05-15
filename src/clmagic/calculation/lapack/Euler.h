@@ -65,8 +65,8 @@ namespace Euler {
 	struct rotation {};
 	
 	template<typename _Ts, typename _Tb, bool _Major>
-	struct rotation< clmagic::matrix3x3<_Ts,_Tb,_Major> > {// matrix3x3
-		using matrix_type = clmagic::matrix3x3<_Ts, _Tb, _Major>;
+	struct rotation< MATRIX3x3 > {// matrix3x3
+		using matrix_type = MATRIX3x3;
 
 		matrix_type yaw(clmagic::radians<_Ts> theta) {// apply: [vx*cos(theta)-vz*sin(theta), vy, vx*sin(theta)+vz*cos(theta)]
 			const auto theta_cos = clmagic::cos(static_cast<_Ts>(theta));
@@ -119,8 +119,8 @@ namespace Euler {
 	};
 
 	template<typename _Ts, typename _Tb, bool _Major>
-	struct rotation< clmagic::matrix4x4<_Ts,_Tb,_Major> > {// matrix4x4
-		using matrix_type = clmagic::matrix4x4<_Ts, _Tb, _Major>;
+	struct rotation< MATRIX4x4 > {// matrix4x4
+		using matrix_type = MATRIX4x4;
 
 		matrix_type yaw(clmagic::radians<_Ts> theta) {// apply: [vx*cos(theta)-vz*sin(theta), vy, vx*sin(theta)+vz*cos(theta)]
 			const auto theta_sin = clmagic::cos(static_cast<_Ts>(theta));

@@ -33,6 +33,7 @@
 
 #include "calculation/cg/reflectance.h"
 #include "calculation/cg/rendering.h"
+#include "calculation/cg/intersection.h"
 
 #include "calculation/physic/atmosphere_scattering.h"
 

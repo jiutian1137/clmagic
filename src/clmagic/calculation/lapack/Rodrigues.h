@@ -15,8 +15,8 @@ namespace Rodrigues {
 	struct rotation {
 		template<typename _Ts>
 		static clmagic::radians<_Ts> _Get_angle(_Ts M00, _Ts M11, _Ts M22) {
-			const auto theta = acos( ( M00 + M11 + M22 - ((_Ts)1) ) / ((_Ts)2) );
-			return clmagic::radians<_Ts>(theta);
+			using clmagic::acos;
+			return clmagic::radians<_Ts>( acos((M00+M11+M22-1)/2) );
 			/*
 			θ = acos( (trace(R)-1) / 2 )
 				= acos( [c+(1-c)x² + c+(1-c)y² + c+(1-c)z² - 1] / 2 )
@@ -31,7 +31,7 @@ namespace Rodrigues {
 		static _Tv _Get_axis(const _TTm& M, clmagic::radians<_Ts> angle) {
 			using clmagic::sin;
 
-			_Ts theta_sin_m2 = sin((_Ts)angle) * ((_Ts)2);
+			_Ts theta_sin_m2 = sin(static_cast<_Ts>(angle)) * 2;
 			
 			if _CONSTEXPR_IF( _TTm::col_major() ) {
 				const auto x = M.at(2, 1) - M.at(1, 2);
@@ -64,10 +64,13 @@ namespace Rodrigues {
 	};
 
 	template<typename _Ts, typename _Tb, bool _Major>
-	struct rotation< clmagic::matrix3x3<_Ts, _Tb, _Major> > {// matrix3x3
-		using matrix_type = clmagic::matrix3x3 <_Ts, _Tb, _Major>;
+	struct rotation< MATRIX3x3 > {// matrix3x3
+		using matrix_type       = MATRIX3x3;
+		using radians_type      = clmagic::radians<_Ts>;
+		using vector3_type      = clmagic::vector3<_Ts, _Tb>;
+		using unit_vector3_type = clmagic::unit_vector3<_Ts, _Tb>;
 
-		static matrix_type get_matrix(clmagic::unit_vector3<_Ts, _Tb> axis, clmagic::radians<_Ts> angle) {
+		static matrix_type  get_matrix(unit_vector3_type axis, radians_type angle) {
 			const auto c = clmagic::cos(static_cast<_Ts>(angle));
 			const auto s = clmagic::sin(static_cast<_Ts>(angle));
 			const auto x = axis[0];
@@ -75,18 +78,16 @@ namespace Rodrigues {
 			const auto z = axis[2];
 			const auto tmp = (static_cast<_Ts>(1) - c) * axis;// from GLM library
 
-			if _CONSTEXPR_IF(_Major == clmagic::_COL_MAJOR_) {
+			if _CONSTEXPR_IF( matrix_type::col_major() ) {
 				return matrix_type{
 					c + tmp[0]*x,           tmp[0]*y - s*z,     tmp[0]*z + s*y,
 					    tmp[1]*x + s*z, c + tmp[1]*y,           tmp[1]*z - s*x,
-					    tmp[2]*x - s*y,     tmp[2]*y + s*x, c + tmp[2]*z
-				};
+					    tmp[2]*x - s*y,     tmp[2]*y + s*x, c + tmp[2]*z };
 			} else {
 				return matrix_type{
 					c + tmp[0]*x,           tmp[1]*x + s*z,     tmp[2]*x - s*y,
 						tmp[0]*y - s*z, c + tmp[1]*y,           tmp[2]*y + s*x,
-						tmp[0]*z + s*y,     tmp[1]*z + s*x, c + tmp[2]*z
-				};
+						tmp[0]*z + s*y,     tmp[1]*z + s*x, c + tmp[2]*z };
 			}
 			/*
 			@_Note: colume_major
@@ -115,22 +116,22 @@ namespace Rodrigues {
 
 			*/
 		}
-
-		static clmagic::radians<_Ts> get_angle(const matrix_type& M) {
+		static radians_type get_angle(const matrix_type& M) {
 			return rotation<void>::_Get_angle(M.at(0, 0), M.at(1, 1), M.at(2, 2));
 		}
-		static clmagic::unit_vector3<_Ts, _Tb> get_axis(const matrix_type& M, clmagic::radians<_Ts> angle) {
-			return clmagic::unit_vector3<_Ts, _Tb>(
-				rotation<void>::_Get_axis< clmagic::vector3<_Ts, _Tb> >(M, angle) 
-				);
+		static unit_vector3_type get_axis(const matrix_type& M, radians_type angle) {
+			return unit_vector3_type( rotation<void>::_Get_axis<vector3_type>(M, angle) );
 		}
 	};
 
 	template<typename _Ts, typename _Tb, bool _Major>
-	struct rotation< clmagic::matrix4x4<_Ts, _Tb, _Major> > {// matrix4x4
-		using matrix_type = clmagic::matrix4x4<_Ts, _Tb, _Major>;
+	struct rotation< MATRIX4x4 > {// matrix4x4
+		using matrix_type       = MATRIX4x4;
+		using radians_type      = clmagic::radians<_Ts>;
+		using vector3_type      = clmagic::vector3<_Ts, _Tb>;
+		using unit_vector3_type = clmagic::unit_vector3<_Ts, _Tb>;
 
-		static matrix_type get_matrix(clmagic::unit_vector3<_Ts, _Tb> axis, clmagic::radians<_Ts> angle) {
+		static matrix_type  get_matrix(unit_vector3_type axis, radians_type angle) {
 			const auto c   = clmagic::cos(static_cast<_Ts>(angle));
 			const auto s   = clmagic::sin(static_cast<_Ts>(angle));
 			const auto x   = axis[0];
@@ -138,7 +139,7 @@ namespace Rodrigues {
 			const auto z   = axis[2];
 			const auto tmp = (static_cast<_Ts>(1) - c) * axis;// from GLM library
 
-			if _CONSTEXPR_IF(_Major == clmagic::_COL_MAJOR_) {
+			if _CONSTEXPR_IF( matrix_type::col_major() ) {
 				return matrix_type{
 					c + tmp[0]*x,           tmp[0]*y - s*z,     tmp[0]*z + s*y, (_Ts)0,
 						tmp[1]*x + s*z, c + tmp[1]*y,           tmp[1]*z - s*x, (_Ts)0,
@@ -154,14 +155,11 @@ namespace Rodrigues {
 				};
 			}
 		}
-	
-		static clmagic::radians<_Ts> get_angle(const matrix_type& M) {
+		static radians_type get_angle(const matrix_type& M) {
 			return rotation<void>::_Get_angle(M.at(0, 0), M.at(1, 1), M.at(2, 2));
 		}
-		static clmagic::unit_vector3<_Ts> get_axis(const matrix_type& M, clmagic::radians<_Ts> angle) {
-			return clmagic::unit_vector3<_Ts, _Tb>(
-				rotation<void>::_Get_axis< clmagic::vector3<_Ts, _Tb> >(M, angle)
-				);
+		static unit_vector3_type get_axis(const matrix_type& M, radians_type angle) {
+			return unit_vector3_type( rotation<void>::_Get_axis<vector3_type>(M, angle) );
 		}
 	};
 }// namespace Rodrigues

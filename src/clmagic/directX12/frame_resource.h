@@ -1,17 +1,18 @@
 #pragma once
 #ifndef clmagic_directX12_FRAME_RESOURCE_h_
 #define clmagic_directX12_FRAME_RESOURCE_h_
-#include "dxcore.h"
+#include <d3d12.h>
+#include <wrl.h>
+#include <assert.h>
 
-namespace dx12 {
-	/*
-	@_basic_frame_resource:
-	*/
-	struct basic_frame_resource {
-		basic_frame_resource() = default;
+namespace d3d12 {
 
-		basic_frame_resource(ID3D12Device& _Device, D3D12_COMMAND_LIST_TYPE _Type) {
-			ThrowIfFailed(_Device.CreateCommandAllocator(_Type, IID_PPV_ARGS(&_Myalloc)));
+	struct Basic_Frame_Resource {
+		Basic_Frame_Resource() = default;
+
+		Basic_Frame_Resource(ID3D12Device& _Device, D3D12_COMMAND_LIST_TYPE _Type = D3D12_COMMAND_LIST_TYPE_DIRECT) {
+			HRESULT hr = _Device.CreateCommandAllocator(_Type, IID_PPV_ARGS(&_Myalloc));
+			assert(SUCCEEDED(hr));
 		}
 
 		ID3D12CommandAllocator* command_allocator_ptr() const {
@@ -23,6 +24,7 @@ namespace dx12 {
 	private:
 		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> _Myalloc;
 	};
-}// namespace dx12
+
+}// namespace DX12
 
 #endif

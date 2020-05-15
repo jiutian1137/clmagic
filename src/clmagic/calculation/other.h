@@ -28,13 +28,13 @@ namespace clmagic
 			{ /*empty*/ }
 
 		template<typename T>
-		constexpr ColorRGB( _in(vector3<T>) _Linearcolor )
+		constexpr ColorRGB( _in(VECTOR3<T>) _Linearcolor )
 			: red(  static_cast<unsigned char>(_Linearcolor[0] * 255.f) ),
 			  green(static_cast<unsigned char>(_Linearcolor[1] * 255.f) ),
 			  blue( static_cast<unsigned char>(_Linearcolor[2] * 255.f) )
 			{ /*empty*/ }
 
-		operator vector3<real_t>() const;
+		operator VECTOR3<real_t>() const;
 		explicit operator std::string() const;
 
 		std::string to_hexstring() const;
@@ -97,7 +97,7 @@ namespace clmagic
 			value = _Max;
 			}
 
-		operator vector3<real_t>() const;
+		operator VECTOR3<real_t>() const;
 		explicit operator std::string() const;
 
 		union
@@ -150,14 +150,14 @@ namespace clmagic
 		region_type   scale_step(T _sX, T _sY);
 		region_type   scale_rate(T _sX, T _sY);
 
-		template<typename _Ty = float> vector2<_Ty> get_pos(const position_type& _Uv) const;
-		template<typename _Ty = float> vector2<_Ty> get_pos(T _U, T _V) const;
+		template<typename _Ty = float> VECTOR2<_Ty> get_pos(const position_type& _Uv) const;
+		template<typename _Ty = float> VECTOR2<_Ty> get_pos(T _U, T _V) const;
 
-		template<typename _Ty = float> vector2<_Ty> leftbottom() const { return vector2<_Ty>((_Ty)_Mypos[0], (_Ty)_Mypos[1]); }
-		template<typename _Ty = float> vector2<_Ty> lefttop()    const { return get_pos<_Ty>(T(0), T(1)); }
-		template<typename _Ty = float> vector2<_Ty> righttop()   const { return get_pos<_Ty>(T(1), T(1)); }
-		template<typename _Ty = float> vector2<_Ty> rightbottom() const{ return get_pos<_Ty>(T(1), T(0)); }
-		template<typename _Ty = float> vector2<_Ty> center()     const { return get_pos<_Ty>(T(0.5), T(0.5)); }
+		template<typename _Ty = float> VECTOR2<_Ty> leftbottom() const { return VECTOR2<_Ty>((_Ty)_Mypos[0], (_Ty)_Mypos[1]); }
+		template<typename _Ty = float> VECTOR2<_Ty> lefttop()    const { return get_pos<_Ty>(T(0), T(1)); }
+		template<typename _Ty = float> VECTOR2<_Ty> righttop()   const { return get_pos<_Ty>(T(1), T(1)); }
+		template<typename _Ty = float> VECTOR2<_Ty> rightbottom() const{ return get_pos<_Ty>(T(1), T(0)); }
+		template<typename _Ty = float> VECTOR2<_Ty> center()     const { return get_pos<_Ty>(T(0.5), T(0.5)); }
 		template<typename _Ty = float> _Ty left() const   { return static_cast<_Ty>(_Mypos[0]); }
 		template<typename _Ty = float> _Ty bottom() const { return static_cast<_Ty>(_Mypos[1]); }
 		template<typename _Ty = float> _Ty right() const  { return static_cast<_Ty>(_Mypos[0] + _Mysize[0]); }

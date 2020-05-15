@@ -1,7 +1,7 @@
 #pragma once
 #ifndef clmagic_directX12_HLSL_h_
 #define clmagic_directX12_HLSL_h_
-#include "dxcore.h"
+#include <d3d12.h>
 #include <d3dcompiler.h>
 
 namespace hlsl {
@@ -87,7 +87,7 @@ namespace hlsl {
 			MessageBoxA(nullptr, (char*)_Perror->GetBufferPointer(), "->[root_signature<>::root_signature(...)]", MB_OK);
 		}
 
-		ThrowIfFailed(hr);
+		assert(SUCCEEDED(hr));
 		return _Pdest;
 	}
 
@@ -104,7 +104,7 @@ namespace hlsl {
 			MessageBoxA(nullptr, (char*)_Perror->GetBufferPointer(), "->[root_signature<>::root_signature(...)]", MB_OK);
 		}
 
-		ThrowIfFailed(hr);
+		assert(SUCCEEDED(hr));
 		return _Pdest;
 	}
 

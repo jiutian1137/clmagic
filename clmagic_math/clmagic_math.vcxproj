@@ -22,6 +22,7 @@
     <ClInclude Include="..\src\clmagic\calculation\calculus\differentiation.h" />
     <ClInclude Include="..\src\clmagic\calculation\calculus\intergration.h" />
     <ClInclude Include="..\src\clmagic\calculation\cg\microfacet.h" />
+    <ClInclude Include="..\src\clmagic\calculation\cg\intersection.h" />
     <ClInclude Include="..\src\clmagic\calculation\cg\reflectance.h" />
     <ClInclude Include="..\src\clmagic\calculation\cg\rendering.h" />
     <ClInclude Include="..\src\clmagic\calculation\complex\WilliamRowanHamilton.h" />
@@ -31,7 +32,6 @@
     <ClInclude Include="..\src\clmagic\calculation\lapack\Euler.h" />
     <ClInclude Include="..\src\clmagic\calculation\lapack\general.inl.h" />
     <ClInclude Include="..\src\clmagic\calculation\lapack\geometry.h" />
-    <ClInclude Include="..\src\clmagic\calculation\lapack\intersect.inl.h" />
     <ClInclude Include="..\src\clmagic\calculation\lapack\matrix.h" />
     <ClInclude Include="..\src\clmagic\calculation\lapack\Rodrigues.h" />
     <ClInclude Include="..\src\clmagic\calculation\lapack\vector.h" />
@@ -51,6 +51,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\clmagic\calculation\physic\Snell_law.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\src\clmagic\calculation\cg\rendering.hlsl">
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

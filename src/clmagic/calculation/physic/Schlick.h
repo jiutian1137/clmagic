@@ -10,7 +10,7 @@
 namespace Schlick {
 
 	template<typename _Ts, typename _Tb>
-	clmagic::vector3<_Ts, _Tb> Fresnel_reflectance(clmagic::vector3<_Ts, _Tb> F0, 
+	clmagic::VECTOR3<_Ts, _Tb> Fresnel_reflectance(clmagic::VECTOR3<_Ts, _Tb> F0, 
 		clmagic::unit_vector3<_Ts, _Tb> N, clmagic::unit_vector3<_Ts, _Tb> L) {
 		using clmagic::pow;
 		using clmagic::positive;
@@ -18,7 +18,7 @@ namespace Schlick {
 	}
 
 	template<typename _Ts, typename _Tb>
-	clmagic::vector3<_Ts, _Tb> Fresnel_reflectance(clmagic::vector3<_Ts, _Tb> F0, clmagic::vector3<_Ts, _Tb> F90, _Ts p, 
+	clmagic::VECTOR3<_Ts, _Tb> Fresnel_reflectance(clmagic::VECTOR3<_Ts, _Tb> F0, clmagic::VECTOR3<_Ts, _Tb> F90, _Ts p, 
 		clmagic::unit_vector3<_Ts, _Tb> N, clmagic::unit_vector3<_Ts, _Tb> L) {
 		using clmagic::pow;
 		using clmagic::positive;

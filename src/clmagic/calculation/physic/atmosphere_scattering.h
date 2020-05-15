@@ -5,15 +5,15 @@
 
 namespace clmagic {
 
-	template<typename T>
+	template<typename _Ts, typename _Tb>
 	struct scattering_coefficient {
-		vector3<T> extinction;
-		vector3<T> total_scattering;// scattering coefficient 
-		vector3<T> angular_scattering;// !!precision problem
+		VECTOR3 extinction;
+		VECTOR3 total_scattering;// scattering coefficient 
+		VECTOR3 angular_scattering;// !!precision problem
 
-		static scattering_coefficient<T> Rayleigh() {
+		static scattering_coefficient<_Ts, _Tb> Rayleigh() {
 			const auto _Wavelengths = std::array<double, 3>{ 680e-9, 550e-9, 440e-9 };
-			      auto _Sctr        = scattering_coefficient<T>();
+			      auto _Sctr        = scattering_coefficient<_Ts, _Tb>();
 
 			double n  = 1.0003;
 			double N  = 2.545e+25;
@@ -26,24 +26,24 @@ namespace clmagic {
 				double _Lambda2  = pow(_Wavelengths[i], 2);
 				double _Lambda4  = pow(_Wavelengths[i], 4);
 				double _Sctrcoef = C / _Lambda4;
-				_Sctr.total_scattering[i] = static_cast<T>(_Sctrcoef);
+				_Sctr.total_scattering[i] = static_cast<_Ts>(_Sctrcoef);
 
 				// Angular scattering coefficient is essentially volumetric scattering coefficient multiplied by the
 				// normalized phase function
 				// p(Theta) = 3/(16*Pi) * (1 + cos^2(Theta))
 				// aR contains all the terms exepting 1 + cos^2(Theta):
-				_Sctr.angular_scattering[i] = (T)(3 /* (1+cos^2(θ)) igonore */
+				_Sctr.angular_scattering[i] =       3 /* (1+cos^2(θ)) igonore */
 											 /*--------------*/ * _Sctrcoef
-											 / (16 * 3.14159));
+											 / (16 * 3.14159);
 			}
 			_Sctr.extinction = _Sctr.total_scattering;
 
 			return ( _Sctr );
 		}
 
-		static scattering_coefficient<T> Mie(bool _Preetham_method = false, T _Turbidity = T(1.02)) {
+		static scattering_coefficient<_Ts, _Tb> Mie(bool _Preetham_method = false, SCALAR _Turbidity = SCALAR(1.02)) {
 			const auto _Wavelengths = std::array<double, 3>{ 680e-9, 550e-9, 440e-9 };
-			      auto _Sctr        = scattering_coefficient<T>();
+			      auto _Sctr        = scattering_coefficient<_Ts, _Tb>();
 
 			if (_Preetham_method) {
 				double K[] = {
@@ -63,11 +63,11 @@ namespace clmagic {
 
 				for (size_t i = 0; i < 3; ++i) {
 					double Lambdav_minus_2    = pow(_Wavelengths[i], v - 2);
-					_Sctr.total_scattering[i] = static_cast<T>(dTotalMieBetaTerm * K[i] / Lambdav_minus_2);
+					_Sctr.total_scattering[i] = static_cast<_Ts>(dTotalMieBetaTerm * K[i] / Lambdav_minus_2);
 				}
 			} else {
-				const T _Mie_beta = 2e-5f * 1.f/*g_post_proces_attrib.m_fAerosolDensityScale*/;
-				_Sctr.total_scattering = vector3<T>(_Mie_beta, _Mie_beta, _Mie_beta);
+				const _Ts _Mie_beta = 2e-5f * 1.f/*g_post_proces_attrib.m_fAerosolDensityScale*/;
+				_Sctr.total_scattering = VECTOR3(_Mie_beta, _Mie_beta, _Mie_beta);
 			}
 
 			for (size_t i = 0; i != 3; ++i) {
@@ -75,9 +75,9 @@ namespace clmagic {
 				// F(theta) = 1/(4*PI) * 3*(1-g^2) / (2*(2+g^2)) * (1+cos^2(theta)) / (1 + g^2 - 2g*cos(theta))^(3/2)
 				// The angular scattering coefficient is the volumetric scattering coefficient multiplied by the phase 
 				// function. 1/(4*PI) is baked into the aM, the other terms are baked into f4CS_g
-				_Sctr.angular_scattering[i] = _Sctr.total_scattering[i] / static_cast<T>(4.f * 3.14159f);
+				_Sctr.angular_scattering[i] = _Sctr.total_scattering[i] / static_cast<_Ts>(4.f * 3.14159f);
 				// [BN08] also uses slight absorption factor which is 10% of scattering
-				_Sctr.extinction[i] = _Sctr.total_scattering[i] * (T(1.0) * T(0.1)/*g_post_proces_attrib.m_fAerosolAbsorbtionScale*/);
+				_Sctr.extinction[i] = _Sctr.total_scattering[i] * (_Ts(1.0) * _Ts(0.1)/*g_post_proces_attrib.m_fAerosolAbsorbtionScale*/);
 			}
 			return ( _Sctr );
 		}

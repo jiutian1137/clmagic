@@ -285,14 +285,14 @@ OpenVINO-serial number: CZL3-BH28FBG4
 		matrix_transform(_in(matrix<T, 4, 4>) _matrix);
 
 		unit_vector3<T>& transform(_inout(unit_vector3<T>) _Normal) const;
-		vector3<T>&      transform(_inout(vector3<T>) _Vector) const;
+		VECTOR3<T>&      transform(_inout(VECTOR3<T>) _Vector) const;
 		unit_vector3<T> transform_copy(_in(unit_vector3<T>) _Normal) const;
-		vector3<T>      transform_copy(_in(vector3<T>) _Vector) const;
+		VECTOR3<T>      transform_copy(_in(VECTOR3<T>) _Vector) const;
 
 		unit_vector3<T>& inv_transform(_inout(unit_vector3<T>) _Normal) const;
-		vector3<T>&      inv_transform(_inout(vector3<T>) _Vector) const;
+		VECTOR3<T>&      inv_transform(_inout(VECTOR3<T>) _Vector) const;
 		unit_vector3<T> inv_transform_copy(_in(unit_vector3<T>) _Normal) const;
-		vector3<T>      inv_transform_copy(_in(vector3<T>) _Vector) const;
+		VECTOR3<T>      inv_transform_copy(_in(VECTOR3<T>) _Vector) const;
 
 		matrix4x4<T> _Mymat;
 		matrix4x4<T> _Myinvmat;
@@ -318,12 +318,12 @@ OpenVINO-serial number: CZL3-BH28FBG4
 	/* @_S: scale, scaling */
 	template<typename T = real_t>
 	struct scale_transform {
-		scale_transform( _in(vector3<T>) _Vec = vector3<T>(T(1)) );
+		scale_transform( _in(VECTOR3<T>) _Vec = VECTOR3<T>(T(1)) );
 		scale_transform(T _sX, T _sY, T _sZ);
 		
 		matrix4x4<T> to_matrix() const;
-		vector3<T>&  transform(_inout(vector3<T>) _Input) const;
-		vector3<T>   transform_copy(_in(vector3<T>) _Input) const;
+		VECTOR3<T>&  transform(_inout(VECTOR3<T>) _Input) const;
+		VECTOR3<T>   transform_copy(_in(VECTOR3<T>) _Input) const;
 
 		scale_transform& operator+=(_in(scale_transform) _B) { _Mydata += _B._Mydata; return (*this); }
 		scale_transform& operator-=(_in(scale_transform) _B) { _Mydata -= _B._Mydata; return (*this); }
@@ -336,7 +336,7 @@ OpenVINO-serial number: CZL3-BH28FBG4
 		friend scale_transform operator*(_in(T) _A, _in(scale_transform) _B) { return (_A * _B._Mydata); }
 		friend scale_transform operator/(_in(T) _A, _in(scale_transform) _B) { return (_A / _B._Mydata); }
 			
-		vector3<T> _Mydata;
+		VECTOR3<T> _Mydata;
 	};
 
 
@@ -344,12 +344,12 @@ OpenVINO-serial number: CZL3-BH28FBG4
 	template<typename T = real_t>
 	struct rotate_transform {
 		rotate_transform(_in(Quaternion_<T>) _Quat = Quaternion_<T>());
-		rotate_transform(_in(vector3<T>) _Axis, T _Radians);
-		rotate_transform(_in(vector3<T>) _From, _in(vector3<T>) _To);
+		rotate_transform(_in(VECTOR3<T>) _Axis, T _Radians);
+		rotate_transform(_in(VECTOR3<T>) _From, _in(VECTOR3<T>) _To);
 
 		matrix4x4<T> to_matrix() const;
-		vector3<T>&  transform(_inout(vector3<T>) _Input) const;
-		vector3<T>   transform_copy(_in(vector3<T>) _Input) const;
+		VECTOR3<T>&  transform(_inout(VECTOR3<T>) _Input) const;
+		VECTOR3<T>   transform_copy(_in(VECTOR3<T>) _Input) const;
 
 		/* unsupport scalar mul div */
 		rotate_transform& operator+=(_in(rotate_transform) _B) { _Mydata *= _B._Mydata; return (*this); }
@@ -364,12 +364,12 @@ OpenVINO-serial number: CZL3-BH28FBG4
 	/* @_T: translate, move */
 	template<typename T = real_t>
 	struct translate_transform {
-		translate_transform(_in(vector3<T>) _Vec = vector3<T>());
+		translate_transform(_in(VECTOR3<T>) _Vec = VECTOR3<T>());
 		translate_transform(T _X, T _Y, T _Z);
 			
 		matrix4x4<T> to_matrix() const;
-		vector3<T>&  transform(_inout(vector3<T>) _Input) const;
-		vector3<T>   transform_copy(_in(vector3<T>) _Input) const;
+		VECTOR3<T>&  transform(_inout(VECTOR3<T>) _Input) const;
+		VECTOR3<T>   transform_copy(_in(VECTOR3<T>) _Input) const;
 
 		translate_transform& operator+=(_in(translate_transform) _B) { _Mydata += _B._Mydata; return (*this); }
 		translate_transform& operator-=(_in(translate_transform) _B) { _Mydata -= _B._Mydata; return (*this); }
@@ -382,7 +382,7 @@ OpenVINO-serial number: CZL3-BH28FBG4
 		friend translate_transform operator*(_in(T) _A, _in(translate_transform) _B) { return (_A * _B._Mydata); }
 		friend translate_transform operator/(_in(T) _A, _in(translate_transform) _B) { return (_A / _B._Mydata); }
 
-		vector3<T> _Mydata;
+		VECTOR3<T> _Mydata;
 	};
 
 
@@ -398,8 +398,8 @@ OpenVINO-serial number: CZL3-BH28FBG4
 
 		matrix4x4<T> to_matrix( ) const;
 		matrix<T, 3, 4> to_matrix3x4() const;
-		vector3<T>&  transform(_inout(vector3<T>) _Input) const;
-		vector3<T>   transform_copy(_in(vector3<T>) _Input) const;
+		VECTOR3<T>&  transform(_inout(VECTOR3<T>) _Input) const;
+		VECTOR3<T>   transform_copy(_in(VECTOR3<T>) _Input) const;
 
 		SQT_transform& operator+=(_in(SQT_transform) _B) { _Myscl += _B._Myscl; _Myrot += _B._Myrot; _Mymov += _B._Mymov; return (*this); }
 		SQT_transform& operator-=(_in(SQT_transform) _B) { _Myscl -= _B._Myscl; _Myrot -= _B._Myrot; _Mymov -= _B._Mymov; return (*this); }
@@ -437,7 +437,7 @@ OpenVINO-serial number: CZL3-BH28FBG4
 	/* < following: is object [in] the region [with] crosspoint > */
 	template<typename _Ty>
 		bool intersect(
-			_in(vector2<_Ty>) _Pos,
+			_in(VECTOR2<_Ty>) _Pos,
 			/*in*/_Ty	    _Left,
 			/*in*/_Ty		_Right,
 			/*in*/_Ty		_Bottom,
@@ -448,19 +448,19 @@ OpenVINO-serial number: CZL3-BH28FBG4
 	*/
 	template<typename T> 
 		int intersect(
-			_in(vector3<T>) _Pos,
-			_in(vector3<T>) _V0,
-			_in(vector3<T>) _V1,
-			_in(vector3<T>) _V2);
+			_in(VECTOR3<T>) _Pos,
+			_in(VECTOR3<T>) _V0,
+			_in(VECTOR3<T>) _V1,
+			_in(VECTOR3<T>) _V2);
 
 	template<typename T> 
 		bool intersect(
-			_in(vector3<T>) _Origin,
-			_in(vector3<T>) _Dir,
-			_in(vector3<T>) _V0,
-			_in(vector3<T>) _V1,
-			_in(vector3<T>) _V2,
-			_out(vector3<T>) _Point);
+			_in(VECTOR3<T>) _Origin,
+			_in(VECTOR3<T>) _Dir,
+			_in(VECTOR3<T>) _V0,
+			_in(VECTOR3<T>) _V1,
+			_in(VECTOR3<T>) _V2,
+			_out(VECTOR3<T>) _Point);
 
 	/* </ following: is object [in] the region [with] crosspoint > */
 }// namespace clmagic

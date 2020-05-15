@@ -1,7 +1,7 @@
 #pragma once
 #ifndef clmagic_directX12_STATIC_MESH_h_
 #define clmagic_directX12_STATIC_MESH_h_
-#include "dxcore.h"
+#include "dxcore/ID3D12Resource.h"
 #include <memory>
 #include <unordered_map>
 
@@ -9,10 +9,10 @@ namespace dx12 {
 	// subclass-memory will not change
 	template<typename _Tvt, typename _Tit = uint32_t>
 	struct basic_mesh {
-		using vertex_resource_type = packaged_resource;
-		using index_resource_type  = packaged_resource;
-		using vertex_shared_ptr    = std::shared_ptr<packaged_resource>;
-		using index_shared_ptr     = std::shared_ptr<packaged_resource>;
+		using vertex_resource_type = resource;
+		using index_resource_type  = resource;
+		using vertex_shared_ptr    = std::shared_ptr<resource>;
+		using index_shared_ptr     = std::shared_ptr<resource>;
 
 		basic_mesh() = default;
 
@@ -99,8 +99,8 @@ namespace dx12 {
 			this->_Shared_index_resource.swap(_Right._Shared_index_resource);
 		}
 		
-		std::shared_ptr<packaged_resource> _Shared_vertex_resource;
-		std::shared_ptr<packaged_resource> _Shared_index_resource;
+		std::shared_ptr<resource> _Shared_vertex_resource;
+		std::shared_ptr<resource> _Shared_index_resource;
 	public:
 		size_t base_vertex_location = 0;
 		size_t start_index_location = 0;
@@ -111,10 +111,10 @@ namespace dx12 {
 	template<typename _Tvt, typename _Tit = uint32_t>
 	struct static_mesh : public basic_mesh<_Tvt, _Tit> {
 		using _Mybase = basic_mesh<_Tvt, _Tit>;
-		using vertex_resource_type = packaged_resource_default_heap;
-		using index_resource_type  = packaged_resource_default_heap;
-		using vertex_shared_ptr    = std::shared_ptr<packaged_resource_default_heap>;
-		using index_shared_ptr     = std::shared_ptr<packaged_resource_default_heap>;
+		using vertex_resource_type = default_heap_resource;
+		using index_resource_type  = default_heap_resource;
+		using vertex_shared_ptr    = std::shared_ptr<default_heap_resource>;
+		using index_shared_ptr     = std::shared_ptr<default_heap_resource>;
 
 		static_mesh() = default;
 
@@ -162,10 +162,10 @@ namespace dx12 {
 	template<typename _Tvt, typename _Tit = uint32_t>
 	struct dynamic_vertex_mesh : public basic_mesh<_Tvt, _Tit> {
 		using _Mybase = basic_mesh<_Tvt, _Tit>;
-		using vertex_resource_type = packaged_resource_upload_heap;
-		using index_resource_type  = packaged_resource_default_heap;
-		using vertex_shared_ptr    = std::shared_ptr<packaged_resource_upload_heap>;
-		using index_shared_ptr     = std::shared_ptr<packaged_resource_default_heap>;
+		using vertex_resource_type = upload_heap_resource;
+		using index_resource_type  = default_heap_resource;
+		using vertex_shared_ptr    = std::shared_ptr<upload_heap_resource>;
+		using index_shared_ptr     = std::shared_ptr<default_heap_resource>;
 
 		dynamic_vertex_mesh() = default;
 

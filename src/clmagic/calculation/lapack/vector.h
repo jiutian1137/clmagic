@@ -1709,8 +1709,6 @@ namespace clmagic{
 		}
 	};
 
-	#define vectorN vector<_Ts, _Size, _Tb>
-
 	template<typename _Ts, typename _Tb = _Ts>
 	using vector2 = vector<_Ts, 2, _Tb>;
 	template<typename _Ts, typename _Tb = _Ts>
@@ -1727,35 +1725,41 @@ namespace clmagic{
 	
 	using point2_size_t = point2<size_t>;
 
+	#define VECTORN ::clmagic::vector<_Ts, _Size, _Tb>
+	#define VECTOR2 ::clmagic::vector<_Ts, 2, _Tb>
+	#define VECTOR3 ::clmagic::vector<_Ts, 3, _Tb>
+	#define VECTOR4 ::clmagic::vector<_Ts, 4, _Tb>
+
+
 
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	std::string to_string(const vectorN& v) {
+	std::string to_string(const VECTORN& v) {
 		return v.to_string();
 	}
 
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	_Ts sum(const vectorN& v) {
+	_Ts sum(const VECTORN& v) {
 		return v.sum();
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	_Ts product(const vectorN& v) {
+	_Ts product(const VECTORN& v) {
 		return v.product();
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	_Ts dot(const vectorN& v1, const vectorN& v2) {
+	_Ts dot(const VECTORN& v1, const VECTORN& v2) {
 		return v1.dot(v2);
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	_Ts length(const vectorN& v) {
+	_Ts length(const VECTORN& v) {
 		return dot(v, v);
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	_Ts norm(const vectorN& v, const _Ts& L) {
+	_Ts norm(const VECTORN& v, const _Ts& L) {
 		return v.norm(L);
 	}
 
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN normalize(const vectorN& v) {
+	VECTORN normalize(const VECTORN& v) {
 		const _Ts _Length_squared = dot(v, v);
 		return !approach_equal(_Length_squared, static_cast<_Ts>(1), std::numeric_limits<_Ts>::epsilon()) ?
 			v / sqrt(_Length_squared) :
@@ -1763,36 +1767,36 @@ namespace clmagic{
 	}
 
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN fmod(const vectorN& _Left, const vectorN& _Right) {
-		_Return_generate_object( vectorN, _Result, 
+	VECTORN fmod(const VECTORN& _Left, const VECTORN& _Right) {
+		_Return_generate_object( VECTORN, _Result, 
 			fast_vector_operation<_Ts, _Tb>::func_2nd(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
 				[](const _Tb& _Arg0, const _Tb& _Arg1) { return fmod(_Arg0, _Arg1); }) );
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN fmod(const vectorN& _Left, const _Ts& _Scalar) {
+	VECTORN fmod(const VECTORN& _Left, const _Ts& _Scalar) {
 		const _Tb  _Arg1 = block_traits<_Tb>::set1(_Scalar);
 		const auto _Func = [&_Arg1](const _Tb& _Arg0) { return fmod(_Arg0, _Arg1); };
-		_Return_generate_object( vectorN, _Result, 
+		_Return_generate_object( VECTORN, _Result, 
 			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), _Func) );
 	}
 
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN pow(const vectorN& _Left, const vectorN& _Right) {
-		_Return_generate_object( vectorN, _Result, 
+	VECTORN pow(const VECTORN& _Left, const VECTORN& _Right) {
+		_Return_generate_object( VECTORN, _Result, 
 			fast_vector_operation<_Ts, _Tb>::func_2nd(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
 				[](const _Tb& _Arg0, const _Tb& _Arg1) { return pow(_Arg0, _Arg1); }) );
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN pow(const vectorN& _Left, const _Ts& _Scalar) {
+	VECTORN pow(const VECTORN& _Left, const _Ts& _Scalar) {
 		const _Tb  _Arg1 = block_traits<_Tb>::set1(_Scalar);
 		const auto _Func = [&_Arg1](const _Tb& _Arg0) { return pow(_Arg0, _Arg1); };
-		_Return_generate_object( vectorN, _Result, 
+		_Return_generate_object( VECTORN, _Result, 
 			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), _Func) );
 	}
 
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN cross3(const vectorN& _Left, const vectorN& _Right) {
-		return vectorN{
+	VECTORN cross3(const VECTORN& _Left, const VECTORN& _Right) {
+		return VECTORN{
 			_Left[1] * _Right[2] - _Left[2] * _Right[1],
 			_Left[2] * _Right[0] - _Left[0] * _Right[2],
 			_Left[0] * _Right[1] - _Left[1] * _Right[0]
@@ -1800,99 +1804,99 @@ namespace clmagic{
 	}
 
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN abs(const vectorN& _Left) {// abs(v)
-		_Return_generate_object( vectorN, _Result,
+	VECTORN abs(const VECTORN& _Left) {// abs(v)
+		_Return_generate_object( VECTORN, _Result,
 			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
 				[](const _Tb& _Arg0) { return abs(_Arg0); }) );
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN floor(const vectorN& _Left) {// floor(v)
-		_Return_generate_object( vectorN, _Result,
+	VECTORN floor(const VECTORN& _Left) {// floor(v)
+		_Return_generate_object( VECTORN, _Result,
 			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
 				[](const _Tb& _Arg0) { return floor(_Arg0); }) );
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN ceil(const vectorN& _Left) {// ceil(v)
-		_Return_generate_object( vectorN, _Result,
+	VECTORN ceil(const VECTORN& _Left) {// ceil(v)
+		_Return_generate_object( VECTORN, _Result,
 			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
 				[](const _Tb& _Arg0) { return ceil(_Arg0); }) );
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN trunc(const vectorN& _Left) {// trunc(v)
-		_Return_generate_object( vectorN, _Result,
+	VECTORN trunc(const VECTORN& _Left) {// trunc(v)
+		_Return_generate_object( VECTORN, _Result,
 			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
 				[](const _Tb& _Arg0) { return trunc(_Arg0); }) );
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN round(const vectorN& _Left) {// round(v)
-		_Return_generate_object( vectorN, _Result,
+	VECTORN round(const VECTORN& _Left) {// round(v)
+		_Return_generate_object( VECTORN, _Result,
 			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
 				[](const _Tb& _Arg0) { return round(_Arg0); }) );
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN sqrt(const vectorN& _Left) {// sqrt(v)
-		_Return_generate_object( vectorN, _Result,
+	VECTORN sqrt(const VECTORN& _Left) {// sqrt(v)
+		_Return_generate_object( VECTORN, _Result,
 			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
 				[](const _Tb& _Arg0) { return sqrt(_Arg0); }) );
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN cbrt(const vectorN& _Left) {// cbrt(v)
-		_Return_generate_object( vectorN, _Result,
+	VECTORN cbrt(const VECTORN& _Left) {// cbrt(v)
+		_Return_generate_object( VECTORN, _Result,
 			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
 				[](const _Tb& _Arg0) { return cbrt(_Arg0); }) );
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN invsqrt(const vectorN& _Left) {// invsqrt(v)
-		_Return_generate_object( vectorN, _Result,
+	VECTORN invsqrt(const VECTORN& _Left) {// invsqrt(v)
+		_Return_generate_object( VECTORN, _Result,
 			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
 				[](const _Tb& _Arg0) { return invsqrt(_Arg0); }) );
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN invcbrt(const vectorN& _Left) {// invcbrt(v)
-		_Return_generate_object( vectorN, _Result,
+	VECTORN invcbrt(const VECTORN& _Left) {// invcbrt(v)
+		_Return_generate_object( VECTORN, _Result,
 			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
 				[](const _Tb& _Arg0) { return invcbrt(_Arg0); }) );
 	}
 
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN sin(const vectorN& _Left) {// sin(v)
-		_Return_generate_object( vectorN, _Result,
+	VECTORN sin(const VECTORN& _Left) {// sin(v)
+		_Return_generate_object( VECTORN, _Result,
 			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
 				[](const _Tb& _Arg0) { return sin(_Arg0); }) );
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN cos(const vectorN& _Left) {
-		_Return_generate_object( vectorN, _Result,
+	VECTORN cos(const VECTORN& _Left) {
+		_Return_generate_object( VECTORN, _Result,
 			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
 				[](const _Tb& _Arg0) { return cos(_Arg0); }) );
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN tan(const vectorN& _Left) {// tan(v)
-		_Return_generate_object( vectorN, _Result,
+	VECTORN tan(const VECTORN& _Left) {// tan(v)
+		_Return_generate_object( VECTORN, _Result,
 			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
 				[](const _Tb& _Arg0) { return tan(_Arg0); }) );
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN asin(const vectorN& _Left) {// asin(v)
-		_Return_generate_object( vectorN, _Result,
+	VECTORN asin(const VECTORN& _Left) {// asin(v)
+		_Return_generate_object( VECTORN, _Result,
 			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
 				[](const _Tb& _Arg0) { return asin(_Arg0); }) );
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN acos(const vectorN& _Left) {// acos(v)
-		_Return_generate_object( vectorN, _Result,
+	VECTORN acos(const VECTORN& _Left) {// acos(v)
+		_Return_generate_object( VECTORN, _Result,
 			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
 				[](const _Tb& _Arg0) { return acos(_Arg0); }) );
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN atan(const vectorN& _Left) {// atan(v)
-		_Return_generate_object( vectorN, _Result,
+	VECTORN atan(const VECTORN& _Left) {// atan(v)
+		_Return_generate_object( VECTORN, _Result,
 			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
 				[](const _Tb& _Arg0) { return atan(_Arg0); }) );
 	}
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN atan2(const vectorN& _Left, const vectorN& _Right) {// atan(yv, xv)
-		_Return_generate_object( vectorN, _Result, 
+	VECTORN atan2(const VECTORN& _Left, const VECTORN& _Right) {// atan(yv, xv)
+		_Return_generate_object( VECTORN, _Result, 
 			fast_vector_operation<_Ts, _Tb>::func_2nd(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
 				[](const _Tb& _Arg0, const _Tb& _Arg1) { return atan2(_Arg0, _Arg1); }) );
 	}
@@ -1925,6 +1929,32 @@ namespace clmagic{
 		}
 		return true;
 	}
+
+	template<typename _OutVec, typename _InVec>
+	struct _Vector_cast {
+		using dest_type = _OutVec;
+		using src_type  = _InVec;
+
+		dest_type operator()(const src_type& v) const {
+			return dest_type(v.begin(), v.end());
+		}
+	};
+
+	template<typename _Ts, size_t _Size, typename _Tb, typename _InVec>
+	struct _Vector_cast<vector<_Ts, _Size, _Tb>, _InVec> {
+		using dest_type = vector<_Ts, _Size, _Tb>;
+		using src_type  = _InVec;
+
+		dest_type operator()(const src_type& v) const {
+			return dest_type( v.begin(), v.begin() + min(v.size(), dest_type::size()) );
+		}
+	};
+
+	template<typename _OutVec, typename _InVec>
+	_OutVec vector_cast(const _InVec& v) {
+		return _Vector_cast<_OutVec, _InVec>()(v);
+	}
+
 
 	/*- - - - - - - - - - - - - - - - - - - unit_vector<> - - - - - - - - - - - - - - - - - - - - -*/
 	/*
@@ -1961,7 +1991,8 @@ namespace clmagic{
 	template<typename _Ts, typename _Tb = _Ts>
 	using unit_vector3 = unit_vector<_Ts, 3, _Tb>;
 
-	#define unit_vectorN unit_vector<_Ts, _Size, _Tb>
+	#define UNIT_VECTORN ::clmagic::unit_vector<_Ts, _Size, _Tb>
+	#define UNIT_VECTOR3 ::clmagic::unit_vector3<_Ts, _Tb>
 
 	/*- - - - - - - - - - - - - - - - - - - vector_any<> - - - - - - - - - - - - - - - - - - - - -*/
 	/*
@@ -2461,12 +2492,12 @@ namespace clmagic{
 
 	// dot(_I,_Nref) < 0 ? N : -N
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	unit_vectorN faceforward(const unit_vectorN& _Normal, const vectorN& _I, const vectorN& _Nref) {
+	UNIT_VECTORN faceforward(UNIT_VECTORN _Normal, VECTORN _I, VECTORN _Nref) {
 		return (dot(_I, _Nref) < static_cast<_Ts>(0) ? _Normal : -_Normal);
 	}
 
 	template<typename _Ts, size_t _Size, typename _Tb> inline
-	vectorN proj(const vectorN& _Vector, const vectorN& _Proj) {// return dot(V,||_Proj||) * |Proj| 
+	VECTORN proj(const VECTORN& _Vector, const VECTORN& _Proj) {// return dot(V,||_Proj||) * |Proj| 
 		return (dot(_Vector, _Proj) / dot(_Proj, _Proj) * _Proj);
 		/*
 			|          / |

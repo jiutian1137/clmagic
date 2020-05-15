@@ -67,9 +67,6 @@
     <ClInclude Include="..\src\clmagic\calculation\lapack\geometry.h">
       <Filter>private\lapack</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\calculation\lapack\intersect.inl.h">
-      <Filter>private\lapack</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\clmagic\calculation\lapack\matrix.h">
       <Filter>private\lapack</Filter>
     </ClInclude>
@@ -127,10 +124,16 @@
     <ClInclude Include="..\src\clmagic\calculation\cg\rendering.h">
       <Filter>private\cg</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\cg\intersection.h">
+      <Filter>private\cg</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\clmagic\calculation\physic\Snell_law.html">
       <Filter>private\physic</Filter>
+    </None>
+    <None Include="..\src\clmagic\calculation\cg\rendering.hlsl">
+      <Filter>private\cg</Filter>
     </None>
   </ItemGroup>
 </Project>

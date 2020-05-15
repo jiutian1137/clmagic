@@ -1,25 +1,49 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClInclude Include="..\src\clmagic\directX12\d3dx12.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore.h">
-      <Filter>private</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\enum_string.h">
-      <Filter>private</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\clmagic\directX12\hlsl.h">
-      <Filter>private</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\frame_resource.h">
       <Filter>private</Filter>
     </ClInclude>
     <ClInclude Include="..\src\clmagic\directX12\directX12.h">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\src\clmagic\directX12\mesh.h">
+      <Filter>private</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Resource.h">
+      <Filter>private\dxcore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\d3dx12.h">
+      <Filter>private\dxcore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\enum_string.h">
+      <Filter>private\dxcore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\uncopyable.h">
+      <Filter>private\dxcore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12RootSignature.h">
+      <Filter>private\dxcore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12PipelineState.h">
+      <Filter>private\dxcore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\D3D12_INPUT_LAYOUT_DESC.h">
+      <Filter>private\dxcore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12DescriptorHeap.h">
+      <Filter>private\dxcore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Heap.h">
+      <Filter>private\dxcore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\Frame_Resource.h">
+      <Filter>private</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Fence.h">
+      <Filter>private\dxcore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore.h">
       <Filter>private</Filter>
     </ClInclude>
   </ItemGroup>
@@ -29,6 +53,9 @@
     </Filter>
     <Filter Include="private">
       <UniqueIdentifier>{46e6f6f7-24da-4ba5-a9ef-71dfbba73d51}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="private\dxcore">
+      <UniqueIdentifier>{bb96361f-f3d6-460b-8757-86521ae9f63a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

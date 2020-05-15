@@ -30,7 +30,7 @@ namespace clmagic
 	inline ColorRGB::operator vector3<real_t>() const
 		{
 		const float _Invcolor = 1.0f / 255.0f;
-		const auto _Linearcolor = vector3<real_t>{
+		const auto _Linearcolor = VECTOR3<real_t>{
 			static_cast<float>(red)* _Invcolor,
 			static_cast<float>(green)* _Invcolor,
 			static_cast<float>(blue)* _Invcolor
@@ -52,7 +52,7 @@ namespace clmagic
 
 
 	/* < HSV > */
-	inline ColorHSV::operator vector3<real_t>() const
+	inline ColorHSV::operator VECTOR3<real_t>() const
 		{	// convert to linear color
 		const float _Hue$60 = hue / 60.0f;
 		const float _Hue$60_floor = std::floor(_Hue$60);
@@ -75,7 +75,7 @@ namespace clmagic
 			};
 		const size_t _Swizzleindex = static_cast<size_t>(_Hue$60_floor) % 6;
 
-		return vector3<real_t>{
+		return VECTOR3<real_t>{
 			_Values[_Swizzle[_Swizzleindex][0]],
 			_Values[_Swizzle[_Swizzleindex][1]],
 			_Values[_Swizzle[_Swizzleindex][2]]};

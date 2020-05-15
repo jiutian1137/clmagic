@@ -2,6 +2,7 @@
 #ifndef clmagic_basic_CONCURRENT_RESOURCE_h_
 #define clmagic_basic_CONCURRENT_RESOURCE_h_
 #include <mutex>
+#include <assert.h>
 
 namespace clmagic {
 

@@ -6,7 +6,7 @@
 
 namespace clmagic {
 	template<typename _Ts, typename _Tb>
-	vector3<_Ts, _Tb> reflect(const vector3<_Ts, _Tb>& L, const unit_vector3<_Ts, _Tb>& N) {// get reflect-vector
+	VECTOR3<_Ts, _Tb> reflect(const VECTOR3<_Ts, _Tb>& L, const unit_vector3<_Ts, _Tb>& N) {// get reflect-vector
 		/*<figure>
 			/|\
 		   / 2.0f * proj(L, N)
@@ -30,14 +30,14 @@ namespace clmagic {
 	/*<Reference> RealTimeRendering-4th-Edition.page324 </Reference>*/
 	template<typename _Ts>
 	struct substance {
-		vector3<_Ts> specular_color;
-		vector3<_Ts> diffuse_color;// or diffuse_albedo
+		VECTOR3<_Ts> specular_color;
+		VECTOR3<_Ts> diffuse_color;// or diffuse_albedo
 	};
 
 	/*<Reference> RealTimeRendering-4th-Edition.page324 </Reference>*/
 	template<typename _Ts>
 	struct substance_metalness {
-		vector3<_Ts> surface_color;
+		VECTOR3<_Ts> surface_color;
 		_Ts metalness;
 	};
 

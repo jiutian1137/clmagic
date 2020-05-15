@@ -28,13 +28,13 @@ namespace WilliamRowanHamilton {
 	template<typename _Ts, typename _Tb = _Ts>
 	struct __declspec(align(std::alignment_of_v<_Tb>)) quaternion {
 		using real_type = _Ts;
-		using imag_type = clmagic::vector3<_Ts, _Tb>;
+		using imag_type = ::clmagic::vector<_Ts, 3, _Tb>;
 
 		quaternion() = default;
 		quaternion(const _Ts& _Real, const _Ts& _ImX, const _Ts& _ImY, const _Ts& _ImZ)
 			: _Mydata{ _ImX, _ImY, _ImZ, _Real } {}
 		quaternion(const real_type& _Real, const imag_type& _Imag)
-			: _Mydata(_Imag[0], _Imag[1], _Imag[2], _Real) {}
+			: _Mydata{ _Imag[0], _Imag[1], _Imag[2], _Real } {}
 
 		real_type& real() {
 			return _Mydata[3];
@@ -128,13 +128,13 @@ namespace WilliamRowanHamilton {
 			const auto  q_inv = quaternion(real(), -imag());// conj(*this);
 			return (q * p * q_inv);
 		}
-		clmagic::vector4<_Ts, _Tb> operator()(const clmagic::vector4<_Ts, _Tb>& p) const {
+		VECTOR4    operator()(VECTOR4 p) const {
 			const auto qpq = (*this)( reinterpret_cast<const quaternion&>(p) );
-			return reinterpret_cast<const clmagic::vector4<_Ts, _Tb>&>(qpq);
+			return reinterpret_cast<const VECTOR4&>(qpq);
 		}
-		clmagic::vector3<_Ts, _Tb> operator()(const clmagic::vector3<_Ts, _Tb>& p) const {
+		VECTOR3    operator()(VECTOR3 p) const {
 			const auto qpq = (*this)(quaternion(static_cast<_Ts>(1), p[0], p[1], p[2]));
-			return reinterpret_cast<const clmagic::vector3<_Ts, _Tb>&>(qpq);
+			return reinterpret_cast<const VECTOR3&>(qpq);
 		}
 
 		friend std::ostream& operator<<(std::ostream& _Ostr, const quaternion& _Quat) {
@@ -157,8 +157,8 @@ namespace WilliamRowanHamilton {
 	}
 
 	template<typename _Ts, typename _Tb> inline
-	quaternion<_Ts, _Tb> polar(const clmagic::unit_vector3<_Ts, _Tb>& _Axis, clmagic::radians<_Ts> _Angle) {
-		const auto theta = static_cast<_Ts>(_Angle / 2);// div 2, because p*q*inverse(q) is rotate 2*theta
+	quaternion<_Ts, _Tb> polar(clmagic::unit_vector3<_Ts, _Tb> _Axis, clmagic::radians<_Ts> _Angle) {
+		const auto theta = static_cast<_Ts>(_Angle) / 2;// div 2, because p*q*inverse(q) is rotate 2*theta
 		return quaternion<_Ts, _Tb>(cos(theta), sin(theta) * _Axis);
 	}
 	

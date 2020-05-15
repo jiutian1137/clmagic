@@ -73,6 +73,8 @@ namespace clmagic {
 	template<typename _Ty>
 	using revolution = _Angle<_Ty, revolution_ratio>;
 
+	#define RADIANS ::clmagic::radians<_Ts>
+	#define DEGREES ::clmagic::degrees<_Ts>
 
 	template<typename _Ty, typename _Ratio>
 	_Angle<_Ty, _Ratio> fmod(_Angle<_Ty, _Ratio> a, _Angle<_Ty, _Ratio> b) {
