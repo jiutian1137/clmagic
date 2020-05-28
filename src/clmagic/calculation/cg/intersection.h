@@ -178,6 +178,10 @@ namespace clmagic {
 	struct box {
 		VECTOR3 _Mymin;/* minimum of xyz */
 		VECTOR3 _Mymax;/* maximum of xyz */
+
+		VECTOR3 diff() const {
+			return _Mymax - _Mymin;
+		}
 	};
 
 

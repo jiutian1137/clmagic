@@ -13,7 +13,7 @@ namespace d3d12 {
 	using descriptor_heap  = _Descriptorheap_impl;
 	using shader_input     = _Vector_input_element_desc;
 	using shader_signature = _Rootsignature_impl;
-	using shader_pipeline  = _Pipelinestate_impl;
+	using shader_program   = _Pipelinestate_impl;
 	using resource         = _Resource_impl;
 
 	template<typename _Ty> using static_buffer = _Buffer_resource<_Ty, D3D12_HEAP_TYPE_DEFAULT>;

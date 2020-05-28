@@ -1596,10 +1596,10 @@ template<typename _Ts> inline
 			return *this;
 		}
 		friend matrix operator*(const _Ts& _Scalar, const matrix& _Right) {
-			return reinterpret_cast<const matrix_type&>( _Scalar * _Mybase::_As_vector() );
+			return reinterpret_cast<const matrix_type&>( _Scalar * _Right._As_vector() );
 		}
 		friend matrix operator/(const _Ts& _Scalar, const matrix& _Right) {
-			return reinterpret_cast<const matrix_type&>( _Scalar / _Mybase::_As_vector() );
+			return reinterpret_cast<const matrix_type&>( _Scalar / _Right._As_vector() );
 		}
 
 		matrix& operator*=(const matrix& _Right) {

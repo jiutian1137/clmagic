@@ -1,9 +1,57 @@
 #pragma once
 #ifndef clmagic_basic_ALGORITHM_h_
 #define clmagic_basic_ALGORITHM_h_
+#include <assert.h>
 #include <algorithm>
+#include <numeric>
+
+#include <thread>
+#include <future>// parallel_algorithm
+#include <functional>
+
+#include <vector>
 
 namespace clmagic {
+	using std::accumulate;
+	
+	// Not recommended
+	template<size_t _Thread_count, typename _InIt, typename _Ty, typename _Fn>
+	_Ty parallel_accumulate(_InIt _First, _InIt _Last, _Ty _Val, _Fn _Reduce_op) {
+		constexpr size_t _Min_chunk_size = 3000;
+		const auto       _Element_size   = std::distance(_First, _Last);
+		//const auto       _Thread_count = std::max<size_t>(1, std::min<size_t>(_Element_size/_Min_chunk_size, std::thread::hardware_concurrency()/2));
+		const auto       _Chunk_size   = _Element_size / _Thread_count;
+
+		const auto _Other_thread_count = _Thread_count - 1;
+		std::vector<std::future<_Ty>> _Results(_Other_thread_count);
+		std::vector<std::thread>      _Threads(_Other_thread_count);
+		using task_type  = _Ty(_InIt, _InIt, _Ty, _Fn);
+
+		for (size_t i = 0; i != _Other_thread_count; ++i) {
+			auto _Chunk_last = std::next(_First, _Chunk_size);
+			auto _Task       = std::packaged_task<task_type>(std::accumulate<_InIt, _Ty, _Fn>);
+			     _Results[i] = _Task.get_future();
+			     _Threads[i] = std::thread(std::move(_Task), std::next(_First,1), _Chunk_last, *_First, _Reduce_op);
+			     _First      = _Chunk_last;
+		}
+		std::for_each(_Threads.begin(), _Threads.end(), std::mem_fn(&std::thread::join));
+
+		_Val = std::accumulate(_First, _Last, _Val, _Reduce_op);
+		auto       _Rfirst = _Results.begin();
+		const auto _Rlast  = _Results.end();
+		for ( ; _Rfirst != _Rlast; ++_Rfirst) {
+			_Val = _Reduce_op(_Val, _Rfirst->get());
+		}
+		return _Val;
+	}
+
+	template<size_t _Thread_count, typename _InIt, typename _Ty>
+	_Ty parallel_accumulate(_InIt _First, _InIt _Last, _Ty _Val) {
+		return parallel_accumulate<_Thread_count>(_First, _Last, _Val, std::plus<>());
+	}
+
+
+
 	template<typename _OutIt, typename _InIt>
 	_OutIt merge(_OutIt _Dest, std::pair<_InIt, _InIt> _Pairit) {
 		std::copy(_Pairit.first, _Pairit.second, _Dest);

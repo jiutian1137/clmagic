@@ -13,6 +13,7 @@
 #include <stack>
 #include <vector>
 #include <string>
+#include <numeric>
 #include <algorithm>
 
 namespace clmagic{
@@ -102,83 +103,55 @@ namespace clmagic{
 		using _OutIt = _Ts*;
 		using _InIt  = const _Ts *;
 
-		using scalar_type  = _Ts;
+		using scalar_type = _Ts;
 
-		template<typename _Fn>
-		static _OutIt func_1st(_InIt _First, _InIt _Last, _OutIt _Dest, _Fn _Func, 
+		template<typename _UnaryOp>
+		static _OutIt transform(_InIt _First, _InIt _Last, _OutIt _Dest, _UnaryOp _Transform_op,
 			size_t _Inc1 = 1, size_t _Inc2 = 1) {
-			for (; _First != _Last; _First+=_Inc1, _Dest+=_Inc2) {
-				*_Dest = _Func(*_First);
+			for ( ; _First != _Last; _First+=_Inc1, _Dest+=_Inc2) {
+				*_Dest = _Transform_op(*_First);
 			}
 			return _Dest;
 		}
 
-		template<typename _Fn>
-		static _OutIt func_2nd(_InIt _First1, _InIt _Last1, _InIt _First2, _OutIt _Dest, _Fn _Func,
+		template<typename _BinOp>
+		static _OutIt transform(_InIt _First1, _InIt _Last1, _InIt _First2, _OutIt _Dest, _BinOp _Transform_op,
 			size_t _Inc1 = 1, size_t _Inc2 = 1, size_t _Inc3 = 1) {
-			for (; _First1 != _Last1; _First1+=_Inc1, _First2+=_Inc2, _Dest+=_Inc3) {
-				*_Dest = _Func(*_First1, *_First2);
+			for ( ; _First1 != _Last1; _First1+=_Inc1, _First2+=_Inc2, _Dest+=_Inc3) {
+				*_Dest = _Transform_op(*_First1, *_First2);
 			}
 			return _Dest;
 		}
 
-		/*<afunc>
-			<mean>assign-function</mean>
-			</afunc>*/
-		template<typename _Afn>
-		static _Ts& afunc(_InIt _First, _InIt _Last, _Ts& _Result, _Afn _Afunc,
+		template<typename _BinOp>
+		static scalar_type accumulate(_InIt _First, _InIt _Last, scalar_type _Val, _BinOp _Reduce_op,
 			size_t _Inc1 = 1) {
 			for (; _First != _Last; _First+=_Inc1) {
-				_Afunc(_Result, *_First);
+				_Val = _Reduce_op(_Val, *_First);
 			}
-			return _Result;
+			return _Val;
 		}
 
-		template<typename _Afn, typename _Fn>
-		static _Ts& afunc_1st(_InIt _First, _InIt _Last, _Ts& _Result, _Afn _Afunc, _Fn _Func,
+		template<typename _BinOp, typename _UnaryOp>
+		static scalar_type transform_accumulate(_InIt _First, _InIt _Last, scalar_type _Val, _BinOp _Reduce_op, _UnaryOp _Transform_op,
 			size_t _Inc = 1) {
-			// for [_First, _Last): _Afunc(_Result, _Func(*_First))
-			// _Afunc = [](auto&, auto&&), for example: [](auto& Res, auto&& X){ Res += X; } ...
-			// _Func  = [](const _Ts&), for example: exp2<_Tb> ...
 			for ( ; _First != _Last; _First+=_Inc) {
-				_Afunc(_Result, _Func(*_First));
+				_Val = _Reduce_op(_Val, _Transform_op(*_First));
 			}
-			return _Result;
+			return _Val;
 		}
 
-		template<typename _Afn, typename _Fn>
-		static _Ts& afunc_2nd(_InIt _First1, _InIt _Last1, _InIt _First2, _Ts& _Result, _Afn _Afunc, _Fn _Func,
+		template<typename _BinOp1, typename _BinOp2>
+		static scalar_type transform_accumulate(_InIt _First1, _InIt _Last1, _InIt _First2, scalar_type _Val, _BinOp1 _Reduce_op, _BinOp2 _Transform_op,
 			size_t _Inc1 = 1, size_t _Inc2 = 1) {
 			// for [_First1, _Last1): _Afunc(_Result, _Func(*_First1, *_First2))
 			// _Afunc = [](auto&, auto&&),                for example: [](auto& Res, auto&& X){ Res += X; } ...
 			// _Func  = [](const _Ts&, const _Ts&), for example: std::multiplies<_Tb>() ...
 			for ( ; _First1 != _Last1; _First1+=_Inc1, _First2+=_Inc2) {
-				_Afunc(_Result, _Func(*_First1, *_First2));
+				_Val = _Reduce_op(_Val, _Transform_op(*_First1, *_First2));
 			}
-			return _Result;
+			return _Val;
 		}
-
-		template<typename _Fn>
-		static _Ts& norm(_InIt _First, _InIt _Last, _Ts L, _Ts& _Result,
-			size_t _Inc = 1) {
-			afunc_1st(_First, _Last, _Result, 
-				[](auto& _Res, auto&& _X) { _Res += _X; },
-				[](auto&& _X) { return pow(abs(_X), L); }, 
-				_Inc
-			);
-
-			_Result = pow(_Result, static_cast<_Ts>(1) / L);
-			return _Result;
-		}
-
-		/*<dot>
-			<code>
-				auto _Result = static_cast<_Ts>(0);
-				auto_vector_operation<_Ts, _Tb>::afunc_2st( _First1, _Last1, _First2, _Result, 
-					[](auto& _Res, auto&& _X){ _Res += _X; }, 
-					std::multiplies<>() );
-			</code>
-			</dot>*/
 	};
 
 	template<typename _Ts, typename _Tb>
@@ -188,104 +161,68 @@ namespace clmagic{
 
 		using scalar_type  = _Ts;
 		using block_type   = _Tb;
-		using block_traits = ::clmagic::block_traits<_Tb>;
+		using block_traits = clmagic::block_traits<_Tb>;
 		using scalar_operation = _Vector_operation<_Ts, _Tb, _Vector_accelerate_level::Norm>;
 
-		template<typename _Fn>
-		static _OutIt func_1st(_InIt _First, _InIt _Last, _OutIt _Dest, _Fn _Func) {
-			for (; _First != _Last; ++_First, ++_Dest) {
-				*_Dest = _Func(*_First);
+		template<typename _UnaryOp>
+		static _OutIt transform(_InIt _First, _InIt _Last, _OutIt _Dest, _UnaryOp _Func) {
+			return std::transform(_First, _Last, _Dest, _Func);
+		}
+
+		template<typename _BinOp>
+		static _OutIt transform(_InIt _First1, _InIt _Last1, _InIt _First2, _OutIt _Dest, _BinOp _Func) {
+			return std::transform(_First1, _Last1, _First2, _Dest, _Func);
+		}
+
+		/*template<typename _BinOp>
+		static block_type accumulate(_InIt _First, _InIt _Last, block_type _Initval, _BinOp _Reduce_op) {
+			return std::accumulate(_First, _Last, _Initval, _Reduce_op);
+		}*/
+
+		template<typename _BinOp>
+		static scalar_type accumulate(_InIt _First, _InIt _Last, scalar_type _Val, _BinOp _Reduce_op) {
+			if (_First == _Last) {
+				return _Val;
 			}
-			return _Dest;
+			block_type _Block_result = std::accumulate(std::next(_First, 1), _Last, *_First, _Reduce_op);
+			auto       _Sfirst       = reinterpret_cast<const scalar_type*>(&_Block_result);
+			const auto _Slast        = _Sfirst + block_traits::size();
+			return scalar_operation::accumulate(_Sfirst, _Slast, _Val, _Reduce_op);
 		}
 
-		template<typename _Fn>
-		static _OutIt func_2nd(_InIt _First1, _InIt _Last1, _InIt _First2, _OutIt _Dest, _Fn _Func) {
-			for (; _First1 != _Last1; ++_First1, ++_First2, ++_Dest) {
-				*_Dest = _Func(*_First1, *_First2);
+		/*template<typename _BinOp, typename _UnaryOp>
+		static block_type transform_accumulate(_InIt _First, _InIt _Last, block_type _Initval, _BinOp _Reduce_op, _UnaryOp _Transform_op) {
+			return std::transform_reduce(_First, _Last, _Initval, _Reduce_op, _Transform_op);
+		}*/
+
+		template<typename _BinOp, typename _UnaryOp>
+		static scalar_type transform_accumulate(_InIt _First, _InIt _Last, scalar_type _Initval, _BinOp _Reduce_op, _UnaryOp _Transform_op) {
+			if (_First == _Last) {
+				return _Initval;
 			}
-			return _Dest;
+			block_type _Block_initval = _Transform_op(*_First++);
+			block_type _Block_result  = std::transform_reduce(_First, _Last, _Block_initval, _Reduce_op, _Transform_op);
+			auto       _Sfirst        = reinterpret_cast<const scalar_type*>(&_Block_result);
+			const auto _Slast         = _Sfirst + block_traits::size();
+			return scalar_operation::accumulate(_Sfirst, _Slast, _Initval, _Reduce_op);
 		}
 
-		/*<afunc>
-			<mean>assign-function</mean>
-			</afunc>*/
-		template<typename _Afn>
-		static _Ts& afunc(_InIt _First, _InIt _Last, _Ts& _Result, _Afn _Afunc) {
-			if (_First != _Last) {
-				auto _Temp = *_First++;
-				for (; _First != _Last; ++_First) {
-					_Afunc(_Temp, *_First);
-				}
+		/*template<typename _BinOp1, typename _BinOp2>
+		static block_type transform_accumulate(_InIt _First1, _InIt _Last1, _InIt _First2, block_type _Initval, _BinOp1 _Reduce_op, _BinOp2 _Transform_op) {
+			return std::transform_reduce(_First1, _Last1, _First2, _Initval, _Reduce_op, _Transform_op);
+		}*/
 
-				auto _First2 = reinterpret_cast<_Ts*>(&_Temp);
-				scalar_operation::afunc(_First2, _First2+block_traits::size(), _Result, _Afunc);
+		template<typename _BinOp1, typename _BinOp2>
+		static scalar_type transform_accumulate(_InIt _First1, _InIt _Last1, _InIt _First2, scalar_type _Initval, _BinOp1 _Reduce_op, _BinOp2 _Transform_op) {
+			if (_First1 == _Last1) {
+				return _Initval;
 			}
-			return _Result;
+			block_type _Block_initval = _Transform_op(*_First1++, *_First2++);
+			block_type _Block_result  = std::transform_reduce(_First1, _Last1, _First2, _Block_initval, _Reduce_op, _Transform_op);
+			auto       _Sfirst        = reinterpret_cast<const scalar_type*>(&_Block_result);
+			const auto _Slast         = _Sfirst + block_traits::size();
+			return scalar_operation::accumulate(_Sfirst, _Slast, _Initval, _Reduce_op);
 		}
-
-		template<typename _Afn, typename _Fn>
-		static _Ts& afunc_1st(_InIt _First, _InIt _Last, _Ts& _Result, _Afn _Afunc, _Fn _Func) {
-			// for [_First, _Last): _Afunc(_Result, _Func(*_First))
-			// _Afunc = [](auto&, auto&&), for example: [](auto& Res, auto&& X){ Res += X; } ...
-			// _Func  = [](const _Tb&), for example: exp2<_Tb> ...
-			if (_First != _Last) {
-				auto _Temp = _Func(*_First++);
-				for ( ; _First != _Last; ++_First) {
-					_Afunc(_Temp, _Func(*_First));
-				}
-
-				auto _First_temp = reinterpret_cast<_Ts*>(&_Temp);
-				scalar_operation::afunc(_First_temp, _First_temp+block_traits::size(), _Result, _Afunc);
-			}
-			return _Result;
-		}
-
-		template<typename _Afn, typename _Fn>
-		static _Ts& afunc_2nd(_InIt _First1, _InIt _Last1, _InIt _First2, _Ts& _Result, _Afn _Afunc, _Fn _Func) {
-			// for [_First1, _Last1): _Afunc(_Result, _Func(*_First1, *_First2))
-			// _Afunc = [](auto&, auto&&),                for example: [](auto& Res, auto&& X){ Res += X; } ...
-			// _Func  = [](const _Tb&, const _Tb&), for example: std::multiplies<_Tb>() ...
-			if (_First1 != _Last1) {
-				auto _Temp = _Func(*_First1++, *_First2++);
-				for ( ; _First1 != _Last1; ++_First1, ++_First2) {
-					_Afunc(_Temp, _Func(*_First1, *_First2));
-				}
-
-				auto _First_temp = reinterpret_cast<_Ts*>(&_Temp);
-				scalar_operation::afunc(_First_temp, _First_temp+block_traits::size(), _Result, _Afunc);
-			}
-			return _Result;
-		}
-
-		template<typename _Fn>
-		static _Ts& norm(_InIt _First, _InIt _Last, _Ts L, _Ts& _Result) {
-			/* abs_pow(A[0]) + abs_pow(A[1]) + abs_pow(A[2]) + ... + abs_pow(A[N]) */
-			/******************** equal *******************/
-			/*
-			(abs_pow(A[0]) + abs_pow(A[4]) + abs_pow(A[8]) + abs_pow(A[12]))
-				+ (abs_pow(A[1]) + abs_pow(A[5]) + abs_pow(A[9]) + abs_pow(A[13])) 
-				+ ... 
-				+ (abs_pow(A[N-12]) + abs_pow(A[N-8]) + abs_pow(A[N-4]) + abs_pow(A[N])) 
-			*/
-			
-			afunc_1st(_First, _Last, _Result, 
-				[](auto& _Res, auto&& _X) { _Res += _X; },
-				[](auto&& _X) { return pow(abs(_X), L); }
-			);
-
-			_Result = pow(_Result, static_cast<_Ts>(1) / L);
-			return _Result;
-		}
-
-		/*<dot>
-			<code>
-				auto _Result = static_cast<_Ts>(0);
-				auto_vector_operation<_Ts, _Tb>::afunc_2st( _First1, _Last1, _First2, _Result, 
-					[](auto& _Res, auto&& _X){ _Res += _X; }, 
-					std::multiplies<>() );
-			</code>
-			</dot>*/
 	};
 
 	template<typename _Ts, typename _Tb>
@@ -309,39 +246,47 @@ namespace clmagic{
 			</paragraph>
 			</viewer>*/
 
-		template<typename _Fn>
-		static _OutIt func_1st(_InIt _First, _InIt _Last, _OutIt _Dest, _Fn _Func, 
+		static void _Copy_from_last(const scalar_type* _Last, scalar_type* _Dest, size_t _Count) {// [..., _Last)
+			while (_Count--) {
+				--_Last;
+				--_Dest;
+				*_Dest = *_Last;
+			}
+		}
+
+		template<typename _UnaryOp>
+		static _OutIt transform(_InIt _First, _InIt _Last, _OutIt _Dest, _UnaryOp _Transform_op,
 			size_t _Leading_size = 0, size_t _Tail_size = 0) {
 			if (_Leading_size != 0) {
-				const _Tb       _Temp      = _Func(*(_First - 1));
-				const scalar_type* _Last_temp = reinterpret_cast<const _Ts*>((&_Temp) + 1);
-				std::copy(_Last_temp-_Leading_size, _Last_temp, ((scalar_type*)_Dest) - _Leading_size );
+				const block_type   _Temp      = _Transform_op(*std::prev(_First,1));
+				const scalar_type* _Last_temp = reinterpret_cast<const scalar_type*>((&_Temp) + 1);
+				_Copy_from_last(_Last_temp, (scalar_type*)_Dest, _Leading_size);
 			}
 
 			for ( ; _First != _Last; ++_First, ++_Dest) {
-				*_Dest = _Func(*_First);
+				*_Dest = _Transform_op(*_First);
 			}
 
 			if (_Tail_size != 0) {// vector-length is usually large, when _Tail_size != 0
-				const _Tb       _Temp       = _Func(*_First);
-				const scalar_type* _First_temp = reinterpret_cast<const _Ts*>(&_Temp);
+				const block_type   _Temp       = _Transform_op(*_First);
+				const scalar_type* _First_temp = reinterpret_cast<const scalar_type*>(&_Temp);
 				std::copy(_First_temp, _First_temp+_Tail_size, (scalar_type*)_Dest);
 			}
 
 			return _Dest;// Almost useless
 		}
 	
-		template<typename _Fn>
-		static _OutIt func_2nd(_InIt _First1, _InIt _Last1, _InIt _First2, _OutIt _Dest, _Fn _Func, 
+		template<typename _BinOp>
+		static _OutIt transform(_InIt _First1, _InIt _Last1, _InIt _First2, _OutIt _Dest, _BinOp _Transform_op,
 			size_t _Leading_size = 0, size_t _Tail_size = 0) {
 			if (_Leading_size != 0) {
-				const _Tb       _Temp      = _Func(*(_First1 - 1), *(_First2 - 1));
+				const block_type   _Temp      = _Transform_op( *std::prev(_First1, 1), *std::prev(_First2, 1) );
 				const scalar_type* _Last_temp = reinterpret_cast<const scalar_type*>((&_Temp) + 1);
-				std::copy(_Last_temp-_Leading_size, _Last_temp, ((scalar_type*)_Dest) - _Leading_size );
+				_Copy_from_last(_Last_temp, (scalar_type*)_Dest, _Leading_size);
 			}
 
 			for (; _First1 != _Last1; ++_First1, ++_First2, ++_Dest) {
-				*_Dest = _Func(*_First1, *_First2);
+				*_Dest = _Transform_op(*_First1, *_First2);
 			}
 
 			if (_Tail_size != 0) {// vector-length is usually large, when _Tail_size != 0
@@ -353,94 +298,78 @@ namespace clmagic{
 			return _Dest;// Almost useless
 		}
 	
-		/*<afunc>
-			<mean>assign-function</mean>
-			</afunc>*/
-		template<typename _Afn>
-		static _Ts& afunc(_InIt _First, _InIt _Last, _Ts& _Result, _Afn _Afunc, 
+		template<typename _BinOp>
+		static scalar_type accumulate(_InIt _First, _InIt _Last, scalar_type _Val, _BinOp _Reduce_op,
 			size_t _Leading_size = 0, size_t _Tail_size = 0) {
 			if (_Leading_size != 0) {
-				auto _Last_temp = reinterpret_cast<const _Ts*>(_First);
-				scalar_operation::afunc(_Last_temp-_Leading_size, _Last_temp, _Result, _Afunc);
+				auto _Slast  = reinterpret_cast<const scalar_type*>(_First);
+				auto _Sfirst = _Slast - _Leading_size;
+				_Val = std::accumulate(_Sfirst, _Slast, _Val, _Reduce_op);
 			}
 
-			if (_First != _Last) {
-				auto _Temp = *_First++;
-				for ( ; _First != _Last; ++_First) {
-					_Afunc(_Temp, *_First);
-				}
-				auto _First_temp = reinterpret_cast<_Ts*>(&_Temp);
-				scalar_operation::afunc(_First_temp, _First_temp+block_traits::size(), _Result, _Afunc);
-			}
+			_Val = block_operation::accumulate(_First, _Last, _Val, _Reduce_op);// impotant!
 
 			if (_Tail_size != 0) {
-				auto _First_temp = reinterpret_cast<const _Ts*>(_First);
-				scalar_operation::afunc(_First_temp, _First_temp+_Tail_size, _Result, _Afunc);
+				auto       _Sfirst = reinterpret_cast<const _Ts*>(_Last);
+				const auto _Slast  = _Sfirst + _Tail_size;
+				_Val = std::accumulate(_Sfirst, _Slast, _Val, _Reduce_op);
 			}
 
-			return _Result;
+			return _Val;
 		}
 
-		template<typename _Afn, typename _Fn>
-		static _Ts& afunc_1st(_InIt _First, _InIt _Last, _Ts& _Result, _Afn _Afunc, _Fn _Func, 
+		template<typename _BinOp, typename _UnaryOp>
+		static scalar_type transform_accumulate(_InIt _First, _InIt _Last, scalar_type _Val, _BinOp _Reduce_op, _UnaryOp _Transform_op,
 			size_t _Leading_size = 0, size_t _Tail_size = 0) {
 			if (_Leading_size != 0) {
-				const auto _Temp      = _Func(*(_First - 1));
-				auto       _Last_temp = reinterpret_cast<const _Ts*>((&_Temp) + 1);
-				scalar_operation::afunc(_Last_temp-_Leading_size, _Last_temp, _Result, _Afunc);
+				const auto _Temp   = _Transform_op(*std::prev(_First,1));
+				auto       _Slast  = reinterpret_cast<const scalar_type*>((&_Temp) + 1);
+				auto       _Sfirst = _Slast - _Leading_size;
+				_Val = std::accumulate(_Sfirst, _Slast, _Val, _Reduce_op);
 			}
 
-			block_operation::afunc_1st(_First, _Last, _Result, _Afunc, _Func);// impotant!
+			_Val = block_operation::transform_accumulate(_First, _Last, _Val, _Reduce_op, _Transform_op);// impotant!
 
 			if (_Tail_size != 0) {
-				const auto _Temp       = _Func(*_Last);
-				auto       _First_temp = reinterpret_cast<const _Ts*>(&_Temp);
-				scalar_operation::afunc(_First_temp, _First_temp+_Tail_size, _Result, _Afunc);
+				const auto _Temp   = _Transform_op(*_Last);
+				auto       _Sfirst = reinterpret_cast<const _Ts*>(&_Temp);
+				const auto _Slast  = _Sfirst + _Tail_size;
+				_Val = std::accumulate(_Sfirst, _Slast, _Val, _Reduce_op);
 			}
 
-			return _Result;
+			return _Val;
 		}
 
-		template<typename _Afn, typename _Fn>
-		static _Ts& afunc_2nd(_InIt _First1, _InIt _Last1, _InIt _First2, _Ts& _Result, _Afn _Afunc, _Fn _Func,
+		template<typename _BinOp1, typename _BinOp2>
+		static scalar_type transform_accumulate(_InIt _First1, _InIt _Last1, _InIt _First2, scalar_type _Val, _BinOp1 _Reduce_op, _BinOp2 _Transform_op,
 			size_t _Leading_size = 0, size_t _Tail_size = 0) {
 			if (_Leading_size != 0) {
-				const auto _Temp      = _Func(*(_First1 - 1), *(_First2 - 1));
-				auto       _Last_temp = reinterpret_cast<const _Ts*>((&_Temp) + 1);
-				scalar_operation::afunc(_Last_temp-_Leading_size, _Last_temp, _Result, _Afunc);
+				const auto _Temp   = _Transform_op( *std::prev(_First1,1), *std::prev(_First2,1) );
+				auto       _Slast  = reinterpret_cast<const scalar_type*>((&_Temp) + 1);
+				auto       _Sfirst = _Slast - _Leading_size;
+				_Val = std::accumulate(_Sfirst, _Slast, _Val, _Reduce_op);
 			}
 
 			if (_First1 != _Last1) {
-				auto _Temp = _Func(*_First1++, *_First2++);
+				block_type _Block_val = _Transform_op(*_First1++, *_First2++);
 				for ( ; _First1 != _Last1; ++_First1, ++_First2) {
-					_Afunc(_Temp, _Func(*_First1, *_First2));
+					_Block_val = _Reduce_op(_Block_val, _Transform_op(*_First1, *_First2));
 				}
 
-				auto _First_temp = reinterpret_cast<_Ts*>(&_Temp);
-				scalar_operation::afunc(_First_temp, _First_temp+block_traits::size(), _Result, _Afunc);
+				auto       _Sfirst = reinterpret_cast<const scalar_type*>(&_Block_val);
+				const auto _Slast  = _Sfirst + block_traits::size();
+				_Val = std::accumulate(_Sfirst, _Slast, _Val, _Reduce_op);
 			}
 
 			if (_Tail_size != 0) {
-				const auto _Temp       = _Func(*_First1, *_First2);
-				auto       _First_temp = reinterpret_cast<const _Ts*>(&_Temp);
-				scalar_operation::afunc(_First_temp, _First_temp+_Tail_size, _Result, _Afunc);
+				const auto _Temp   = _Transform_op(*_First1, *_First2);
+				auto       _Sfirst = reinterpret_cast<const scalar_type*>(&_Temp);
+				const auto _Slast  = _Sfirst + _Tail_size;
+				_Val = std::accumulate(_Sfirst, _Slast, _Val, _Reduce_op);
 			}
 
-			return _Result;
-		}
-	
-		template<typename _Fn>
-		static _Ts& norm(_InIt _First, _InIt _Last, _Ts L, _Ts& _Result, 
-			size_t _Leading_size = 0, size_t _Tail_size = 0) {
-			afunc_1st(_First, _Last, _Result, 
-				[](auto& _Res, auto&& _X) { _Res += _X; },
-				[](auto&& _X) { return pow(abs(_X), L); },
-				_Leading_size, _Tail_size
-			);
-
-			_Result = pow(_Result, static_cast<_Ts>(1) / L);
-			return _Result;
-		}
+			return _Val;
+		}	
 	};
 
 	template<typename _Ts, typename _Tb>
@@ -448,8 +377,10 @@ namespace clmagic{
 		using _OutIt = void*;
 		using _InIt  = const void *;
 
-		using size_type    = ::clmagic::vector_size<_Ts, _Tb>;
-		using block_traits = ::clmagic::block_traits<_Tb>;
+		using scalar_type  = _Ts;
+		using block_type   = _Tb;
+		using size_type    = clmagic::vector_size<_Ts, _Tb>;
+		using block_traits = clmagic::block_traits<_Tb>;
 
 		using scalar_operation  = _Vector_operation<_Ts, _Tb, _Vector_accelerate_level::Norm>;
 		using block_operation   = _Vector_operation<_Ts, _Tb, _Vector_accelerate_level::Fastest>;
@@ -457,165 +388,154 @@ namespace clmagic{
 		using fast_operation    = _Vector_operation<_Ts, _Tb, _Vector_accelerate_level::Fast>;
 		using norm_operation    = scalar_operation;
 
-		template<typename _Fn>
-		static _OutIt func_1st(_InIt _First, _InIt _Last, _OutIt _Dest, _Fn _Func, 
+		template<typename _UnaryOp>
+		static _OutIt transform(_InIt _First, _InIt _Last, _OutIt _Dest, _UnaryOp _Transform_op,
 			const size_type& _Vsize) {
 			if (_Vsize.can_fastest()) {
-				return fastest_operation::func_1st(static_cast<const _Tb*>(_First), static_cast<const _Tb*>(_Last),
-					static_cast<_Tb*>(_Dest), _Func);
+				auto       _Bfirst = static_cast<typename fastest_operation::_InIt>(_First);
+				const auto _Blast  = static_cast<typename fastest_operation::_InIt>(_Last);
+				auto       _Dest   = static_cast<typename fastest_operation::_OutIt>(_Last);
+				return fastest_operation::transform(_Bfirst, _Blast, _Dest, _Transform_op);
 			} else if (!_Vsize.empty()) {
-				auto       _First_bk = reinterpret_cast<const _Tb*>( (const _Ts*)(_First) + _Vsize.leading_size );
-				const auto _Last_bk  = _First_bk + _Vsize.block_size;
-				auto       _Dest_bk  = reinterpret_cast<_Tb*>( (_Ts*)(_Dest) + _Vsize.leading_size );
-				return fast_operation::func_1st(_First_bk, _Last_bk, _Dest_bk, _Func,
-					_Vsize.leading_size, _Vsize.tail_size);
+				auto       _Bfirst = reinterpret_cast<const block_type*>( (const scalar_type*)(_First) + _Vsize.leading_size );
+				const auto _Blast  = _Bfirst + _Vsize.block_size;
+				auto       _Bdest  = reinterpret_cast<block_type*>( (scalar_type*)(_Dest) + _Vsize.leading_size );
+				return fast_operation::transform(_Bfirst, _Blast, _Bdest, _Transform_op, _Vsize.leading_size, _Vsize.tail_size);
 			}
-
-			return norm_operation::func_1st(static_cast<const _Ts*>(_First), static_cast<const _Ts*>(_Last),
-				static_cast<_Ts*>(_Dest), _Func);
+			return norm_operation::transform(static_cast<typename norm_operation::_InIt>(_First), static_cast<typename norm_operation::_InIt>(_Last),
+				static_cast<typename norm_operation::_OutIt>(_Dest), _Transform_op);
 		}
 
-		template<typename _Fn>
-		static _OutIt func_1st(_InIt _First, _InIt _Last, _OutIt _Dest, _Fn _Func,
+		template<typename _UnaryOp>
+		static _OutIt transform(_InIt _First, _InIt _Last, _OutIt _Dest, _UnaryOp _Transform_op,
 			size_t _Inc1 = 1, size_t _Inc2 = 1) {
 			if (_Inc1 == 1 && _Inc2 == 1) {// memory-continue
-				return func_1st( _First, _Last, _Dest, _Func, size_type((const _Ts*)_First, (const _Ts*)_Last) );
+				return transform( _First, _Last, _Dest, _Transform_op, 
+					size_type((const _Ts*)_First, (const _Ts*)_Last) );
 			}
-
-			return norm_operation::func_1st((const _Ts*)(_First), (const _Ts*)(_Last), (_Ts*)(_Dest), _Func, 
-				_Inc1, _Inc2);
+			return norm_operation::transform(static_cast<typename norm_operation::_InIt>(_First), static_cast<typename norm_operation::_InIt>(_Last),
+				static_cast<typename norm_operation::_OutIt>(_Dest), _Transform_op, _Inc1, _Inc2);
 		}
 	
-		template<typename _Fn>
-		static _OutIt func_2nd(_InIt _First1, _InIt _Last1, _InIt _First2, _OutIt _Dest, _Fn _Func,
+		template<typename _BinOp>
+		static _OutIt transform(_InIt _First1, _InIt _Last1, _InIt _First2, _OutIt _Dest, _BinOp _Transform_op,
 			const size_type& _Vsize1, const size_type& _Vsize2) {
 			if (_Vsize1 == _Vsize2) {
 				if (_Vsize1.can_fastest()) {
-					return fastest_operation::func_2nd(static_cast<const _Tb*>(_First1), static_cast<const _Tb*>(_Last1),
-						static_cast<const _Tb*>(_First2), static_cast<_Tb*>(_Dest), _Func);
+					auto       _Bfirst1 = static_cast<typename fastest_operation::_InIt>(_First1);
+					const auto _Blast1  = static_cast<typename fastest_operation::_InIt>(_Last1);
+					auto       _Bfirst2 = static_cast<typename fastest_operation::_InIt>(_First2);
+					auto       _Bdest   = static_cast<typename fastest_operation::_OutIt>(_Dest);
+					return fastest_operation::transform(_Bfirst1, _Blast1, _Bfirst2, _Bdest, _Transform_op);
 				} else if(!_Vsize1.empty()) {
-					auto       _First1_bk = reinterpret_cast<const _Tb*>((const _Ts*)(_First1) + _Vsize1.leading_size);
-					const auto _Last1_bk  = _First1_bk + _Vsize1.block_size;
-					auto       _First2_bk = reinterpret_cast<const _Tb*>((const _Ts*)(_First2) + _Vsize1.leading_size);
-					auto       _Dest_bk   = reinterpret_cast<_Tb*>(      (_Ts*)(_Dest)         + _Vsize1.leading_size);
-					return fast_operation::func_2nd(_First1_bk, _Last1_bk, _First2_bk, _Dest_bk, _Func,
-						_Vsize1.leading_size, _Vsize1.tail_size);
+					auto       _Bfirst1 = reinterpret_cast<const block_type*>((const scalar_type*)(_First1) + _Vsize1.leading_size);
+					const auto _Blast1  = _Bfirst1 + _Vsize1.block_size;
+					auto       _Bfirst2 = reinterpret_cast<const block_type*>((const scalar_type*)(_First2) + _Vsize1.leading_size);
+					auto       _Bdest   = reinterpret_cast<block_type*>(      (scalar_type*)(_Dest)         + _Vsize1.leading_size);
+					return fast_operation::func_2nd(_Bfirst1, _Blast1, _Bfirst2, _Bdest, _Transform_op, _Vsize1.leading_size, _Vsize1.tail_size);
 				}
 			}
 
-			return norm_operation::func_2nd(static_cast<const _Ts*>(_First1), static_cast<const _Ts*>(_Last1), 
-				static_cast<const _Ts*>(_First2), static_cast<_Ts*>(_Dest), _Func );
+			return norm_operation::transform(static_cast<typename norm_operation::_InIt>(_First1), static_cast<typename norm_operation::_InIt>(_Last1),
+				static_cast<typename norm_operation::_InIt>(_First2), static_cast<typename norm_operation::_OutIt>(_Dest), _Transform_op );
 		}
 
-		template<typename _Fn>
-		static _OutIt func_2nd(_InIt _First1, _InIt _Last1, _InIt _First2, _OutIt _Dest, _Fn _Func, 
+		template<typename _BinOp>
+		static _OutIt transform(_InIt _First1, _InIt _Last1, _InIt _First2, _OutIt _Dest, _BinOp _Transform_op,
 			size_t _Inc1 = 1, size_t _Inc2 = 1, size_t _Inc3 = 1) {
 			if (_Inc1 == 1 && _Inc2 == 1 && _Inc3 == 1) {// is_continue
 				const auto _Diff = std::distance((const _Ts*)(_First1), (const _Ts*)(_Last1));
-
-				return func_2nd( _First1, _Last1, _First2, _Dest, _Func, 
+				return transform( _First1, _Last1, _First2, _Dest, _Transform_op,
 					size_type((const _Ts*)_First1, (const _Ts*)_Last1), 
 					size_type((const _Ts*)_First2, (const _Ts*)_First2 + _Diff) );
 			}
-
-			return norm_operation::func_2nd(static_cast<const _Ts*>(_First1), static_cast<const _Ts*>(_Last1),
-				static_cast<const _Ts*>(_First2), static_cast<_Ts*>(_Dest), _Func, 
-				_Inc1, _Inc2, _Inc3);
+			return norm_operation::transform(static_cast<typename norm_operation::_InIt>(_First1), static_cast<typename norm_operation::_InIt>(_Last1),
+				static_cast<typename norm_operation::_InIt>(_First2), static_cast<typename norm_operation::_OutIt>(_Dest), _Transform_op, _Inc1, _Inc2, _Inc3);
 		}
 	
-		template<typename _Afn>
-		static _Ts& afunc(_InIt _First, _InIt _Last, _Ts& _Result, _Afn _Afunc, const size_type& _Vsize) {
+		template<typename _BinOp>
+		static scalar_type accumulate(_InIt _First, _InIt _Last, scalar_type _Val, _BinOp _Reduce_op, const size_type& _Vsize) {
 			if ( _Vsize.can_fastest() ) {
-				return fastest_operation::afunc((const _Tb*)_First, (const _Tb*)_Last, _Result, _Afunc);
+				auto       _Bfirst = static_cast<typename fastest_operation::_InIt>(_First);
+				const auto _Blast  = static_cast<typename fastest_operation::_InIt>(_Last);
+				return fastest_operation::accumulate(_Bfirst, _Blast, _Val, _Reduce_op);
 			} else if ( !_Vsize.empty() ) {
-				auto _First_bk = reinterpret_cast<const _Tb*>( (const _Ts*)(_First) + _Vsize.leading_size );
-				return fast_operation::afunc(_First_bk, _First_bk+_Vsize.block_size, _Result, _Afunc);
+				auto       _Bfirst = reinterpret_cast<const block_type*>( (const scalar_type*)(_First) + _Vsize.leading_size );
+				const auto _Blast  = _Bfirst + +_Vsize.block_size;
+				return fast_operation::accumulate(_Bfirst, _Blast, _Val, _Reduce_op);
 			}
-
-			return norm_operation::afunc((const _Ts*)_First, (const _Ts*)_Last, _Result, _Afunc);
+			return norm_operation::accumulate(static_cast<typename norm_operation::_InIt>(_First), static_cast<typename norm_operation::_InIt>(_Last),
+				_Val, _Reduce_op);
 		}
 
-		template<typename _Afn>
-		static _Ts& afunc(_InIt _First, _InIt _Last, _Ts& _Result, _Afn _Afunc,
+		template<typename _BinOp>
+		static scalar_type accumulate(_InIt _First, _InIt _Last, scalar_type _Val, _BinOp _Reduce_op,
 			size_t _Inc = 1) {
-			if (_Inc == 1) {
-				return afunc(_First, _Last, _Result, _Afunc, size_type((const _Ts*)_First, (const _Ts*)_Last));
+			if (_Inc == 1) {// memory-continue
+				return accumulate( _First, _Last, _Val, _Reduce_op, size_type((const _Ts*)_First, (const _Ts*)_Last) );
 			}
-
-			return norm_operation::afunc((const _Ts*)_First, (const _Ts*)_Last, _Result, _Afunc,
-				_Inc);
+			return norm_operation::accumulate(static_cast<typename norm_operation::_InIt>(_First), static_cast<typename norm_operation::_InIt>(_Last),
+				_Val, _Reduce_op, _Inc);
 		}
 
-		template<typename _Afn, typename _Fn>
-		static _Ts& afunc_1st(_InIt _First, _InIt _Last, _Ts& _Result, _Afn _Afunc, _Fn _Func,
+		template<typename _BinOp, typename _UnaryOp>
+		static scalar_type transform_accumulate(_InIt _First, _InIt _Last, scalar_type _Val, _BinOp _Reduce_op, _UnaryOp _Transform_op,
 			const size_type& _Vsize) {
 			if ( _Vsize.can_fastest() ) {
-				return fastest_operation::afunc_1st((const _Tb*)_First, (const _Tb*)_Last, _Result, _Afunc, _Func);
+				auto       _Bfirst = static_cast<typename fastest_operation::_InIt>(_First);
+				const auto _Blast  = static_cast<typename fastest_operation::_InIt>(_First);
+				return fastest_operation::transform_accumulate(_Bfirst, _Blast, _Val, _Reduce_op, _Transform_op);
 			} else if ( !_Vsize.empty() ) {
-				auto _First_bk = reinterpret_cast<const _Tb*>( (const _Ts*)(_First) + _Vsize.leading_size );
-				return fast_operation::afunc_1st(_First_bk, _First_bk+_Vsize.block_size, _Result, _Afunc, _Func);
+				auto       _Bfirst = reinterpret_cast<const block_type*>( (const scalar_type*)(_First) + _Vsize.leading_size );
+				const auto _Blast  = _Bfirst + _Vsize.block_size;
+				return fast_operation::transform_accumulate(_Bfirst, _Blast, _Val, _Reduce_op, _Transform_op);
 			}
-
-			return norm_operation::afunc_1st((const _Ts*)_First, (const _Ts*)_Last, _Result, _Afunc, _Func);
+			return norm_operation::transform_accumulate(static_cast<typename norm_operation::_InIt>(_First), static_cast<typename norm_operation::_InIt>(_Last),
+				_Val, _Reduce_op, _Transform_op);
 		}
 
-		template<typename _Afn, typename _Fn>
-		static _Ts& afunc_1st(_InIt _First, _InIt _Last, _Ts& _Result, _Afn _Afunc, _Fn _Func,
+		template<typename _BinOp, typename _UnaryOp>
+		static scalar_type transform_accumulate(_InIt _First, _InIt _Last, scalar_type _Val, _BinOp _Reduce_op, _UnaryOp _Transform_op,
 			size_t _Inc = 1) {
-			if (_Inc == 1) {
-				return afunc_1st(_First, _Last, _Result, _Afunc, _Func, size_type((const _Ts*)_First, (const _Ts*)_Last));
+			if (_Inc == 1) {// memory-continue
+				return transform_accumulate(_First, _Last, _Val, _Reduce_op, _Transform_op, 
+					size_type((const _Ts*)_First, (const _Ts*)_Last) );
 			}
-
-			return norm_operation::afunc_1st((const _Ts*)_First, (const _Ts*)_Last, _Result, _Afunc, _Func, 
-				_Inc);
+			return norm_operation::transform_accumulate(static_cast<typename norm_operation::_InIt>(_First), static_cast<typename norm_operation::_InIt>(_Last),
+				_Val, _Reduce_op, _Transform_op, _Inc);
 		}
 
-		template<typename _Afn, typename _Fn>
-		static _Ts& afunc_2nd(_InIt _First1, _InIt _Last1, _InIt _First2, _Ts& _Result, _Afn _Afunc, _Fn _Func,
+		template<typename _BinOp1, typename _BinOp2>
+		static scalar_type transform_accumulate(_InIt _First1, _InIt _Last1, _InIt _First2, scalar_type _Val, _BinOp1 _Reduce_op, _BinOp2 _Transform_op,
 			const size_type& _Vsize1, const size_type& _Vsize2) {
 			if (_Vsize1 == _Vsize2) {
 				if ( _Vsize1.can_fastest() ) {
-					return fastest_operation::afunc_2nd(static_cast<const _Tb*>(_First1), static_cast<const _Tb*>(_Last1),
-						static_cast<const _Tb*>(_First2), _Result, _Afunc, _Func);
+					auto       _Bfirst1 = static_cast<typename fast_operation::_InIt>(_First1);
+					const auto _Blast1  = static_cast<typename fast_operation::_InIt>(_Last1);
+					auto       _Bfirst2 = static_cast<typename fast_operation::_InIt>(_First2);
+					return fastest_operation::transform_accumulate(_Bfirst1, _Blast1, _Bfirst2, _Val, _Reduce_op, _Transform_op);
 				} else if( !_Vsize1.empty() ) {
-					auto       _First1_bk = reinterpret_cast<const _Tb*>((const _Ts*)(_First1) + _Vsize1.leading_size);
-					const auto _Last1_bk  = _First1_bk + _Vsize1.block_size;
-					auto       _First2_bk = reinterpret_cast<const _Tb*>((const _Ts*)(_First2) + _Vsize1.leading_size);
-					return fast_operation::afunc_2nd(_First1_bk, _Last1_bk, _First2_bk, _Result, _Afunc, _Func,
-						_Vsize1.leading_size, _Vsize1.tail_size);
+					auto       _Bfirst1 = reinterpret_cast<const block_type*>((const scalar_type*)(_First1) + _Vsize1.leading_size);
+					const auto _Blast1  = _Bfirst1 + _Vsize1.block_size;
+					auto       _Bfirst2 = reinterpret_cast<const block_type*>((const scalar_type*)(_First2) + _Vsize1.leading_size);
+					return fast_operation::transform_accumulate(_Bfirst1, _Blast1, _Bfirst2, _Val, _Reduce_op, _Transform_op, _Vsize1.leading_size, _Vsize1.tail_size);
 				}
 			}
-
-			return norm_operation::afunc_2nd(static_cast<const _Ts*>(_First1), static_cast<const _Ts*>(_Last1),
-				static_cast<const _Ts*>(_First2), _Result, _Afunc, _Func );
+			return norm_operation::transform_accumulate(static_cast<typename norm_operation::_InIt>(_First1), static_cast<typename norm_operation::_InIt>(_Last1),
+				static_cast<typename norm_operation::_InIt>(_First2), _Val, _Reduce_op, _Transform_op );
 		}
 
-		template<typename _Afn, typename _Fn>
-		static _Ts& afunc_2nd(_InIt _First1, _InIt _Last1, _InIt _First2, _Ts& _Result, _Afn _Afunc, _Fn _Func,
+		template<typename _BinOp1, typename _BinOp2>
+		static scalar_type transform_accumulate(_InIt _First1, _InIt _Last1, _InIt _First2, scalar_type _Val, _BinOp1 _Reduce_op, _BinOp2 _Transform_op,
 			size_t _Inc1 = 1, size_t _Inc2 = 1) {
-			if (_Inc1 == 1 && _Inc2 == 1) {
+			if (_Inc1 == 1 && _Inc2 == 1) {// memory-continue
 				const auto _Diff = std::distance((const _Ts*)(_First1), (const _Ts*)(_Last1));
-
-				return afunc_2nd( _First1, _Last1, _First2, _Result, _Afunc, _Func,
+				return transform_accumulate( _First1, _Last1, _First2, _Val, _Reduce_op, _Transform_op,
 					size_type((const _Ts*)_First1, (const _Ts*)_Last1), 
 					size_type((const _Ts*)_First2, (const _Ts*)_First2 + _Diff) );
 			}
-
-			return norm_operation::afunc_2nd(static_cast<const _Ts*>(_First1), static_cast<const _Ts*>(_Last1),
-				static_cast<const _Ts*>(_First2), _Result, _Afunc, _Func, _Inc1, _Inc2);
-		}
-	
-		template<typename _Fn>
-		static _Ts& norm(_InIt _First, _InIt _Last, _Ts L, _Ts& _Result,
-			size_t _Inc1 = 1, size_t _Inc2 = 1) {
-			afunc_1st(_First, _Last, _Result, 
-				[](auto& _Res, auto&& _X) { _Res += _X; },
-				[](auto&& _X) { return pow(abs(_X), L); },
-				_Inc1, _Inc2
-			);
-
-			_Result = pow(_Result, static_cast<_Ts>(1) / L);
-			return _Result;
+			return norm_operation::transform_accumulate(static_cast<typename norm_operation::_InIt>(_First1), static_cast<typename norm_operation::_InIt>(_Last1),
+				static_cast<typename norm_operation::_InIt>(_First2), _Val, _Reduce_op, _Transform_op, _Inc1, _Inc2);
 		}
 	};
 
@@ -673,24 +593,24 @@ namespace clmagic{
 			return _Count / block_traits<_Tb>::size() + static_cast<size_t>(_Divide);*/
 		}
 
-		static _Ts* allocate(size_t _Count/*scalar*/) {
-			return reinterpret_cast<_Ts*>(data().seek_n(calc_block_count(_Count)));
+		static _Ts* allocate(size_t _Scalar_count) {
+			return reinterpret_cast<_Ts*>(data().seek_n(calc_block_count(_Scalar_count)));
 		}
 
-		static void deallocate(size_t _Count/*scalar*/) {
-			data()._Myseek -= calc_block_count(_Count);
+		static void deallocate(size_t _Scalar_count) {
+			data()._Myseek -= calc_block_count(_Scalar_count);
 		}
 
-		static void push(size_t/*block*/ _Count) {
+		static void push(size_t _Block_count) {
 			auto& _Stack = data();
-			assert(_Stack._Myseek == 0);
-			const auto _Newsize = _Count + _Count / 2;
+			assert(_Stack.empty());
+			const auto _Newsize = _Block_count + _Block_count / 2;
 			_Stack.resize(_Newsize);
 		}
 		
 		static void pop() {
 			auto& _Stack = data();
-			assert(_Stack._Myseek == 0);
+			assert(_Stack.empty());
 			_Stack.clear();
 			_Stack.shrink_to_fit();
 		}
@@ -699,13 +619,19 @@ namespace clmagic{
 			return ((*this)[_Myseek]);
 		}
 
-		_Tb* seek_n(size_t/*block*/ _Count) {
+		_Tb* seek_n(size_t _Count/*block*/) {
 			const auto _Newseek = _Myseek + _Count;
-			assert(_Newseek <= _Mybase::size());
+			if (_Newseek > _Mybase::size()) {
+				_Mybase::resize(_Newseek);
+			}
 
-			auto _Ptr = &this->top();
+			auto* _Ptr = &(this->top());
 			_Myseek = _Newseek;
 			return _Ptr;
+		}
+
+		bool empty() const {
+			return _Myseek == 0;
 		}
 
 		size_t _Myseek;
@@ -719,73 +645,26 @@ namespace clmagic{
 	template<typename _Ts, typename _Tb>
 		struct subvector;
 
-	#define SUBVECTOR_OPERATOR_1ST(LHS, FUNC)           \
-	size_t _Size   = (##LHS##).size();                  \
-	auto   _Memory = clmagic::stack_allocator<_Ts, _Tb>::allocate(_Size); \
-	auto   _Result = subvector<_Ts, _Tb>(_Memory, _Memory + _Size, 1, true); \
-	auto_vector_operation<_Ts, _Tb>::func_1st((##LHS##).begin(), (##LHS##).end(), _Result.begin(), (##FUNC##), \
-	(##LHS##).stride(), _Result.stride()); \
-	return std::move(_Result)
-
-	#define SUBVECTOR_OPERATOR_2ND(LHS, RHS, FUNC)      \
-	size_t _Size   = (##LHS##).size();                  \
-	auto   _Memory = clmagic::stack_allocator<_Ts, _Tb>::allocate(_Size); \
-	auto   _Result = subvector<_Ts, _Tb>(_Memory, _Memory + _Size, 1, true); \
-	auto_vector_operation<_Ts, _Tb>::func_2nd((##LHS##).begin(), (##LHS##).end(), (##RHS##).begin(), _Result.begin(), (##FUNC##), \
-	(##LHS##).stride(), (##RHS##).stride(), _Result.stride()); \
-	return std::move(_Result)
-
 	template<typename _Ts, typename _Tb>
 	struct const_subvector {// const _Ts
 		using iterator_category = std::random_access_iterator_tag;
 		using difference_Tspe   = ptrdiff_t;
 
-		using block_type       = const _Tb;
-		using block_pointer    = block_type*;
-		using scalar_type      = const _Ts;
-		using scalar_pointer   = scalar_type*;
-		using scalar_reference = scalar_type&;
-
-		using size_type        = ::clmagic::vector_size<_Ts, _Tb>;
-		
-		using block_traits     = ::clmagic::block_traits<_Tb>;
-		using allocator_traits = ::clmagic::stack_allocator<_Ts, _Tb>;
-
-		scalar_pointer begin() const {
-			return _Fptr; }
-		scalar_pointer end() const {
-			return _Lptr; }
-		size_t size() const {
-			return (_Lptr - _Fptr) / _Nx; }
-		size_t stride() const {
-			return _Nx; }
-		size_type vsize() const {
-			return size_type(_Fptr, _Lptr, _Nx); }
-		scalar_pointer ptr(size_t _Pos = 0) const {
-			return _Fptr + _Pos * _Nx; }
-		scalar_reference operator[](size_t _Pos) const {
-			return (*ptr(_Pos)); }
-		void reset(scalar_pointer _First, scalar_pointer _Last, size_t _Stride = 1, bool _Memory = false) {
-			_Fptr  = _First;
-			_Lptr  = _Last;
-			_Nx    = _Stride;
-			_Mem   = _Memory;
-		}
-		bool empty() const {
-			return (_Lptr == _Fptr);
-		}
-		bool is_continue() const {
-			return _Nx == 1;
-		}
+		using scalar_type      = _Ts;
+		using block_type       = _Tb;
+		using size_type        = clmagic::vector_size<_Ts, _Tb>;
+		using block_traits     = clmagic::block_traits<_Tb>;
+		using allocator_traits = clmagic::stack_allocator<_Ts, _Tb>;
 
 		const_subvector(const const_subvector&) = delete;
+		const_subvector() = default;
 		const_subvector(const_subvector&& _Right) noexcept
 			: _Fptr(_Right._Fptr), _Lptr(_Right._Lptr), _Nx(_Right._Nx), _Mem(_Right._Mem) {
 			_Right._Mem = false;
 		}
-		const_subvector(scalar_pointer _First, scalar_pointer _Last)
+		const_subvector(const scalar_type* _First, const scalar_type* _Last)
 			: _Fptr(_First), _Lptr(_Last), _Nx(1), _Mem(false) {}
-		const_subvector(scalar_pointer _First, scalar_pointer _Last, size_t _Stride)// &_First[1] = &_First[0] + _Stride
+		const_subvector(const scalar_type* _First, const scalar_type* _Last, size_t _Stride)// &_First[1] = &_First[0] + _Stride
 			: _Fptr(_First), _Lptr(_Last), _Nx(_Stride), _Mem(false) {}
 		~const_subvector() {
 			if (_Mem) {
@@ -802,166 +681,194 @@ namespace clmagic{
 			_Right._Mem  = false;
 			return (*this);
 		}
+		
+		const scalar_type* ptr() const {
+			return _Fptr; }
+		const scalar_type* ptr(size_t _Pos) const {
+			return _Fptr + _Pos * _Nx; }
+		const scalar_type* begin() const {
+			return _Fptr; }
+		const scalar_type* end() const {
+			return _Lptr; }
+		const scalar_type& operator[](size_t _Pos) const {
+			return (*ptr(_Pos)); }
+		size_t size() const {
+			return (_Lptr - _Fptr) / _Nx; }
+		size_t stride() const {
+			return _Nx; }
+		size_type vsize() const {
+			return size_type(_Fptr, _Lptr, _Nx); }
+		void reset(const scalar_type* _First, const scalar_type* _Last, size_t _Stride = 1, bool _Memory = false) {
+			_Fptr  = _First;
+			_Lptr  = _Last;
+			_Nx    = _Stride;
+			_Mem   = _Memory;
+		}
+		bool empty() const {
+			return (_Lptr == _Fptr);
+		}
+		bool is_continue() const {
+			return _Nx == 1;
+		}
+
+		subvector<_Ts, _Tb> neg() const;
+		subvector<_Ts, _Tb> add(const const_subvector&) const;
+		subvector<_Ts, _Tb> sub(const const_subvector&) const;
+		subvector<_Ts, _Tb> mul(const const_subvector&) const;
+		subvector<_Ts, _Tb> div(const const_subvector&) const;
+		subvector<_Ts, _Tb> mod(const const_subvector&) const;
+		subvector<_Ts, _Tb> add(scalar_type) const;
+		subvector<_Ts, _Tb> sub(scalar_type) const;
+		subvector<_Ts, _Tb> mul(scalar_type) const;
+		subvector<_Ts, _Tb> div(scalar_type) const;
+		subvector<_Ts, _Tb> mod(scalar_type) const;
+		subvector<_Ts, _Tb> added(scalar_type) const;
+		subvector<_Ts, _Tb> subed(scalar_type) const;
+		subvector<_Ts, _Tb> muled(scalar_type) const;
+		subvector<_Ts, _Tb> dived(scalar_type) const;
+		subvector<_Ts, _Tb> moded(scalar_type) const;
+		std::string to_string() const {
+			using std::to_string;
+			const auto  _Inc   = this->stride();
+			auto        _First = this->begin();
+			const auto  _Last  = this->end();
+			std::string _Str   = "subvector{";
+			for ( ; _First != _Last; _First += _Inc) {
+				_Str += to_string(*_First);
+				_Str += ',';
+			}
+			_Str.back() = '}';
+			return _Str;
+		}
 
 		const_subvector operator()(size_t _First1, size_t _Last1) const {
 			return const_subvector(this->ptr(_First1), this->ptr(_Last1), this->stride());
 		}
 		subvector<_Ts, _Tb> operator-() const {
-			assert(!this->empty());
-			SUBVECTOR_OPERATOR_1ST(*this, std::negate<>());
+			return this->neg();
 		}
 		subvector<_Ts, _Tb> operator+(const const_subvector& _Right) const {
-			assert(!this->empty());
-			assert(this->size() == _Right.size());
-			SUBVECTOR_OPERATOR_2ND(*this, _Right, std::plus<>() );
+			return this->add(_Right);
 		}
 		subvector<_Ts, _Tb> operator-(const const_subvector& _Right) const {
-			assert(!this->empty());
-			assert(this->size() == _Right.size());
-			SUBVECTOR_OPERATOR_2ND(*this, _Right, std::minus<>());
+			return this->sub(_Right);
 		}
 		subvector<_Ts, _Tb> operator*(const const_subvector& _Right) const {
-			assert(!this->empty());
-			assert(this->size() == _Right.size());
-			SUBVECTOR_OPERATOR_2ND(*this, _Right, std::multiplies<>());
+			return this->mul(_Right);
 		}
 		subvector<_Ts, _Tb> operator/(const const_subvector& _Right) const {
-			assert(!this->empty());
-			assert(this->size() == _Right.size());
-			SUBVECTOR_OPERATOR_2ND(*this, _Right, std::divides<>());
+			return this->div(_Right);
+		}
+		subvector<_Ts, _Tb> operator%(const const_subvector& _Right) const {
+			return this->mod(_Right);
 		}
 		
-		subvector<_Ts, _Tb> operator+(const _Ts& _Scalar) const {
-			assert(!this->empty());
-			const auto _Rhs  = block_traits::set1(_Scalar);
-			const auto _Func = [&_Rhs](auto&& _Lhs) { return _Lhs + _Rhs; };
-			SUBVECTOR_OPERATOR_1ST(*this, _Func);
+		subvector<_Ts, _Tb> operator+(int _Scalar) const {
+			return this->add(static_cast<_Ts>(_Scalar));
 		}
-		subvector<_Ts, _Tb> operator-(const _Ts& _Scalar) const {
-			assert(!this->empty());
-			const auto _Rhs  = block_traits::set1(_Scalar);
-			const auto _Func = [&_Rhs](auto&& _Lhs) { return _Lhs - _Rhs; };
-			SUBVECTOR_OPERATOR_1ST(*this, _Func);
+		subvector<_Ts, _Tb> operator-(int _Scalar) const {
+			return this->sub(static_cast<_Ts>(_Scalar));
 		}
-		subvector<_Ts, _Tb> operator*(const _Ts& _Scalar) const {
-			assert(!this->empty());
-			const auto _Rhs  = block_traits::set1(_Scalar);
-			const auto _Func = [&_Rhs](auto&& _Lhs) { return _Lhs * _Rhs; };
-			SUBVECTOR_OPERATOR_1ST(*this, _Func);
+		subvector<_Ts, _Tb> operator*(int _Scalar) const {
+			return this->mul(static_cast<_Ts>(_Scalar));
 		}
-		subvector<_Ts, _Tb> operator/(const _Ts& _Scalar) const {
-			assert(!this->empty());
-			const auto _Rhs  = block_traits::set1(_Scalar);
-			const auto _Func = [&_Rhs](auto&& _Lhs) { return _Lhs / _Rhs; };
-			SUBVECTOR_OPERATOR_1ST(*this, _Func);
+		subvector<_Ts, _Tb> operator/(int _Scalar) const {
+			return this->div(static_cast<_Ts>(_Scalar));
 		}
-		friend subvector<_Ts, _Tb> operator+(const _Ts& _Scalar, const const_subvector& _Right) {
-			assert(!_Right.empty());
-			const auto _Lhs  = block_traits::set1(_Scalar);
-			const auto _Func = [&_Lhs](auto&& _Rhs) { return _Lhs + _Rhs; };
-			SUBVECTOR_OPERATOR_1ST(*this, _Func);
+		subvector<_Ts, _Tb> operator%(int _Scalar) const {
+			return this->mod(static_cast<_Ts>(_Scalar));
 		}
-		friend subvector<_Ts, _Tb> operator-(const _Ts& _Scalar, const const_subvector& _Right) {
-			assert(!_Right.empty());
-			const auto _Lhs  = block_traits::set1(_Scalar);
-			const auto _Func = [&_Lhs](auto&& _Rhs) { return _Lhs - _Rhs; };
-			SUBVECTOR_OPERATOR_1ST(*this, _Func);
+		subvector<_Ts, _Tb> operator+(float _Scalar) const {
+			return this->add(static_cast<_Ts>(_Scalar));
 		}
-		friend subvector<_Ts, _Tb> operator*(const _Ts& _Scalar, const const_subvector& _Right) {
-			assert(!_Right.empty());
-			const auto _Lhs  = block_traits::set1(_Scalar);
-			const auto _Func = [&_Lhs](auto&& _Rhs) { return _Lhs * _Rhs; };
-			SUBVECTOR_OPERATOR_1ST(*this, _Func);
+		subvector<_Ts, _Tb> operator-(float _Scalar) const {
+			return this->sub(static_cast<_Ts>(_Scalar));
 		}
-		friend subvector<_Ts, _Tb> operator/(const _Ts& _Scalar, const const_subvector& _Right) {
-			assert(!_Right.empty());
-			const auto _Lhs  = block_traits::set1(_Scalar);
-			const auto _Func = [&_Lhs](auto&& _Rhs) { return _Lhs / _Rhs; };
-			SUBVECTOR_OPERATOR_1ST(*this, _Func);
+		subvector<_Ts, _Tb> operator*(float _Scalar) const {
+			return this->mul(static_cast<_Ts>(_Scalar));
 		}
-
-		friend std::string to_string(const const_subvector& _Left) {
-			using std::to_string;
-			const auto  _Inc   = _Left.stride();
-			auto        _First = _Left.begin();
-			const auto  _Last  = _Left.end();
-			std::string _Str   = "[";
-			for (; _First != _Last; _First += _Inc) {
-				_Str += to_string(*_First);
-				_Str += ' ';
-			}
-			_Str.back() = ']';
-			return _Str;
+		subvector<_Ts, _Tb> operator/(float _Scalar) const {
+			return this->div(static_cast<_Ts>(_Scalar));
 		}
+		subvector<_Ts, _Tb> operator%(float _Scalar) const {
+			return this->mod(static_cast<_Ts>(_Scalar));
+		}
+		subvector<_Ts, _Tb> operator+(double _Scalar) const {
+			return this->add(static_cast<_Ts>(_Scalar));
+		}
+		subvector<_Ts, _Tb> operator-(double _Scalar) const {
+			return this->sub(static_cast<_Ts>(_Scalar));
+		}
+		subvector<_Ts, _Tb> operator*(double _Scalar) const {
+			return this->mul(static_cast<_Ts>(_Scalar));
+		}
+		subvector<_Ts, _Tb> operator/(double _Scalar) const {
+			return this->div(static_cast<_Ts>(_Scalar));
+		}
+		subvector<_Ts, _Tb> operator%(double _Scalar) const {
+			return this->mod(static_cast<_Ts>(_Scalar));
+		}
+		friend subvector<_Ts, _Tb> operator+(int _Scalar, const const_subvector& _Right) {
+			return _Right.added(static_cast<_Ts>(_Scalar));
+		}
+		friend subvector<_Ts, _Tb> operator-(int _Scalar, const const_subvector& _Right) {
+			return _Right.subed(static_cast<_Ts>(_Scalar));
+		}
+		friend subvector<_Ts, _Tb> operator*(int _Scalar, const const_subvector& _Right) {
+			return _Right.muled(static_cast<_Ts>(_Scalar));
+		}
+		friend subvector<_Ts, _Tb> operator/(int _Scalar, const const_subvector& _Right) {
+			return _Right.dived(static_cast<_Ts>(_Scalar));
+		}
+		friend subvector<_Ts, _Tb> operator%(int _Scalar, const const_subvector& _Right) {
+			return _Right.moded(static_cast<_Ts>(_Scalar));
+		}
+		friend subvector<_Ts, _Tb> operator+(float _Scalar, const const_subvector& _Right) {
+			return _Right.added(static_cast<_Ts>(_Scalar));
+		}
+		friend subvector<_Ts, _Tb> operator-(float _Scalar, const const_subvector& _Right) {
+			return _Right.subed(static_cast<_Ts>(_Scalar));
+		}
+		friend subvector<_Ts, _Tb> operator*(float _Scalar, const const_subvector& _Right) {
+			return _Right.muled(static_cast<_Ts>(_Scalar));
+		}
+		friend subvector<_Ts, _Tb> operator/(float _Scalar, const const_subvector& _Right) {
+			return _Right.dived(static_cast<_Ts>(_Scalar));
+		}
+		friend subvector<_Ts, _Tb> operator%(float _Scalar, const const_subvector& _Right) {
+			return _Right.moded(static_cast<_Ts>(_Scalar));
+		}
+		friend subvector<_Ts, _Tb> operator+(double _Scalar, const const_subvector& _Right) {
+			return _Right.added(static_cast<_Ts>(_Scalar));
+		}
+		friend subvector<_Ts, _Tb> operator-(double _Scalar, const const_subvector& _Right) {
+			return _Right.subed(static_cast<_Ts>(_Scalar));
+		}
+		friend subvector<_Ts, _Tb> operator*(double _Scalar, const const_subvector& _Right) {
+			return _Right.muled(static_cast<_Ts>(_Scalar));
+		}
+		friend subvector<_Ts, _Tb> operator/(double _Scalar, const const_subvector& _Right) {
+			return _Right.dived(static_cast<_Ts>(_Scalar));
+		}
+		friend subvector<_Ts, _Tb> operator%(double _Scalar, const const_subvector& _Right) {
+			return _Right.moded(static_cast<_Ts>(_Scalar));
+		}
+		
 		friend std::ostream& operator<<(std::ostream& _Ostr, const const_subvector& _Left) {
-			return (_Ostr << to_string(_Left));
+			return (_Ostr << _Left.to_string());
 		}
 
 	protected:
-		const_subvector(scalar_pointer _First, scalar_pointer _Last, size_t _Stride, bool _Memory)
+		const_subvector(scalar_type* _First, scalar_type* _Last, size_t _Stride, bool _Memory)
 			: _Fptr(_First), _Lptr(_Last), _Nx(_Stride), _Mem(_Memory) { }
 
 	private:
-		scalar_pointer _Fptr;
-		scalar_pointer _Lptr;
-		size_t         _Nx;
-		bool           _Mem;
+		const _Ts* _Fptr;
+		const _Ts* _Lptr;
+		size_t     _Nx;// stride
+		bool       _Mem;
 	};
 	
-	// vector OP vector
-	template<typename _Ts, typename _Tb> inline
-	subvector<_Ts, _Tb> mod(const const_subvector<_Ts, _Tb>& _Left, const const_subvector<_Ts, _Tb>& _Right) {
-		assert(!_Left.empty());
-		assert(_Left.size() == _Right.size());
-		SUBVECTOR_OPERATOR_2ND(_Left, _Right, std::modulus<_Ts>());
-	}
-	template<typename _Ts, typename _Tb> inline
-	subvector<_Ts, _Tb> pow(const const_subvector<_Ts, _Tb>& _Left, const const_subvector<_Ts, _Tb>& _Right) {
-		assert(!_Left.empty());
-		assert(_Left.size() == _Right.size());
-		const auto _Func = [](auto&& A, auto&& B) { return pow(A, B); };
-		SUBVECTOR_OPERATOR_2ND(_Left, _Right, _Func);
-	}
-	
-	template<typename _Ts, typename _Tb> inline
-	_Ts dot(const const_subvector<_Ts, _Tb>& _Left, const const_subvector<_Ts, _Tb>& _Right) {
-		_Ts _Result = static_cast<_Ts>(0);
-		return auto_vector_operation<_Ts, _Tb>::afunc_2nd( _Left.begin(), _Left.end(), _Right.begin(), _Result,
-			[](auto& _Res, auto&& _X) { _Res += _X; }, std::multiplies<>(), 
-			_Left.stride(), _Right.stride() );
-	}
-
-	// vector OP scalar
-	template<typename _Ts, typename _Tb> inline
-	subvector<_Ts, _Tb> mod(const const_subvector<_Ts, _Tb>& _Left, const _Ts& _Scalar) {
-		assert(!_Left.empty());
-		const auto _Rhs  = clmagic::block_traits<_Ts, _Tb>::set1(_Scalar);
-		const auto _Func = [&_Rhs](auto&& _Lhs) { return mod(_Lhs, _Rhs); };
-		SUBVECTOR_OPERATOR_1ST(_Left, _Func);
-	}
-	template<typename _Ts, typename _Tb> inline
-	subvector<_Ts, _Tb> pow(const const_subvector<_Ts, _Tb>& _Left, const _Ts& _Scalar) {
-		assert(!_Left.empty());
-		const auto _Rhs  = clmagic::block_traits<_Ts, _Tb>::set1(_Scalar);
-		const auto _Func = [&_Rhs](auto&& _Lhs) { return pow(_Lhs, _Rhs); };
-		SUBVECTOR_OPERATOR_1ST(_Left, _Func);
-	}
-	#undef SUBVECTOR_OPERATOR_1ST
-	#undef SUBVECTOR_OPERATOR_2ND
-
-
-	#define SUBVECTOR_ASSIGN_OPERATOR_1ST(LHS, DST, FUNC) \
-	auto_vector_operation<_Ts, _Tb>::func_1st((##LHS##).begin(), (##LHS##).end(), \
-	(##DST##).begin(), (##FUNC##), \
-	(##LHS##).stride(), (##DST##).stride()); \
-	return (*this)
-
-	#define SUBVECTOR_ASSIGN_OPERATOR_2ND(LHS, RHS, DST, FUNC) \
-	auto_vector_operation<_Ts, _Tb>::func_2nd((##LHS##).begin(), (##LHS##).end(), (##RHS##).begin(), \
-	(##DST##).begin(), (##FUNC##), \
-	(##LHS##).stride(), (##RHS##).stride(), (##DST##).stride()); \
-	return (*this)
-
 	template<typename _Ts, typename _Tb>
 	struct subvector : public const_subvector<_Ts, _Tb> {// default const _Ts
 		using _Mybase = const_subvector<_Ts, _Tb>;
@@ -970,30 +877,29 @@ namespace clmagic{
 		using iterator_category = std::random_access_iterator_tag;
 		using difference_Tspe   = ptrdiff_t;
 
-		using block_type       = _Tb;
-		using block_pointer    = block_type*;
-		using scalar_type      = _Ts;
-		using scalar_pointer   = scalar_type*;
-		using scalar_reference = scalar_type&;
+		using scalar_type  = _Ts;
+		using block_type   = _Tb;
+		using size_type    = typename _Mybase::size_type;
+		using block_traits = clmagic::block_traits<_Tb>;
 
-		using size_type = typename _Mybase::size_type;
-
-		using block_traits = ::clmagic::block_traits<_Tb>;
-
-		subvector(scalar_pointer _First_arg, scalar_pointer _Last_arg)
-			: _Mybase(_First_arg, _Last_arg) {}
-		subvector(scalar_pointer _First, scalar_pointer _Last, size_t _Stride)
+		subvector(scalar_type* _First, scalar_type* _Last)
+			: _Mybase(_First, _Last) {}
+		subvector(scalar_type* _First, scalar_type* _Last, size_t _Stride)
 			: _Mybase(_First, _Last, _Stride) {}
-		subvector(subvector<_Ts, _Tb>& _Right) {
+		subvector(scalar_type* _First, scalar_type* _Last, size_t _Stride, bool _Memory)
+			: _Mybase(_First, _Last, _Stride, _Memory) {}
+		subvector(const const_subvector<_Ts, _Tb>& _Right) {// construct by _Right copied
+			// 1. allocate memory
 			size_t _Size   = _Right.size();
-			auto   _Memory = _Mybase::allocator_traits::allocate(_Size);
+			auto*  _Memory = _Mybase::allocator_traits::allocate(_Size);
 			_Mybase::reset(_Memory, _Memory+_Size, 1, true);
+			// 2. copy
+			*this = _Right;
 		}
 		subvector(subvector<_Ts, _Tb>&& _Right) noexcept// owner move to this
 			: _Mybase(std::move(_Right)) {}
 
-		// full-clone
-		subvector& operator=(const const_subvector<_Ts, _Tb>& _Right) {
+		subvector& operator=(const const_subvector<_Ts, _Tb>& _Right) {// copy
 			auto       _First = _Right.begin();
 			const auto _Last  = _Right.end();
 			auto       _Dest  = this->begin();
@@ -1004,86 +910,26 @@ namespace clmagic{
 			}
 			return *this;
 		}
-		subvector& operator=(const subvector<_Ts, _Tb>& _Right) { 
-			return ( (*this) = static_cast<const const_subvector<_Ts, _Tb>&>(_Right) );
-		}
-		subvector& operator=(subvector<_Ts, _Tb>&& _Right) noexcept {
+		subvector& operator=(subvector<_Ts, _Tb>&& _Right) noexcept {// copy
 			return ((*this) = static_cast<subvector<_Ts, _Tb>&>(_Right));
 		}
-
-		subvector operator()(size_t _First, size_t _Last) const {
-			return subvector(this->ptr(_First), this->ptr(_Last), this->stride());
-		}
-		subvector& operator+=(const const_subvector<_Ts, _Tb>& _Right) {
-			SUBVECTOR_ASSIGN_OPERATOR_2ND(*this, _Right, *this, std::plus<>());
-		}
-		subvector& operator-=(const const_subvector<_Ts, _Tb>& _Right) {
-			SUBVECTOR_ASSIGN_OPERATOR_2ND(*this, _Right, *this, std::minus<>());
-		}
-		subvector& operator*=(const const_subvector<_Ts, _Tb>& _Right) {
-			SUBVECTOR_ASSIGN_OPERATOR_2ND(*this, _Right, *this, std::multiplies<>());
-		}
-		subvector& operator/=(const const_subvector<_Ts, _Tb>& _Right) {
-			SUBVECTOR_ASSIGN_OPERATOR_2ND(*this, _Right, *this, std::divides<>());
-		}
-		subvector& operator+=(const scalar_type& _Right) {
-			const auto _Rhs  = block_traits::set1(_Right);
-			const auto _Func = [&_Rhs](auto&& _Lhs) { return _Lhs + _Rhs; };
-			SUBVECTOR_ASSIGN_OPERATOR_1ST(*this, *this, _Func);
-		}
-		subvector& operator-=(const scalar_type& _Right) {
-			const auto _Rhs  = block_traits::set1(_Right);
-			const auto _Func = [&_Rhs](auto&& _Lhs) { return _Lhs - _Rhs; };
-			SUBVECTOR_ASSIGN_OPERATOR_1ST(*this, *this, _Func);
-		}
-		subvector& operator*=(const scalar_type& _Right) {
-			auto       _First = this->begin();
-			const auto _Last  = this->end();
-			auto       _Dest  = this->begin();
-			if (_Mybase::is_continue()) {
-				const auto _Vsize = size_type(_First, _Last);
-				const auto _Rhs   = block_traits::set1(_Right);
-				const auto _Func  = [&_Rhs](auto&& _Lhs) { return _Lhs * _Rhs; };
-				if ( _Vsize.can_fastest() ) {
-					fastest_vector_operation<_Ts, _Tb>::func_1st(
-						reinterpret_cast<const _Tb*>(_First), reinterpret_cast<const _Tb*>(_Last),
-						reinterpret_cast<_Tb*>(_Dest),
-						_Func);
-					return *this;
-				} else if( !_Vsize.empty() ) {
-					auto       _First_bk = reinterpret_cast<const _Tb*>( (const _Ts*)(_First) + _Vsize.leading_size );
-					const auto _Last_bk  = _First_bk + _Vsize.block_size;
-					auto       _Dest_bk  = reinterpret_cast<_Tb*>( (_Ts*)(_First) + _Vsize.leading_size );
-					fast_vector_operation<_Ts, _Tb>::func_1st(_First_bk, _Last_bk, _Dest_bk, _Func,
-						_Vsize.leading_size, _Vsize.tail_size);
-					return *this;
-				}
-			}
-
-			norm_vector_operation<_Ts, _Tb>::func_1st(_First, _Last, _Dest, [&_Right](auto&& _Lhs) { return _Lhs * _Right; }, 
-				_Mybase::stride(), _Mybase::stride());
-			return *this;
-		}
-		subvector& operator/=(const scalar_type& _Right) {
-			const auto _Rhs  = block_traits::set1(_Right);
-			const auto _Func = [&_Rhs](auto&& _Lhs) { return _Lhs / _Rhs; };
-			SUBVECTOR_ASSIGN_OPERATOR_1ST(*this, *this, _Func);
-		}
-
-		scalar_pointer ptr(size_t _Pos = 0) const {
-			return  const_cast<scalar_pointer>(_Mybase::ptr(_Pos));
-		}
-		scalar_pointer begin() const {
-			return const_cast<scalar_pointer>(_Mybase::begin()); 
-		}
-		scalar_pointer end() const {
-			return const_cast<scalar_pointer>(_Mybase::end()); 
-		}
-		scalar_reference operator[](size_t _Pos) const {
-			return const_cast<scalar_reference>(_Mybase::operator[](_Pos)); 
-		}
 		
-		void reset(scalar_pointer _First, scalar_pointer _Last, size_t _Stride = 1) {
+		scalar_type* ptr() const {
+			return  const_cast<scalar_type*>(_Mybase::ptr());
+		}
+		scalar_type* ptr(size_t _Pos) const {
+			return  const_cast<scalar_type*>(_Mybase::ptr(_Pos));
+		}
+		scalar_type* begin() const {
+			return const_cast<scalar_type*>(_Mybase::begin());
+		}
+		scalar_type* end() const {
+			return const_cast<scalar_type*>(_Mybase::end());
+		}
+		scalar_type& operator[](size_t _Pos) const {
+			return const_cast<scalar_type&>(_Mybase::operator[](_Pos));
+		}
+		void reset(scalar_type* _First, scalar_type* _Last, size_t _Stride = 1) {
 			_Mybase::reset(_First, _Last, _Stride);
 		}
 		void fill(const scalar_type& _Val) {
@@ -1102,32 +948,372 @@ namespace clmagic{
 				*_Dest = *_First;
 			}
 		}
-	
+
+		subvector& assign_add(const const_subvector<_Ts, _Tb>& _Right) {
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(), 
+				this->begin(), std::plus<>(), this->stride(), _Right.stride());
+			return *this;
+		}
+		subvector& assign_sub(const const_subvector<_Ts, _Tb>& _Right) {
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(),
+				this->begin(), std::minus<>(), this->stride(), _Right.stride());
+			return *this;
+		}
+		subvector& assign_mul(const const_subvector<_Ts, _Tb>& _Right) {
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(),
+				this->begin(), std::multiplies<>(), this->stride(), _Right.stride());
+			return *this;
+		}
+		subvector& assign_div(const const_subvector<_Ts, _Tb>& _Right) {
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(),
+				this->begin(), std::divides<>(), this->stride(), _Right.stride());
+			return *this;
+		}
+		subvector& assign_mod(const const_subvector<_Ts, _Tb>& _Right) {
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(),
+				this->begin(), std::modulus<>(), this->stride(), _Right.stride());
+			return *this;
+		}
+		subvector& assign_add(scalar_type _Scalar) {
+			const auto _Arg1         = block_traits::set1(_Scalar);
+			auto       _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 + _Arg1; };
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), this->begin(), _Transform_op, this->stride());
+			return *this;
+		}
+		subvector& assign_sub(scalar_type _Scalar) {
+			const auto _Arg1         = block_traits::set1(_Scalar);
+			auto       _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 - _Arg1; };
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), this->begin(), _Transform_op, this->stride());
+			return *this;
+		}
+		subvector& assign_mul(scalar_type _Scalar) {
+			const auto _Arg1         = block_traits::set1(_Scalar);
+			auto       _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 * _Arg1; };
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), this->begin(), _Transform_op, this->stride());
+			return *this;
+		}
+		subvector& assign_div(scalar_type _Scalar) {
+			const auto _Arg1         = block_traits::set1(_Scalar);
+			auto       _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 / _Arg1; };
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), this->begin(), _Transform_op, this->stride());
+			return *this;
+		}
+		subvector& assign_mod(scalar_type _Scalar) {
+			const auto _Arg1         = block_traits::set1(_Scalar);
+			auto       _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 % _Arg1; };
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), this->begin(), _Transform_op, this->stride());
+			return *this;
+		}
+
+		subvector operator()(size_t _First, size_t _Last) const {
+			return subvector(this->ptr(_First), this->ptr(_Last), this->stride());
+		}
+		subvector& operator+=(const const_subvector<_Ts, _Tb>& _Right) {
+			return this->assign_add(_Right);
+		}
+		subvector& operator-=(const const_subvector<_Ts, _Tb>& _Right) {
+			return this->assign_sub(_Right);
+		}
+		subvector& operator*=(const const_subvector<_Ts, _Tb>& _Right) {
+			return this->assign_mul(_Right);
+		}
+		subvector& operator/=(const const_subvector<_Ts, _Tb>& _Right) {
+			return this->assign_div(_Right);
+		}
+		subvector& operator%=(const const_subvector<_Ts, _Tb>& _Right) {
+			return this->assign_mod(_Right);
+		}
+		subvector& operator+=(int _Scalar) {
+			return this->assign_add(static_cast<scalar_type>(_Scalar));
+		}
+		subvector& operator-=(int _Scalar) {
+			return this->assign_sub(static_cast<scalar_type>(_Scalar));
+		}
+		subvector& operator*=(int _Scalar) {
+			return this->assign_mul(static_cast<scalar_type>(_Scalar));
+		}
+		subvector& operator/=(int _Scalar) {
+			return this->assign_div(static_cast<scalar_type>(_Scalar));
+		}
+		subvector& operator%=(int _Scalar) {
+			return this->assign_mod(static_cast<scalar_type>(_Scalar));
+		}
+		subvector& operator+=(float _Scalar) {
+			return this->assign_add(static_cast<scalar_type>(_Scalar));
+		}
+		subvector& operator-=(float _Scalar) {
+			return this->assign_sub(static_cast<scalar_type>(_Scalar));
+		}
+		subvector& operator*=(float _Scalar) {
+			return this->assign_mul(static_cast<scalar_type>(_Scalar));
+		}
+		subvector& operator/=(float _Scalar) {
+			return this->assign_div(static_cast<scalar_type>(_Scalar));
+		}
+		subvector& operator%=(float _Scalar) {
+			return this->assign_mod(static_cast<scalar_type>(_Scalar));
+		}
+		subvector& operator+=(double _Scalar) {
+			return this->assign_add(static_cast<scalar_type>(_Scalar));
+		}
+		subvector& operator-=(double _Scalar) {
+			return this->assign_sub(static_cast<scalar_type>(_Scalar));
+		}
+		subvector& operator*=(double _Scalar) {
+			return this->assign_mul(static_cast<scalar_type>(_Scalar));
+		}
+		subvector& operator/=(double _Scalar) {
+			return this->assign_div(static_cast<scalar_type>(_Scalar));
+		}
+		subvector& operator%=(double _Scalar) {
+			return this->assign_mod(static_cast<scalar_type>(_Scalar));
+		}
+
 		struct refernece {
-			scalar_pointer _Myfirst;
-			scalar_pointer _Mylast;
-			size_t         _Mystride;
-			vector_size<_Ts, _Tb> _Mysize;
+			scalar_type* _Myfirst;
+			scalar_type* _Mylast;
+			size_t       _Mystride;// stride
+			bool         _Mem;
 		};
 	
 		refernece& subvector_ref() {
 			return reinterpret_cast<refernece&>(*this);
 		}
-
-	protected:
-		subvector(scalar_pointer _First, scalar_pointer _Last, size_t _Stride, bool _Memory)
-			: _Mybase(_First, _Last, _Stride, _Memory) {}
 	};
-	#undef SUBVECTOR_ASSIGN_OPERATOR_1ST
-	#undef SUBVECTOR_ASSIGN_OPERATOR_2ND
 
+	template<typename _Ts, typename _Tb>
+	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::neg() const {
+		assert(!this->empty());
+		size_t _Size   = this->size();
+		auto*  _Memory = allocator_traits::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::negate<>(), 
+				this->stride(), 1));
+	}
+	template<typename _Ts, typename _Tb>
+	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::add(const const_subvector& _Right) const {
+		assert(!this->empty());
+		assert(this->size() == _Right.size());
+		size_t _Size   = this->size();
+		auto*  _Memory = allocator_traits::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(), _Result.begin(), std::plus<>(), 
+				this->stride(), _Right.stride(), 1));
+	}
+	template<typename _Ts, typename _Tb>
+	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::sub(const const_subvector& _Right) const {
+		assert(!this->empty());
+		assert(this->size() == _Right.size());
+		size_t _Size   = this->size();
+		auto*  _Memory = allocator_traits::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(), _Result.begin(), std::minus<>(), 
+				this->stride(), _Right.stride(), 1));
+	}
+	template<typename _Ts, typename _Tb>
+	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::mul(const const_subvector& _Right) const {
+		assert(!this->empty());
+		assert(this->size() == _Right.size());
+		size_t _Size   = this->size();
+		auto*  _Memory = allocator_traits::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(), _Result.begin(), std::multiplies<>(), 
+				this->stride(), _Right.stride(), 1));
+	}
+	template<typename _Ts, typename _Tb>
+	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::div(const const_subvector& _Right) const {
+		assert(!this->empty());
+		assert(this->size() == _Right.size());
+		size_t _Size   = this->size();
+		auto*  _Memory = allocator_traits::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(), _Result.begin(), std::divides<>(), 
+				this->stride(), _Right.stride(), 1));
+	}
+	template<typename _Ts, typename _Tb>
+	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::mod(const const_subvector& _Right) const {
+		assert(!this->empty());
+		assert(this->size() == _Right.size());
+		size_t _Size   = this->size();
+		auto*  _Memory = allocator_traits::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(), _Result.begin(), std::modulus<>(), 
+				this->stride(), _Right.stride(), 1));
+	}
+	template<typename _Ts, typename _Tb>
+	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::add(scalar_type _Scalar) const {
+		assert(!this->empty());
+		const auto _Arg1         = block_traits::set1(_Scalar);
+		const auto _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 + _Arg1; };
+		size_t     _Size         = this->size();
+		auto*      _Memory       = allocator_traits::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
+				this->stride(), 1));
+	}
+	template<typename _Ts, typename _Tb>
+	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::sub(scalar_type _Scalar) const {
+		assert(!this->empty());
+		const auto _Arg1         = block_traits::set1(_Scalar);
+		const auto _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 - _Arg1; };
+		size_t     _Size         = this->size();
+		auto*      _Memory       = allocator_traits::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
+				this->stride(), 1));
+	}
+	template<typename _Ts, typename _Tb>
+	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::mul(scalar_type _Scalar) const {
+		assert(!this->empty());
+		const auto _Arg1         = block_traits::set1(_Scalar);
+		const auto _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 * _Arg1; };
+		size_t     _Size         = this->size();
+		auto*      _Memory       = allocator_traits::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
+				this->stride(), 1));
+	}
+	template<typename _Ts, typename _Tb>
+	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::div(scalar_type _Scalar) const {
+		assert(!this->empty());
+		const auto _Arg1         = block_traits::set1(_Scalar);
+		const auto _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 / _Arg1; };
+		size_t     _Size         = this->size();
+		auto*      _Memory       = allocator_traits::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
+				this->stride(), 1));
+	}
+	template<typename _Ts, typename _Tb>
+	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::mod(scalar_type _Scalar) const {
+		assert(!this->empty());
+		const auto _Arg1         = block_traits::set1(_Scalar);
+		const auto _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 % _Arg1; };
+		size_t     _Size         = this->size();
+		auto*      _Memory       = allocator_traits::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
+				this->stride(), 1));
+	}
+	template<typename _Ts, typename _Tb>
+	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::added(scalar_type _Scalar) const {
+		assert(!this->empty());
+		const auto _Arg0         = block_traits::set1(_Scalar);
+		const auto _Transform_op = [&_Arg0](auto&& _Arg1) { return _Arg0 + _Arg1; };
+		size_t     _Size         = this->size();
+		auto*      _Memory       = allocator_traits::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
+				this->stride(), 1));
+	}
+	template<typename _Ts, typename _Tb>
+	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::subed(scalar_type _Scalar) const {
+		assert(!this->empty());
+		const auto _Arg0         = block_traits::set1(_Scalar);
+		const auto _Transform_op = [&_Arg0](auto&& _Arg1) { return _Arg0 - _Arg1; };
+		size_t     _Size         = this->size();
+		auto*      _Memory       = allocator_traits::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
+				this->stride(), 1));
+	}
+	template<typename _Ts, typename _Tb>
+	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::muled(scalar_type _Scalar) const {
+		assert(!this->empty());
+		const auto _Arg0         = block_traits::set1(_Scalar);
+		const auto _Transform_op = [&_Arg0](auto&& _Arg1) { return _Arg0 * _Arg1; };
+		size_t     _Size         = this->size();
+		auto*      _Memory       = allocator_traits::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
+				this->stride(), 1));
+	}
+	template<typename _Ts, typename _Tb>
+	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::dived(scalar_type _Scalar) const {
+		assert(!this->empty());
+		const auto _Arg0         = block_traits::set1(_Scalar);
+		const auto _Transform_op = [&_Arg0](auto&& _Arg1) { return _Arg0 / _Arg1; };
+		size_t     _Size         = this->size();
+		auto*      _Memory       = allocator_traits::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
+				this->stride(), 1));
+	}
+	template<typename _Ts, typename _Tb>
+	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::moded(scalar_type _Scalar) const {
+		assert(!this->empty());
+		const auto _Arg0         = block_traits::set1(_Scalar);
+		const auto _Transform_op = [&_Arg0](auto&& _Arg1) { return _Arg0 % _Arg1; };
+		size_t     _Size         = this->size();
+		auto*      _Memory       = allocator_traits::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
+				this->stride(), 1));
+	}
+
+	// vector OP vector
 	template<typename _Ts, typename _Tb> inline
-	_Ts norm(const_subvector<_Ts, _Tb> _X, const _Ts& _Level) {
-		_Ts _Result = static_cast<_Ts>(0);
-		return auto_vector_operation<_Ts, _Tb>::norm(_X.begin(), _X.end(), _Level, _Result, _X.stride());
+	subvector<_Ts, _Tb> fmod(const const_subvector<_Ts, _Tb>& _Left, const const_subvector<_Ts, _Tb>& _Right) {
+		assert(!_Left.empty());
+		assert(_Left.size() == _Right.size());
+		const auto _Transform_op = [](auto&& _Arg0, auto&& _Arg1) { return fmod(_Arg0, _Arg1); };
+		size_t     _Size         = _Left.size();
+		auto*      _Memory       = stack_allocator<_Ts, _Tb>::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(_Left.begin(), _Left.end(), _Right.begin(), _Result.begin(), _Transform_op,
+				_Left.stride(), _Right.stride(), 1));
 	}
 	template<typename _Ts, typename _Tb> inline
-	_Ts normL2_square(const_subvector<_Ts, _Tb> _X) {
+	subvector<_Ts, _Tb> fmod(const const_subvector<_Ts, _Tb>& _Left, _Ts _Scalar) {
+		assert(!_Left.empty());
+		const auto _Arg1         = block_traits<_Tb>::set1(_Scalar);
+		const auto _Transform_op = [&_Arg1](auto&& _Arg0) { return fmod(_Arg0, _Arg1); };
+		size_t     _Size         = _Left.size();
+		auto*      _Memory       = stack_allocator<_Ts, _Tb>::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(_Left.begin(), _Left.end(), _Result.begin(), _Transform_op,
+				_Left.stride(), 1));
+	}
+
+	template<typename _Ts, typename _Tb> inline
+	subvector<_Ts, _Tb> pow(const const_subvector<_Ts, _Tb>& _Left, const const_subvector<_Ts, _Tb>& _Right) {
+		assert(!_Left.empty());
+		assert(_Left.size() == _Right.size());
+		const auto _Transform_op = [](auto&& _Arg0, auto&& _Arg1) { return pow(_Arg0, _Arg1); };
+		size_t     _Size         = _Left.size();
+		auto*      _Memory       = stack_allocator<_Ts, _Tb>::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(_Left.begin(), _Left.end(), _Right.begin(), _Result.begin(), _Transform_op,
+				_Left.stride(), _Right.stride(), 1));
+	}
+	template<typename _Ts, typename _Tb> inline
+	subvector<_Ts, _Tb> pow(const const_subvector<_Ts, _Tb>& _Left, _Ts _Scalar) {
+		assert(!_Left.empty());
+		const auto _Arg1         = block_traits<_Tb>::set1(_Scalar);
+		const auto _Transform_op = [&_Arg1](auto&& _Arg0) { return pow(_Arg0, _Arg1); };
+		size_t     _Size         = _Left.size();
+		auto*      _Memory       = stack_allocator<_Ts, _Tb>::allocate(_Size);
+		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
+			auto_vector_operation<_Ts, _Tb>::transform(_Left.begin(), _Left.end(), _Result.begin(), _Transform_op,
+				_Left.stride(), 1));
+	}
+	
+	template<typename _Ts, typename _Tb> inline
+	_Ts dot(const const_subvector<_Ts, _Tb>& _Left, const const_subvector<_Ts, _Tb>& _Right) {
+		return auto_vector_operation<_Ts, _Tb>::transform_accumulate( _Left.begin(), _Left.end(), _Right.begin(), static_cast<_Ts>(0),
+			std::plus<>(), std::multiplies<>(), _Left.stride(), _Right.stride() );
+	}
+	template<typename _Ts, typename _Tb> inline
+	_Ts norm(const const_subvector<_Ts, _Tb>& _X, const _Ts& _Level) {
+		const auto _Level_block  = block_traits<_Tb>::set1(_Level);
+		const auto _Transform_op = [&_Level_block](auto&& _Arg0) { return pow(_Arg0, _Level_block); };
+		const auto _Result       =  auto_vector_operation<_Ts, _Tb>::transform_accumulate(_X.begin(), _X.end(), static_cast<_Ts>(0), 
+			std::plus<>(), _Transform_op,
+			_X.stride());
+		return sqrt(_Result, static_cast<_Ts>(1) / _Level);
+	}
+	template<typename _Ts, typename _Tb> inline
+	_Ts normL2_square(const const_subvector<_Ts, _Tb>& _X) {
 		return dot(_X, _X);
 	}
 	template<typename _Ts, typename _Tb> inline
@@ -1138,12 +1324,10 @@ namespace clmagic{
 			_Source;
 	}
 
-
-	/*- - - - - - - - - - - - - - - - - - - vector<> - - - - - - - - - - - - - - - - - - - - -*/
+	/*- - - - - - - - - - - - - - - - - - - vector - - - - - - - - - - - - - - - - - - - - -*/
 	template<typename _Ts, size_t _Size, typename _Tb>
 	class __declspec(align(std::alignment_of_v<_Tb>)) _Data_of_vector {
 		constexpr static size_t _Real_size = ceil(_Size * sizeof(_Ts), std::alignment_of_v<_Tb>) / sizeof(_Ts);
-
 		_Ts _Mydata[_Real_size];
 
 	public:
@@ -1247,16 +1431,15 @@ namespace clmagic{
 
 		using block_type  = _Tb;
 		using scalar_type = _Ts;
-		using operation   = ::clmagic::fastest_vector_operation<_Ts, _Tb>;// impotant!!!
+		using operation   = clmagic::fastest_vector_operation<_Ts, _Tb>;// impotant!!!
 
-		using block_traits    = ::clmagic::block_traits<_Tb>;
+		using block_traits    = clmagic::block_traits<_Tb>;
 		//using scalar_traits = clmagic::block_traits<_Ts>;
 
-		using subvector       = ::clmagic::subvector<_Ts, _Tb>;
-		using const_subvector = ::clmagic::const_subvector<_Ts, _Tb>;
+		using subvector       = clmagic::subvector<_Ts, _Tb>;
+		using const_subvector = clmagic::const_subvector<_Ts, _Tb>;
 
 		constexpr vector() = default;
-
 		explicit vector(int _Val) { _Mybase::assign(static_cast<_Ts>(_Val)); }
 		explicit vector(float _Val) { _Mybase::assign(static_cast<_Ts>(_Val)); }
 		explicit vector(double _Val) { _Mybase::assign(static_cast<_Ts>(_Val)); }
@@ -1269,6 +1452,7 @@ namespace clmagic{
 			_Mybase::assign(_Ilist.begin(), _Ilist.end()); 
 		}
 
+		vector& operator=(const vector&) = default;
 		vector& operator=(std::initializer_list<_Ts> _Ilist) {
 			this->assign(_Ilist.begin(), _Ilist.end());
 			return *this;
@@ -1289,56 +1473,56 @@ namespace clmagic{
 
 		vector neg() const {
 			_Return_generate_object( vector, _Result,
-				operation::func_1st(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(),
+				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(),
 					std::negate<_Tb>()) );
 		}
 		vector add(vector _Right) const {
 			_Return_generate_object( vector, _Result,
-				operation::func_2nd(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
+				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
 					std::plus<_Tb>()) );
 		}
 		vector sub(vector _Right) const {
 			_Return_generate_object( vector, _Result,
-				operation::func_2nd(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
+				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
 					std::minus<_Tb>()) );
 		}
 		vector mul(vector _Right) const {
 			_Return_generate_object( vector, _Result,
-				operation::func_2nd(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
+				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
 					std::multiplies<_Tb>()) );
 		}
 		vector div(vector _Right) const {
 			_Return_generate_object( vector, _Result,
-				operation::func_2nd(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
+				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
 					std::divides<_Tb>()) );
 		}
 		vector mod(vector _Right) const {
 			_Return_generate_object( vector, _Result,
-				operation::func_2nd(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
+				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
 					std::modulus<_Tb>()) );
 		}
 		vector& assign_add(vector _Right) {
-			operation::func_2nd(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), 
+			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(),
 				this->begin<_Tb>(), std::plus<_Tb>());
 			return *this;
 		}
 		vector& assign_sub(vector _Right) {
-			operation::func_2nd(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), 
+			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(),
 				this->begin<_Tb>(), std::minus<_Tb>());
 			return *this;
 		}
 		vector& assign_mul(vector _Right) {
-			operation::func_2nd(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), 
+			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(),
 				this->begin<_Tb>(), std::multiplies<_Tb>());
 			return *this;
 		}
 		vector& assign_div(vector _Right) {
-			operation::func_2nd(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), 
+			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(),
 				this->begin<_Tb>(), std::divides<_Tb>());
 			return *this;
 		}
 		vector& assign_mod(vector _Right) {
-			operation::func_2nd(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), 
+			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(),
 				this->begin<_Tb>(), std::modulus<_Tb>());
 			return *this;
 		}
@@ -1347,112 +1531,109 @@ namespace clmagic{
 			const _Tb  _Arg1 = block_traits::set1(_Scalar);
 			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 + _Arg1; };
 			_Return_generate_object(vector, _Result,
-				operation::func_1st(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
+				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
 		}
 		vector sub(_Ts _Scalar) const {
 			const _Tb  _Arg1 = block_traits::set1(_Scalar);
 			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 - _Arg1; };
 			_Return_generate_object(vector, _Result,
-				operation::func_1st(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
+				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
 		}
 		vector mul(_Ts _Scalar) const {
 			const _Tb  _Arg1 = block_traits::set1(_Scalar);
 			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 * _Arg1; };
 			_Return_generate_object(vector, _Result,
-				operation::func_1st(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
+				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
 		}
 		vector div(_Ts _Scalar) const {
 			const _Tb  _Arg1 = block_traits::set1(_Scalar);
 			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 / _Arg1; };
 			_Return_generate_object(vector, _Result,
-				operation::func_1st(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
+				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
 		}
 		vector mod(_Ts _Scalar) const {
 			const _Tb  _Arg1 = block_traits::set1(_Scalar);
 			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 % _Arg1; };
 			_Return_generate_object(vector, _Result,
-				operation::func_1st(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
+				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
 		}
 		vector added(_Ts _Scalar) const {
 			const _Tb  _Arg0 = block_traits::set1(_Scalar);
 			const auto _Func = [&_Arg0](auto&& _Arg1) { return _Arg0 + _Arg1; };
 			_Return_generate_object(vector, _Result,
-				operation::func_1st(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
+				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
 		}
 		vector subed(_Ts _Scalar) const {
 			const _Tb  _Arg0 = block_traits::set1(_Scalar);
 			const auto _Func = [&_Arg0](auto&& _Arg1) { return _Arg0 - _Arg1; };
 			_Return_generate_object(vector, _Result,
-				operation::func_1st(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
+				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
 		}
 		vector muled(_Ts _Scalar) const {
 			const _Tb  _Arg0 = block_traits::set1(_Scalar);
 			const auto _Func = [&_Arg0](auto&& _Arg1) { return _Arg0 * _Arg1; };
 			_Return_generate_object(vector, _Result,
-				operation::func_1st(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
+				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
 		}
 		vector dived(_Ts _Scalar) const {
 			const _Tb  _Arg0 = block_traits::set1(_Scalar);
 			const auto _Func = [&_Arg0](auto&& _Arg1) { return _Arg0 / _Arg1; };
 			_Return_generate_object(vector, _Result,
-				operation::func_1st(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
+				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
 		}
 		vector moded(_Ts _Scalar) const {
 			const _Tb  _Arg0 = block_traits::set1(_Scalar);
 			const auto _Func = [&_Arg0](auto&& _Arg1) { return _Arg0 % _Arg1; };
 			_Return_generate_object(vector, _Result,
-				operation::func_1st(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
+				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
 		}
 		vector& assign_add(_Ts _Scalar) {
 			const _Tb  _Arg1 = block_traits::set1(_Scalar);
 			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 + _Arg1; };
-			operation::func_1st(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), this->begin<_Tb>(), _Func);
+			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), this->begin<_Tb>(), _Func);
 			return *this;
 		}
 		vector& assign_sub(_Ts _Scalar) {
 			const _Tb  _Arg1 = block_traits::set1(_Scalar);
 			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 - _Arg1; };
-			operation::func_1st(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), this->begin<_Tb>(), _Func);
+			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), this->begin<_Tb>(), _Func);
 			return *this;
 		}
 		vector& assign_mul(_Ts _Scalar) {
 			const _Tb  _Arg1 = block_traits::set1(_Scalar);
 			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 * _Arg1; };
-			operation::func_1st(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), this->begin<_Tb>(), _Func);
+			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), this->begin<_Tb>(), _Func);
 			return *this;
 		}
 		vector& assign_div(_Ts _Scalar) {
 			const _Tb  _Arg1 = block_traits::set1(_Scalar);
 			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 / _Arg1; };
-			operation::func_1st(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), this->begin<_Tb>(), _Func);
+			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), this->begin<_Tb>(), _Func);
 			return *this;
 		}
 		vector& assign_mod(_Ts _Scalar) {
 			const _Tb  _Arg1 = block_traits::set1(_Scalar);
 			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 % _Arg1; };
-			operation::func_1st(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), this->begin<_Tb>(), _Func);
+			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), this->begin<_Tb>(), _Func);
 			return *this;
 		}
 		
 		_Ts sum() const {// X[0] + X[1] + X[2] + ... + X[N]
-			const auto _Afunc = [](auto& _Res, auto&& _X) { _Res += _X; };
-			_Return_generate_object(_Ts, _Result, _Result = static_cast<_Ts>(0);
-				operation::afunc(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result, _Afunc));
+			return operation::accumulate(this->begin<_Tb>(), this->begin<_Tb>() + this->block_size(), static_cast<_Ts>(0), std::plus<>());
 		}
 		_Ts product() const {// X[0] * X[1] * X[2] * ... * X[N]
-			const auto _Afunc = [](auto& _Res, auto&& _X) { _Res *= _X; };
-			_Return_generate_object(_Ts, _Result, _Result = static_cast<_Ts>(0);
-				operation::afunc(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result, _Afunc));
+			return operation::accumulate(this->begin<_Tb>(), this->begin<_Tb>() + this->block_size(), static_cast<_Ts>(0), std::multiplies<>());
 		}
 		_Ts norm(_Ts L) const {
-			_Return_generate_object(_Ts, _Result, _Result = static_cast<_Ts>(0);
-				operation::norm(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), L, _Result));
+			const _Tb  _Level_block  = block_traits::set1(L);
+			const auto _Transform_op = [&_Level_block](auto&& _Arg0) { return pow(_Arg0, _Level_block); };
+			const auto _Result       = operation::transform_accumulate(this->begin<_Tb>(), this->begin<_Tb>() + this->block_size(), static_cast<_Ts>(0), 
+				std::plus<>(), _Transform_op);
+			return sqrt(_Result, static_cast<_Ts>(1) / L);
 		}
 		_Ts dot(const vector& _Right) const {// X[0]*Y[0] + X[1]*Y[1] + X[2]*Y[2] + ... * X[N]*Y[N]
-			const auto _Afunc = [](auto& _Res, auto&& _X) { _Res += _X; };
-			_Return_generate_object(_Ts, _Result, _Result = static_cast<_Ts>(0);
-				operation::afunc_2nd(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), _Result,
-					_Afunc, std::multiplies<>()) );
+			return operation::transform_accumulate(this->begin<_Tb>(), this->begin<_Tb>() + this->block_size(), _Right.begin<_Tb>(), static_cast<_Ts>(0),
+				std::plus<>(), std::multiplies<>());
 		}
 		
 		vector& normalize() {
@@ -1464,7 +1645,7 @@ namespace clmagic{
 		}
 
 		std::string to_string() const {
-			return ::clmagic::to_string(this->begin(), this->end());
+			return clmagic::to_string(this->begin(), this->end());
 		}
 
 		vector  operator-() const {
@@ -1500,6 +1681,7 @@ namespace clmagic{
 		vector& operator%=(const vector& _Right) {
 			return this->assign_mod(_Right);
 		}
+		
 		vector<bool, _Size> operator==(const vector& _Right) const {
 			using bvec = vector<bool, _Size>;
 			_Return_generate_object( bvec, _Result, 
@@ -1530,6 +1712,42 @@ namespace clmagic{
 			_Return_generate_object(bvec, _Result,
 				std::transform(this->begin(), this->end(), _Right.begin(), _Result.begin(), std::greater_equal<>()));
 		}
+		vector<bool, _Size> operator==(const _Ts& _Scalar) const {
+			const auto _Func = [&_Scalar](auto&& _Arg0) { return _Arg0 == _Scalar; };
+			using bvec = vector<bool, _Size>;
+			_Return_generate_object(bvec, _Result,
+				std::transform(this->begin(), this->end(), _Result.begin(), _Func));
+		}
+		vector<bool, _Size> operator!=(const _Ts& _Scalar) const {
+			const auto _Func = [&_Scalar](auto&& _Arg0) { return _Arg0 != _Scalar; };
+			using bvec = vector<bool, _Size>;
+			_Return_generate_object(bvec, _Result,
+				std::transform(this->begin(), this->end(), _Result.begin(), _Func));
+		}
+		vector<bool, _Size> operator< (const _Ts& _Scalar) const {
+			const auto _Func = [&_Scalar](auto&& _Arg0) { return _Arg0 < _Scalar; };
+			using bvec = vector<bool, _Size>;
+			_Return_generate_object(bvec, _Result,
+				std::transform(this->begin(), this->end(), _Result.begin(), _Func));
+		}
+		vector<bool, _Size> operator> (const _Ts& _Scalar) const {
+			const auto _Func = [&_Scalar](auto&& _Arg0) { return _Arg0 > _Scalar; };
+			using bvec = vector<bool, _Size>;
+			_Return_generate_object(bvec, _Result,
+				std::transform(this->begin(), this->end(), _Result.begin(), _Func));
+		}
+		vector<bool, _Size> operator<=(const _Ts& _Scalar) const {
+			const auto _Func = [&_Scalar](auto&& _Arg0) { return _Arg0 <= _Scalar; };
+			using bvec = vector<bool, _Size>;
+			_Return_generate_object(bvec, _Result,
+				std::transform(this->begin(), this->end(), _Result.begin(), _Func));
+		}
+		vector<bool, _Size> operator>=(const _Ts& _Scalar) const {
+			const auto _Func = [&_Scalar](auto&& _Arg0) { return _Arg0 >= _Scalar; };
+			using bvec = vector<bool, _Size>;
+			_Return_generate_object(bvec, _Result,
+				std::transform(this->begin(), this->end(), _Result.begin(), _Func));
+		}
 
 		vector  operator+ (int _Scalar) const {
 			return this->add(static_cast<_Ts>(_Scalar));
@@ -1546,36 +1764,6 @@ namespace clmagic{
 		vector  operator% (int _Scalar) const {
 			return this->mod(static_cast<_Ts>(_Scalar));
 		}
-		vector& operator+=(int _Scalar) {
-			return this->assign_add(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator-=(int _Scalar) {
-			return this->assign_sub(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator*=(int _Scalar) {
-			return this->assign_mul(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator/=(int _Scalar) {
-			return this->assign_div(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator%=(int _Scalar) {
-			return this->assign_mod(static_cast<_Ts>(_Scalar));
-		}
-		friend vector operator+(int _Scalar, const vector& _Right) {
-			return _Right.added(static_cast<_Ts>(_Scalar));
-		}
-		friend vector operator-(int _Scalar, const vector& _Right) {
-			return _Right.subed(static_cast<_Ts>(_Scalar));
-		}
-		friend vector operator*(int _Scalar, const vector& _Right) {
-			return _Right.muled(static_cast<_Ts>(_Scalar));
-		}
-		friend vector operator/(int _Scalar, const vector& _Right) {
-			return _Right.dived(static_cast<_Ts>(_Scalar));
-		}
-		friend vector operator%(int _Scalar, const vector& _Right) {
-			return _Right.moded(static_cast<_Ts>(_Scalar));
-		}
 		vector  operator+ (float _Scalar) const {
 			return this->add(static_cast<_Ts>(_Scalar));
 		}
@@ -1590,36 +1778,6 @@ namespace clmagic{
 		}
 		vector  operator% (float _Scalar) const {
 			return this->mod(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator+=(float _Scalar) {
-			return this->assign_add(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator-=(float _Scalar) {
-			return this->assign_sub(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator*=(float _Scalar) {
-			return this->assign_mul(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator/=(float _Scalar) {
-			return this->assign_div(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator%=(float _Scalar) {
-			return this->assign_mod(static_cast<_Ts>(_Scalar));
-		}
-		friend vector operator+(float _Scalar, const vector& _Right) {
-			return _Right.added(static_cast<_Ts>(_Scalar));
-		}
-		friend vector operator-(float _Scalar, const vector& _Right) {
-			return _Right.subed(static_cast<_Ts>(_Scalar));
-		}
-		friend vector operator*(float _Scalar, const vector& _Right) {
-			return _Right.muled(static_cast<_Ts>(_Scalar));
-		}
-		friend vector operator/(float _Scalar, const vector& _Right) {
-			return _Right.dived(static_cast<_Ts>(_Scalar));
-		}
-		friend vector operator%(float _Scalar, const vector& _Right) {
-			return _Right.moded(static_cast<_Ts>(_Scalar));
 		}
 		vector  operator+ (double _Scalar) const {
 			return this->add(static_cast<_Ts>(_Scalar));
@@ -1636,20 +1794,35 @@ namespace clmagic{
 		vector  operator% (double _Scalar) const {
 			return this->mod(static_cast<_Ts>(_Scalar));
 		}
-		vector& operator+=(double _Scalar) {
-			return this->assign_add(static_cast<_Ts>(_Scalar));
+		friend vector operator+(int _Scalar, const vector& _Right) {
+			return _Right.added(static_cast<_Ts>(_Scalar));
 		}
-		vector& operator-=(double _Scalar) {
-			return this->assign_sub(static_cast<_Ts>(_Scalar));
+		friend vector operator-(int _Scalar, const vector& _Right) {
+			return _Right.subed(static_cast<_Ts>(_Scalar));
 		}
-		vector& operator*=(double _Scalar) {
-			return this->assign_mul(static_cast<_Ts>(_Scalar));
+		friend vector operator*(int _Scalar, const vector& _Right) {
+			return _Right.muled(static_cast<_Ts>(_Scalar));
 		}
-		vector& operator/=(double _Scalar) {
-			return this->assign_div(static_cast<_Ts>(_Scalar));
+		friend vector operator/(int _Scalar, const vector& _Right) {
+			return _Right.dived(static_cast<_Ts>(_Scalar));
 		}
-		vector& operator%=(double _Scalar) {
-			return this->assign_mod(static_cast<_Ts>(_Scalar));
+		friend vector operator%(int _Scalar, const vector& _Right) {
+			return _Right.moded(static_cast<_Ts>(_Scalar));
+		}
+		friend vector operator+(float _Scalar, const vector& _Right) {
+			return _Right.added(static_cast<_Ts>(_Scalar));
+		}
+		friend vector operator-(float _Scalar, const vector& _Right) {
+			return _Right.subed(static_cast<_Ts>(_Scalar));
+		}
+		friend vector operator*(float _Scalar, const vector& _Right) {
+			return _Right.muled(static_cast<_Ts>(_Scalar));
+		}
+		friend vector operator/(float _Scalar, const vector& _Right) {
+			return _Right.dived(static_cast<_Ts>(_Scalar));
+		}
+		friend vector operator%(float _Scalar, const vector& _Right) {
+			return _Right.moded(static_cast<_Ts>(_Scalar));
 		}
 		friend vector operator+(double _Scalar, const vector& _Right) {
 			return _Right.added(static_cast<_Ts>(_Scalar));
@@ -1666,297 +1839,59 @@ namespace clmagic{
 		friend vector operator%(double _Scalar, const vector& _Right) {
 			return _Right.moded(static_cast<_Ts>(_Scalar));
 		}
-		
-		vector<bool, _Size> operator==(const _Ts& _Scalar) const {
-			const auto _Func = [&_Scalar](auto&& _Arg0) { return _Arg0 == _Scalar; };
-			using bvec = vector<bool, _Size>;
-			_Return_generate_object(bvec, _Result, 
-				std::transform(this->begin(), this->end(), _Result.begin(), _Func));
+		vector& operator+=(int _Scalar) {
+			return this->assign_add(static_cast<_Ts>(_Scalar));
 		}
-		vector<bool, _Size> operator!=(const _Ts& _Scalar) const {
-			const auto _Func = [&_Scalar](auto&& _Arg0) { return _Arg0 != _Scalar; };
-			using bvec = vector<bool, _Size>;
-			_Return_generate_object(bvec, _Result, 
-				std::transform(this->begin(), this->end(), _Result.begin(), _Func));
+		vector& operator-=(int _Scalar) {
+			return this->assign_sub(static_cast<_Ts>(_Scalar));
 		}
-		vector<bool, _Size> operator< (const _Ts& _Scalar) const {
-			const auto _Func = [&_Scalar](auto&& _Arg0) { return _Arg0 < _Scalar; };
-			using bvec = vector<bool, _Size>;
-			_Return_generate_object(bvec, _Result, 
-				std::transform(this->begin(), this->end(), _Result.begin(), _Func));
+		vector& operator*=(int _Scalar) {
+			return this->assign_mul(static_cast<_Ts>(_Scalar));
 		}
-		vector<bool, _Size> operator> (const _Ts& _Scalar) const {
-			const auto _Func = [&_Scalar](auto&& _Arg0) { return _Arg0 > _Scalar; };
-			using bvec = vector<bool, _Size>;
-			_Return_generate_object(bvec, _Result, 
-				std::transform(this->begin(), this->end(), _Result.begin(), _Func));
+		vector& operator/=(int _Scalar) {
+			return this->assign_div(static_cast<_Ts>(_Scalar));
 		}
-		vector<bool, _Size> operator<=(const _Ts& _Scalar) const {
-			const auto _Func = [&_Scalar](auto&& _Arg0) { return _Arg0 <= _Scalar; };
-			using bvec = vector<bool, _Size>;
-			_Return_generate_object(bvec, _Result, 
-				std::transform(this->begin(), this->end(), _Result.begin(), _Func));
+		vector& operator%=(int _Scalar) {
+			return this->assign_mod(static_cast<_Ts>(_Scalar));
 		}
-		vector<bool, _Size> operator>=(const _Ts& _Scalar) const {
-			const auto _Func = [&_Scalar](auto&& _Arg0) { return _Arg0 >= _Scalar; };
-			using bvec = vector<bool, _Size>;
-			_Return_generate_object(bvec, _Result, 
-				std::transform(this->begin(), this->end(), _Result.begin(), _Func));
+		vector& operator+=(float _Scalar) {
+			return this->assign_add(static_cast<_Ts>(_Scalar));
 		}
-		
+		vector& operator-=(float _Scalar) {
+			return this->assign_sub(static_cast<_Ts>(_Scalar));
+		}
+		vector& operator*=(float _Scalar) {
+			return this->assign_mul(static_cast<_Ts>(_Scalar));
+		}
+		vector& operator/=(float _Scalar) {
+			return this->assign_div(static_cast<_Ts>(_Scalar));
+		}
+		vector& operator%=(float _Scalar) {
+			return this->assign_mod(static_cast<_Ts>(_Scalar));
+		}
+		vector& operator+=(double _Scalar) {
+			return this->assign_add(static_cast<_Ts>(_Scalar));
+		}
+		vector& operator-=(double _Scalar) {
+			return this->assign_sub(static_cast<_Ts>(_Scalar));
+		}
+		vector& operator*=(double _Scalar) {
+			return this->assign_mul(static_cast<_Ts>(_Scalar));
+		}
+		vector& operator/=(double _Scalar) {
+			return this->assign_div(static_cast<_Ts>(_Scalar));
+		}
+		vector& operator%=(double _Scalar) {
+			return this->assign_mod(static_cast<_Ts>(_Scalar));
+		}
+
 		friend std::ostream& operator<<(std::ostream& _Ostr, const vector& _Left) {
 			return (_Ostr << _Left.to_string());
 		}
 	};
 
-	template<typename _Ts, typename _Tb = _Ts>
-	using vector2 = vector<_Ts, 2, _Tb>;
-	template<typename _Ts, typename _Tb = _Ts>
-	using vector3 = vector<_Ts, 3, _Tb>;
-	template<typename _Ts, typename _Tb = _Ts>
-	using vector4 = vector<_Ts, 4, _Tb>;
 
-	template<typename _Ts, size_t _Size, typename _Tb = _Ts>
-	using point = vector<_Ts, _Size, _Tb>;
-	template<typename _Ts, typename _Tb = _Ts>
-	using point2 = vector<_Ts, 2, _Tb>;
-	template<typename _Ts, typename _Tb = _Ts>
-	using point3 = vector<_Ts, 3, _Tb>;
-	
-	using point2_size_t = point2<size_t>;
-
-	#define VECTORN ::clmagic::vector<_Ts, _Size, _Tb>
-	#define VECTOR2 ::clmagic::vector<_Ts, 2, _Tb>
-	#define VECTOR3 ::clmagic::vector<_Ts, 3, _Tb>
-	#define VECTOR4 ::clmagic::vector<_Ts, 4, _Tb>
-
-
-
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	std::string to_string(const VECTORN& v) {
-		return v.to_string();
-	}
-
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	_Ts sum(const VECTORN& v) {
-		return v.sum();
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	_Ts product(const VECTORN& v) {
-		return v.product();
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	_Ts dot(const VECTORN& v1, const VECTORN& v2) {
-		return v1.dot(v2);
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	_Ts length(const VECTORN& v) {
-		return dot(v, v);
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	_Ts norm(const VECTORN& v, const _Ts& L) {
-		return v.norm(L);
-	}
-
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN normalize(const VECTORN& v) {
-		const _Ts _Length_squared = dot(v, v);
-		return !approach_equal(_Length_squared, static_cast<_Ts>(1), std::numeric_limits<_Ts>::epsilon()) ?
-			v / sqrt(_Length_squared) :
-			v;
-	}
-
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN fmod(const VECTORN& _Left, const VECTORN& _Right) {
-		_Return_generate_object( VECTORN, _Result, 
-			fast_vector_operation<_Ts, _Tb>::func_2nd(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
-				[](const _Tb& _Arg0, const _Tb& _Arg1) { return fmod(_Arg0, _Arg1); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN fmod(const VECTORN& _Left, const _Ts& _Scalar) {
-		const _Tb  _Arg1 = block_traits<_Tb>::set1(_Scalar);
-		const auto _Func = [&_Arg1](const _Tb& _Arg0) { return fmod(_Arg0, _Arg1); };
-		_Return_generate_object( VECTORN, _Result, 
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), _Func) );
-	}
-
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN pow(const VECTORN& _Left, const VECTORN& _Right) {
-		_Return_generate_object( VECTORN, _Result, 
-			fast_vector_operation<_Ts, _Tb>::func_2nd(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
-				[](const _Tb& _Arg0, const _Tb& _Arg1) { return pow(_Arg0, _Arg1); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN pow(const VECTORN& _Left, const _Ts& _Scalar) {
-		const _Tb  _Arg1 = block_traits<_Tb>::set1(_Scalar);
-		const auto _Func = [&_Arg1](const _Tb& _Arg0) { return pow(_Arg0, _Arg1); };
-		_Return_generate_object( VECTORN, _Result, 
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), _Func) );
-	}
-
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN cross3(const VECTORN& _Left, const VECTORN& _Right) {
-		return VECTORN{
-			_Left[1] * _Right[2] - _Left[2] * _Right[1],
-			_Left[2] * _Right[0] - _Left[0] * _Right[2],
-			_Left[0] * _Right[1] - _Left[1] * _Right[0]
-		};
-	}
-
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN abs(const VECTORN& _Left) {// abs(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return abs(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN floor(const VECTORN& _Left) {// floor(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return floor(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN ceil(const VECTORN& _Left) {// ceil(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return ceil(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN trunc(const VECTORN& _Left) {// trunc(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return trunc(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN round(const VECTORN& _Left) {// round(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return round(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN sqrt(const VECTORN& _Left) {// sqrt(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return sqrt(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN cbrt(const VECTORN& _Left) {// cbrt(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return cbrt(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN invsqrt(const VECTORN& _Left) {// invsqrt(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return invsqrt(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN invcbrt(const VECTORN& _Left) {// invcbrt(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return invcbrt(_Arg0); }) );
-	}
-
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN sin(const VECTORN& _Left) {// sin(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return sin(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN cos(const VECTORN& _Left) {
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return cos(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN tan(const VECTORN& _Left) {// tan(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return tan(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN asin(const VECTORN& _Left) {// asin(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return asin(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN acos(const VECTORN& _Left) {// acos(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return acos(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN atan(const VECTORN& _Left) {// atan(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return atan(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN atan2(const VECTORN& _Left, const VECTORN& _Right) {// atan(yv, xv)
-		_Return_generate_object( VECTORN, _Result, 
-			fast_vector_operation<_Ts, _Tb>::func_2nd(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
-				[](const _Tb& _Arg0, const _Tb& _Arg1) { return atan2(_Arg0, _Arg1); }) );
-	}
-
-	// compare function
-	template<size_t _Size, typename _Tb>
-	bool all_of(const vector<bool, _Size, _Tb>& _X) {
-		for (auto _First = _X.begin(); _First != _X.end(); ++_First) {
-			if (!(*_First)) {
-				return false;
-			}
-		}
-		return true;
-	}
-	template<size_t _Size, typename _Tb>
-	bool any_of(const vector<bool, _Size, _Tb>& _X) {
-		for (auto _First = _X.begin(); _First != _X.end(); ++_First) {
-			if (*_First) {
-				return true;
-			}
-		}
-		return false;
-	}
-	template<size_t _Size, typename _Tb>
-	bool none_of(const vector<bool, _Size, _Tb>& _X) {
-		for (auto _First = _X.begin(); _First != _X.end(); ++_First) {
-			if ((*_First)) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	template<typename _OutVec, typename _InVec>
-	struct _Vector_cast {
-		using dest_type = _OutVec;
-		using src_type  = _InVec;
-
-		dest_type operator()(const src_type& v) const {
-			return dest_type(v.begin(), v.end());
-		}
-	};
-
-	template<typename _Ts, size_t _Size, typename _Tb, typename _InVec>
-	struct _Vector_cast<vector<_Ts, _Size, _Tb>, _InVec> {
-		using dest_type = vector<_Ts, _Size, _Tb>;
-		using src_type  = _InVec;
-
-		dest_type operator()(const src_type& v) const {
-			return dest_type( v.begin(), v.begin() + min(v.size(), dest_type::size()) );
-		}
-	};
-
-	template<typename _OutVec, typename _InVec>
-	_OutVec vector_cast(const _InVec& v) {
-		return _Vector_cast<_OutVec, _InVec>()(v);
-	}
-
-
-	/*- - - - - - - - - - - - - - - - - - - unit_vector<> - - - - - - - - - - - - - - - - - - - - -*/
+	/*- - - - - - - - - - - - - - - - - - - unit_vector - - - - - - - - - - - - - - - - - - - - -*/
 	/*
 	@_unit_vector<T>: as vector3<T>
 	@_Traits: length = 1.0
@@ -1965,19 +1900,14 @@ namespace clmagic{
 	struct unit_vector : public vector<_Ts, _Size, _Tb> {
 		using _Mybase     = vector<_Ts, _Size, _Tb>;
 		using scalar_type = _Ts;
-		using vector_Tspe = unit_vector<_Ts, _Size, _Tb>;
 
 		unit_vector() = default;
-
 		unit_vector(std::initializer_list<_Ts> _Ilist, bool _Unitized = false)
 			: _Mybase(_Ilist) {
 			if (!_Unitized) this->normalize();
 		}
-
 		unit_vector(const _Mybase& _Vector, bool _Unitized = false)
-			: _Mybase(_Unitized ? _Vector : normalize(_Vector)) {
-			// 
-		}
+			: _Mybase(_Unitized ? _Vector : normalize(_Vector)) {}
 
 		unit_vector operator-() const {
 			return unit_vector(-static_cast<const _Mybase&>(*this), true);
@@ -1987,22 +1917,16 @@ namespace clmagic{
 			return static_cast<_Ts>(1);
 		}
 	};
-
-	template<typename _Ts, typename _Tb = _Ts>
-	using unit_vector3 = unit_vector<_Ts, 3, _Tb>;
-
-	#define UNIT_VECTORN ::clmagic::unit_vector<_Ts, _Size, _Tb>
-	#define UNIT_VECTOR3 ::clmagic::unit_vector3<_Ts, _Tb>
-
-	/*- - - - - - - - - - - - - - - - - - - vector_any<> - - - - - - - - - - - - - - - - - - - - -*/
+	
+	/*- - - - - - - - - - - - - - - - - - - vector_any - - - - - - - - - - - - - - - - - - - - -*/
 	/*
 	@_vector_any: dynamic-length vector
 	*/
 	template<typename _Ts, typename _Tb = _Ts, typename _Alloc = std::allocator<_Tb>>
-	class vector_any : public clmagic::subvector<_Ts, _Tb> {
-		using _Mybase = clmagic::subvector<_Ts, _Tb>;
+	class vector_any : public subvector<_Ts, _Tb> {
+		using _Mybase = subvector<_Ts, _Tb>;
 	public:
-		using scalar_type         = _Ts;
+		using scalar_type            = _Ts;
 		using scalar_pointer         = _Ts*;
 		using scalar_const_pointer   = _Ts const*;
 		using scalar_reference       = _Ts&;
@@ -2342,7 +2266,6 @@ namespace clmagic{
 				scalar_pointer& _Mylast = _Myvec._Mylast;
 				allocate_traits::construct(_Myalloc, _Mylast, std::forward<_Valty...>(_Val...));
 				++_Mylast;// correct _Mylast
-				_Myvec._Mysize = vector_size<_Ts, _Tb>(_Myvec._Myfirst, _Myvec._Mylast);// correct vector-size
 			} else {
 				_Reallocate(_Calculate_growth(this->capacity() + 1));
 				emplace_back(std::forward<_Valty...>(_Val...));
@@ -2475,18 +2398,264 @@ namespace clmagic{
 		size_t  _Mycapacity;
 	};
 
+	/*- - - - - - - - - - - - - - - - - - - _Vector_cast - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _OutVec, typename _InVec>
+	struct _Vector_cast {
+		using dest_type = _OutVec;
+		using src_type  = _InVec;
+
+		dest_type operator()(const src_type& v) const {
+			return dest_type(v.begin(), v.end());
+		}
+	};
+
+	template<typename _Ts, size_t _Size, typename _Tb, typename _InVec>
+	struct _Vector_cast<vector<_Ts, _Size, _Tb>, _InVec> {
+		using dest_type = vector<_Ts, _Size, _Tb>;
+		using src_type  = _InVec;
+
+		dest_type operator()(const src_type& v) const {
+			return dest_type( v.begin(), v.begin() + min(v.size(), dest_type::size()) );
+		}
+	};
+
+
 
 	template<typename _Ts>
-	constexpr bool is_vector_v = false;
+		constexpr bool is_vector_v = false;
 	template<typename _Ts, size_t _Size, typename _Tb>
-	constexpr bool is_vector_v< vector<_Ts, _Size, _Tb> > = true;
+		constexpr bool is_vector_v< vector<_Ts, _Size, _Tb> > = true;
 	template<typename _Ts, typename _Tb>
-	constexpr bool is_vector_v< vector_any<_Ts, _Tb> > = true;
+		constexpr bool is_vector_v< vector_any<_Ts, _Tb> > = true;
 
 	template<typename _Ts, size_t _Size, typename _Tb>
-	constexpr bool is_support_scalar_operator< vector<_Ts, _Size, _Tb> > = true;
+		constexpr bool is_support_scalar_operator< vector<_Ts, _Size, _Tb> > = true;
 	template<typename _Ts, typename _Tb>
-	constexpr bool is_support_scalar_operator< vector_any<_Ts, _Tb> > = true;
+		constexpr bool is_support_scalar_operator< vector_any<_Ts, _Tb> > = true;
+
+
+	template<typename _Ts, typename _Tb = _Ts> using vector2 = vector<_Ts, 2, _Tb>;
+	template<typename _Ts, typename _Tb = _Ts> using vector3 = vector<_Ts, 3, _Tb>;
+	template<typename _Ts, typename _Tb = _Ts> using vector4 = vector<_Ts, 4, _Tb>;
+	template<typename _Ts, typename _Tb = _Ts> using unit_vector3 = unit_vector<_Ts, 3, _Tb>;
+	using point2_size_t = vector2<size_t>;
+
+	#define VECTORN ::clmagic::vector<_Ts, _Size, _Tb>
+	#define VECTOR2 ::clmagic::vector<_Ts, 2, _Tb>
+	#define VECTOR3 ::clmagic::vector<_Ts, 3, _Tb>
+	#define VECTOR4 ::clmagic::vector<_Ts, 4, _Tb>
+	#define UNIT_VECTORN ::clmagic::unit_vector<_Ts, _Size, _Tb>
+	#define UNIT_VECTOR3 ::clmagic::unit_vector3<_Ts, _Tb>
+
+
+	template<typename _OutVec, typename _InVec>
+	_OutVec vector_cast(const _InVec& v) {
+		return _Vector_cast<_OutVec, _InVec>()(v);
+	}
+
+
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	std::string to_string(const VECTORN& v) {
+		return v.to_string();
+	}
+	template<typename _Ts, typename _Tb, typename _Alloc> inline
+	std::string to_string(const vector_any<_Ts, _Tb, _Alloc>& v) {
+		return v.to_string();
+	}
+
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	_Ts sum(const VECTORN& v) {
+		return v.sum();
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	_Ts product(const VECTORN& v) {
+		return v.product();
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	_Ts dot(const VECTORN& v1, const VECTORN& v2) {
+		return v1.dot(v2);
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	_Ts length(const VECTORN& v) {
+		return dot(v, v);
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	_Ts norm(const VECTORN& v, const _Ts& L) {
+		return v.norm(L);
+	}
+
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN normalize(const VECTORN& v) {
+		const _Ts _Length_squared = dot(v, v);
+		return !approach_equal(_Length_squared, static_cast<_Ts>(1), std::numeric_limits<_Ts>::epsilon()) ?
+			v / sqrt(_Length_squared) :
+			v;
+	}
+
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN fmod(const VECTORN& _Left, const VECTORN& _Right) {
+		_Return_generate_object( VECTORN, _Result, 
+			fast_vector_operation<_Ts, _Tb>::func_2nd(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
+				[](const _Tb& _Arg0, const _Tb& _Arg1) { return fmod(_Arg0, _Arg1); }) );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN fmod(const VECTORN& _Left, const _Ts& _Scalar) {
+		const _Tb  _Arg1 = block_traits<_Tb>::set1(_Scalar);
+		const auto _Func = [&_Arg1](const _Tb& _Arg0) { return fmod(_Arg0, _Arg1); };
+		_Return_generate_object( VECTORN, _Result, 
+			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), _Func) );
+	}
+
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN pow(const VECTORN& _Left, const VECTORN& _Right) {
+		_Return_generate_object( VECTORN, _Result, 
+			fast_vector_operation<_Ts, _Tb>::func_2nd(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
+				[](const _Tb& _Arg0, const _Tb& _Arg1) { return pow(_Arg0, _Arg1); }) );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN pow(const VECTORN& _Left, const _Ts& _Scalar) {
+		const _Tb  _Arg1 = block_traits<_Tb>::set1(_Scalar);
+		const auto _Func = [&_Arg1](const _Tb& _Arg0) { return pow(_Arg0, _Arg1); };
+		_Return_generate_object( VECTORN, _Result, 
+			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), _Func) );
+	}
+
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN cross3(const VECTORN& _Left, const VECTORN& _Right) {
+		return VECTORN{
+			_Left[1] * _Right[2] - _Left[2] * _Right[1],
+			_Left[2] * _Right[0] - _Left[0] * _Right[2],
+			_Left[0] * _Right[1] - _Left[1] * _Right[0]
+		};
+	}
+
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN abs(const VECTORN& _Left) {// abs(v)
+		_Return_generate_object( VECTORN, _Result,
+			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
+				[](const _Tb& _Arg0) { return abs(_Arg0); }) );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN floor(const VECTORN& _Left) {// floor(v)
+		_Return_generate_object( VECTORN, _Result,
+			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
+				[](const _Tb& _Arg0) { return floor(_Arg0); }) );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN ceil(const VECTORN& _Left) {// ceil(v)
+		_Return_generate_object( VECTORN, _Result,
+			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
+				[](const _Tb& _Arg0) { return ceil(_Arg0); }) );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN trunc(const VECTORN& _Left) {// trunc(v)
+		_Return_generate_object( VECTORN, _Result,
+			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
+				[](const _Tb& _Arg0) { return trunc(_Arg0); }) );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN round(const VECTORN& _Left) {// round(v)
+		_Return_generate_object( VECTORN, _Result,
+			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
+				[](const _Tb& _Arg0) { return round(_Arg0); }) );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN sqrt(const VECTORN& _Left) {// sqrt(v)
+		_Return_generate_object( VECTORN, _Result,
+			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
+				[](const _Tb& _Arg0) { return sqrt(_Arg0); }) );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN cbrt(const VECTORN& _Left) {// cbrt(v)
+		_Return_generate_object( VECTORN, _Result,
+			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
+				[](const _Tb& _Arg0) { return cbrt(_Arg0); }) );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN invsqrt(const VECTORN& _Left) {// invsqrt(v)
+		_Return_generate_object( VECTORN, _Result,
+			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
+				[](const _Tb& _Arg0) { return invsqrt(_Arg0); }) );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN invcbrt(const VECTORN& _Left) {// invcbrt(v)
+		_Return_generate_object( VECTORN, _Result,
+			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
+				[](const _Tb& _Arg0) { return invcbrt(_Arg0); }) );
+	}
+
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN sin(const VECTORN& _Left) {// sin(v)
+		_Return_generate_object( VECTORN, _Result,
+			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
+				[](const _Tb& _Arg0) { return sin(_Arg0); }) );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN cos(const VECTORN& _Left) {
+		_Return_generate_object( VECTORN, _Result,
+			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
+				[](const _Tb& _Arg0) { return cos(_Arg0); }) );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN tan(const VECTORN& _Left) {// tan(v)
+		_Return_generate_object( VECTORN, _Result,
+			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
+				[](const _Tb& _Arg0) { return tan(_Arg0); }) );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN asin(const VECTORN& _Left) {// asin(v)
+		_Return_generate_object( VECTORN, _Result,
+			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
+				[](const _Tb& _Arg0) { return asin(_Arg0); }) );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN acos(const VECTORN& _Left) {// acos(v)
+		_Return_generate_object( VECTORN, _Result,
+			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
+				[](const _Tb& _Arg0) { return acos(_Arg0); }) );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN atan(const VECTORN& _Left) {// atan(v)
+		_Return_generate_object( VECTORN, _Result,
+			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
+				[](const _Tb& _Arg0) { return atan(_Arg0); }) );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN atan2(const VECTORN& _Left, const VECTORN& _Right) {// atan(yv, xv)
+		_Return_generate_object( VECTORN, _Result, 
+			fast_vector_operation<_Ts, _Tb>::func_2nd(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
+				[](const _Tb& _Arg0, const _Tb& _Arg1) { return atan2(_Arg0, _Arg1); }) );
+	}
+
+	// compare function
+	template<size_t _Size, typename _Tb>
+	bool all_of(const vector<bool, _Size, _Tb>& _X) {
+		for (auto _First = _X.begin(); _First != _X.end(); ++_First) {
+			if (!(*_First)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	template<size_t _Size, typename _Tb>
+	bool any_of(const vector<bool, _Size, _Tb>& _X) {
+		for (auto _First = _X.begin(); _First != _X.end(); ++_First) {
+			if (*_First) {
+				return true;
+			}
+		}
+		return false;
+	}
+	template<size_t _Size, typename _Tb>
+	bool none_of(const vector<bool, _Size, _Tb>& _X) {
+		for (auto _First = _X.begin(); _First != _X.end(); ++_First) {
+			if ((*_First)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 
 
 

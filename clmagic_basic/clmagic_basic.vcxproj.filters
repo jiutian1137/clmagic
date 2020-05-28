@@ -7,15 +7,8 @@
     <Filter Include="private">
       <UniqueIdentifier>{3a585d6e-7039-4307-977e-aa8e8b7c474a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="include">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\clmagic\basic.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\clmagic\basic\logcout.h">
       <Filter>public</Filter>
     </ClInclude>
@@ -47,6 +40,9 @@
       <Filter>public</Filter>
     </ClInclude>
     <ClInclude Include="..\src\clmagic\basic\concurrent_resource.h">
+      <Filter>public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\basic.h">
       <Filter>public</Filter>
     </ClInclude>
   </ItemGroup>

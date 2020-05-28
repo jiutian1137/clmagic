@@ -20,10 +20,17 @@
 
 namespace clmagic {
 
-#define _Return_generate_object(TYPE, NAME, ...) \
-TYPE NAME;                                       \
-__VA_ARGS__;                                     \
-return NAME
+	#define _Em(...) __VA_ARGS__ \
+
+	#define _Return_generate_object(TYPE, NAME, ...) \
+	TYPE NAME;                                       \
+	__VA_ARGS__;                                     \
+	return std::move(NAME)
+
+	#define _Return_generate_object2(TYPE, NAME, CTOR, ...) \
+	TYPE NAME CTOR;                                       \
+	__VA_ARGS__;                                     \
+	return std::move(NAME)
 
 	/* f(x)
 	   1. _Ty (_Ty or const _Ty or const _Ty&)

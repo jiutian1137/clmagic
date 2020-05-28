@@ -403,46 +403,10 @@ void power_iteration(const clmagic::square_matrix<_Ty, _Rows> _Matrix, size_t _C
 
 
 
-//void test() {
-//	using namespace::clmagic;
-//
-//    dmatrix<3, 3> A;
-//	A.col(0) = { 1, 1, 1 };
-//	A.col(1) = { 1, 0, -1 };
-//	A.col(2) = { 1, 0, 1 };
-//
-//	dmatrix<3, 3> B;
-//	B.col(0) = { 1, 2, 1 };
-//	B.col(1) = { 2, 3, 4 };
-//	B.col(2) = { 3, 4, 3 };
-//	using Amat3x3_3 = augumented_matrix_row_transform<double, 3, 3, double, 3, double>;
-//	Amat3x3_3::solve_until(B, A);
-//	std::cout << A << std::endl;
-//	std::cout << B << std::endl;
-//
-//	dmatrix<3, 1> x = { 1, 1, 3 };
-//	std::cout << A * x << std::endl;
-//
-//   
-//    dmatrix<3, 3> A2 = {
-//        1, 2, 3,
-//        2, 1, 3,
-//        3, 3, 6
-//    };
-//    auto A2copy = A2;
-//    dmatrix<3, 1> W2;
-//    dmatrix<3, 3> V2;
-//    JacobiImpl_(A2, W2, &V2);
-//    std::cout << A2 << std::endl;
-//    std::cout << W2 << std::endl;
-//    std::cout << V2 << std::endl;
-//
-//    double Eval;
-//    power_iteration(A2copy, 50, Eval, W2);
-//    std::cout << std::endl;
-//    std::cout << Eval << std::endl;
-//    std::cout << W2 << std::endl;
-//}
+void test() {
+	using namespace::clmagic;
+
+}
 
 void test_vectorany() {// vector_any<_Ty, _Block> is News, don't used it
     using namespace::clmagic;
@@ -469,33 +433,27 @@ void test_vectorany() {// vector_any<_Ty, _Block> is News, don't used it
 	std::cout << "scalar-capacity: " << _Vec.capacity() * block_traits<__m128>::size() << std::endl;
 }
 
-void test_matrix() {
-	using PersepectiveLHf = clmagic::PerspectiveLH<float, __m128>;
-	auto _Proj = PersepectiveLHf::get_matrix(clmagic::degrees(60), 1600.0f / 900.0f, 10.0f, 10000.0f);
-	std::cout << _Proj << std::endl;
-	std::cout << "Znear: " << PersepectiveLHf::get_Znear(_Proj) << std::endl;
-	std::cout << "Zfar: " << PersepectiveLHf::get_Zfar(_Proj) << std::endl;
-	std::cout << "fov: " << clmagic::unit_cast<clmagic::degrees>(PersepectiveLHf::get_fov(_Proj)) << "deg" << std::endl;
-	std::cout << "foh: " << clmagic::unit_cast<clmagic::degrees>(PersepectiveLHf::get_foh(_Proj)) << "deg" << std::endl;
-
-	clmagic::meters _1m = 1;
-	std::cout << _1m << "m" << std::endl;
-	std::cout << clmagic::kilometers(_1m) << "km" << std::endl;
-	clmagic::degrees _30deg = 30;
-	std::cout << _30deg << "deg" << std::endl;
-	std::cout << clmagic::radians(_30deg) << "rad" << std::endl;
-	auto _29deg = clmagic::unit_cast<clmagic::radians>(clmagic::degrees(29));
-	std::cout << _29deg << "rad" << std::endl;
-	std::cout << _30deg + _29deg << std::endl;
-	std::cout << "Test unit_<> end" << std::endl;
-
-	std::cout << clmagic::cvtfloating_rational<intmax_t>(clmagic::IEEE754_double(10.0f / 3.0f)).to_floating() << std::endl;
-	std::cout << clmagic::cvtfloating_rational<intmax_t>(clmagic::IEEE754_double(5.0f / 3.0f)).to_floating() << std::endl;
-	std::cout << clmagic::cvtfloating_rational<intmax_t>(clmagic::IEEE754_double(37.0f / 3.0f)).to_floating() << std::endl;
-	std::cout << clmagic::cvtfloating_rational<intmax_t>(clmagic::IEEE754_double(9.0f / 3.0f)) << std::endl;
-}
 
 int main() {
+	std::vector<clmagic::vector4<float, __m128>> _Data(10000002);
+	for (size_t i = 0; i != _Data.size(); ++i) {
+		_Data[i] = { clmagic::randf(), clmagic::randf(), clmagic::randf() };
+	}
+
+	using std::chrono::microseconds;
+	auto _Clock_0 = std::chrono::steady_clock::now();
+	std::cout << clmagic::parallel_accumulate<6>(_Data.begin(), _Data.end(), clmagic::vector4<float, __m128>(0.f)) << std::endl;
+	auto _Clock_0_end = std::chrono::steady_clock::now();
+
+	auto _Clock_1 = std::chrono::steady_clock::now();
+	std::cout << std::accumulate(_Data.begin(), _Data.end(), clmagic::vector4<float, __m128>(0.f)) << std::endl;
+	auto _Clock_1_end = std::chrono::steady_clock::now();
+
+
+	std::cout << std::chrono::duration_cast<microseconds>(_Clock_0_end - _Clock_0).count() << std::endl;
+	std::cout << std::chrono::duration_cast<microseconds>(_Clock_1_end - _Clock_1).count() << std::endl;
+
+	std::cin.get();
     srand(static_cast<uint32_t>(time(0)));
 	//diagonal_matrix_operation();
 	task_1();
@@ -506,8 +464,6 @@ int main() {
 	task_6();
 	//test();
 	test_vectorany();
-	test_matrix();
 
-	std::cin.get();
 	return (0);
 }
