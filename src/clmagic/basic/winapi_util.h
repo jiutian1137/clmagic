@@ -271,7 +271,7 @@ namespace winapi_util {
 		}
 		void flash() {
 			FlashWindow(_My_win, true);
-		}
+		} 
 		void move(int x, int y, UINT flag = SWP_SHOWWINDOW) {
 			SetWindowPos(_My_win, HWND_TOPMOST, x, y, _My_old_rect.width(), _My_old_rect.height(), SWP_SHOWWINDOW);
 		}
