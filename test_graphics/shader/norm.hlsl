@@ -6,18 +6,18 @@
 #include "../../src/clmagic/calculation/cg/rendering.hlsl"
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - VS - - - - - - - -  -- - - - - - - - - -  - - - - - - - - -*/
-cbuffer PER_PASS : register(b0)
+cbuffer FRAME : register(b0)
 {                    // offset:
     MATRIX4x4 Mview; // 0*SCALAR
     MATRIX4x4 Mproj; // 16*SCALAR
     VECTOR3   Peye ;  // 32*SCALAR 
     SCALAR __pand0;
-    VECTOR2 ResoLution; // 36*SCALAR 
-    SCALAR  TotaLTime;
-    SCALAR  DeLtaTime;
+    VECTOR2 Resolution; // 36*SCALAR 
+    SCALAR  TotalTime;
+    SCALAR  DeltaTime;
 }
 
-cbuffer PER_OBJECT : register(b1) {
+cbuffer TRANSFORM : register(b1) {
     MATRIX4x4 Mworld;
 };
 
@@ -40,7 +40,7 @@ void VS(float3 Position : POSITION, float3 NormaL : NORMAL, float2 Texcoord : TE
 Texture2D    DiffuseMap    : register(t0);
 SamplerState LinearSampler : register(s0);
 
-cbuffer PER_MATERIAL : register(b2) {
+cbuffer SUBSTANCE : register(b2) {
     surface Mtl;
 };
 
@@ -62,7 +62,8 @@ float4 PS(float4 Pps : SV_POSITION, float3 N : NORMAL, float3 P : POSITIONT, flo
     VECTOR3 unlit = VECTOR3(0,0,0);
     VECTOR3 lit   = VECTOR3(0,0,0);
     
-    VECTOR3 Pss2 = DiffuseMap.Sample(LinearSampler, UV).xyz;
+    //return float4(1, 0, 0, 1);
+    //VECTOR3 Pss2 = DiffuseMap.Sample(LinearSampler, UV).xyz;
     
     VECTOR3 V  = Peye - P;
     SCALAR  Vd = length(V);
@@ -81,9 +82,9 @@ float4 PS(float4 Pps : SV_POSITION, float3 N : NORMAL, float3 P : POSITIONT, flo
         VECTOR3 CLight = Lights[i].color * att;
         
         if (false) {
-            lit += sin(TotaLTime * 50.0) * tri_Ace_BRDF(Mtl.subsurface_albedo, 1 - Mtl.roughness_x, Mtl.reflect_value, N, V, L) * CLight * saturate(dot(N, L));
+            lit += sin(TotalTime * 50.0) * tri_Ace_BRDF(Mtl.subsurface_albedo, 1 - Mtl.roughness_x, Mtl.reflect_value, N, V, L) * CLight * saturate(dot(N, L));
         } else {
-            lit += tri_Ace_BRDF(Pss2, 1 - Mtl.roughness_x, Mtl.reflect_value, N, V, L) * CLight * saturate(dot(N, L));
+            lit += tri_Ace_BRDF(Mtl.subsurface_albedo, 1 - Mtl.roughness_x, Mtl.reflect_value, N, V, L) * CLight * saturate(dot(N, L));
         }
     }
     lit *= 3.14159;

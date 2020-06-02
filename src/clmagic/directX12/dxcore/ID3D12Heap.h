@@ -1,11 +1,10 @@
 #pragma once
 #include <d3d12.h>
-#include <wrl.h>// Windows 
+#include "d3dx12.h"
 #include <assert.h>
 #include <vector>
 
-#include "d3dx12.h"
-#include "uncopyable.h"
+#include "packaged_comptr.h"
 #include "enum_string.h"
 #include "ID3D12Resource.h"
 

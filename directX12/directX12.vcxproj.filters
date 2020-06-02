@@ -10,16 +10,10 @@
     <ClInclude Include="..\src\clmagic\directX12\mesh.h">
       <Filter>private</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Resource.h">
-      <Filter>private\dxcore</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\clmagic\directX12\dxcore\d3dx12.h">
       <Filter>private\dxcore</Filter>
     </ClInclude>
     <ClInclude Include="..\src\clmagic\directX12\dxcore\enum_string.h">
-      <Filter>private\dxcore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\uncopyable.h">
       <Filter>private\dxcore</Filter>
     </ClInclude>
     <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12RootSignature.h">
@@ -44,6 +38,36 @@
       <Filter>private\dxcore</Filter>
     </ClInclude>
     <ClInclude Include="..\src\clmagic\directX12\dxcore.h">
+      <Filter>private</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Device.h">
+      <Filter>private\dxcore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\packaged_comptr.h">
+      <Filter>private\dxcore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\IDXGISwapChain.h">
+      <Filter>private\dxcore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12CommandObjects.h">
+      <Filter>private\dxcore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\IDXGIFactory.h">
+      <Filter>private\dxcore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxwindow.h">
+      <Filter>private</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Resource_b.h">
+      <Filter>private\dxcore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Resource_t.h">
+      <Filter>private\dxcore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Resource.h">
+      <Filter>private\dxcore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\dxrenderable.h">
       <Filter>private</Filter>
     </ClInclude>
   </ItemGroup>

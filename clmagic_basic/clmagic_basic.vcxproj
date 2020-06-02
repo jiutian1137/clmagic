@@ -129,12 +129,14 @@
     <ClInclude Include="..\src\clmagic\basic\fstream.h" />
     <ClInclude Include="..\src\clmagic\basic\logcout.h" />
     <ClInclude Include="..\src\clmagic\basic\logstream.h" />
+    <ClInclude Include="..\src\clmagic\basic\renderable.h" />
     <ClInclude Include="..\src\clmagic\basic\sequence.h" />
     <ClInclude Include="..\src\clmagic\basic\singleton.h" />
     <ClInclude Include="..\src\clmagic\basic\chrono.h" />
     <ClInclude Include="..\src\clmagic\basic\functional.h" />
     <ClInclude Include="..\src\clmagic\basic\string.h" />
     <ClInclude Include="..\src\clmagic\basic\timer_wheel.h" />
+    <ClInclude Include="..\src\clmagic\basic\winapi_util.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\clmagic\basic\fstream.cpp" />

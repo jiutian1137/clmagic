@@ -1,16 +1,16 @@
 #pragma once
 #include <d3d12.h>
-#include <wrl.h>// Windows 
+#include "d3dx12.h"
+
 #include <assert.h>
 #include <array>
 
-#include "d3dx12.h"
-#include "uncopyable.h"
+#include "packaged_comptr.h"
 #include "enum_string.h"
 
 namespace d3d12 {
 
-	struct _Pipelinestate_impl : public uncopyable {
+	struct _Pipelinestate_impl : public packaged_comptr<ID3D12PipelineState>, public uncopyable {
 		_Pipelinestate_impl() = default;
 		_Pipelinestate_impl(_Pipelinestate_impl&& _Right) noexcept {
 			_Right.swap(*this);
@@ -23,8 +23,9 @@ namespace d3d12 {
 		}
 		
 		_Pipelinestate_impl(ID3D12Device& _Device, const D3D12_GRAPHICS_PIPELINE_STATE_DESC& _Desc) {
-			HRESULT hr = _Device.CreateGraphicsPipelineState(&_Desc, IID_PPV_ARGS(&_Myimpl));
-			assert(SUCCEEDED(hr));
+			assert(SUCCEEDED( 
+				_Device.CreateGraphicsPipelineState(&_Desc, IID_PPV_ARGS(&this->_Impl)) 
+			));
 		}
 		_Pipelinestate_impl(ID3D12Device& _Device,
 			ID3D12RootSignature&    _Uniform_register,
@@ -53,36 +54,9 @@ namespace d3d12 {
 			_Desc.RTVFormats[0]     = _RTVFormat;
 			_Desc.DSVFormat         = _DSVFormat;
 			_Desc.SampleDesc        = _Sample;
-			_Device.CreateGraphicsPipelineState( &_Desc, IID_PPV_ARGS(_Myimpl.GetAddressOf()) );
+			HRESULT hr = _Device.CreateGraphicsPipelineState(&_Desc, IID_PPV_ARGS(this->_Impl.GetAddressOf()));
+			assert(SUCCEEDED(hr));
 		}
-
-
-		void release() {
-			_Myimpl = nullptr;
-		}
-		void swap(_Pipelinestate_impl& _Right) {
-			this->_Myimpl.Swap(_Right._Myimpl);
-		}
-
-		ID3D12PipelineState* get() const {
-			return _Myimpl.Get();
-		}
-		ID3D12PipelineState* operator->() const {
-			return _Myimpl.Get();
-		}
-		ID3D12PipelineState& ref() const {
-			return *(_Myimpl.Get());
-		}
-		ID3D12PipelineState& operator*() const {
-			return *(_Myimpl.Get());
-		}
-
-		bool valid() const {
-			return static_cast<bool>(_Myimpl);
-		}
-
-	private:
-		Microsoft::WRL::ComPtr<ID3D12PipelineState> _Myimpl;
 	};
 
 }// namespace dx12

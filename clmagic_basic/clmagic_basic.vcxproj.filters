@@ -45,6 +45,12 @@
     <ClInclude Include="..\src\clmagic\basic.h">
       <Filter>public</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\clmagic\basic\winapi_util.h">
+      <Filter>public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\basic\renderable.h">
+      <Filter>public</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\clmagic\basic\logcout.cpp">

@@ -1,15 +1,94 @@
 #pragma once
 #include <d3d12.h>
 #include "d3dx12.h"
-
-#include <wrl.h>// Windows 
 #include <assert.h>
 #include <vector>
 
-#include "uncopyable.h"
+#include "packaged_comptr.h"
 #include "enum_string.h"
 
 namespace d3d12 {
+
+	struct _Rootsignature_impl : public packaged_comptr<ID3D12RootSignature>, public uncopyable {
+		static void _Initializer(_Rootsignature_impl& _This, ID3D12Device& _Device, const D3D12_VERSIONED_ROOT_SIGNATURE_DESC& _Desc, UINT _Nodemask = 0) {
+			Microsoft::WRL::ComPtr<ID3DBlob> _Perror;
+			Microsoft::WRL::ComPtr<ID3DBlob> _Pdest;
+			D3D12SerializeVersionedRootSignature(&_Desc, _Pdest.GetAddressOf(), _Perror.GetAddressOf());
+			assert(_Perror == nullptr);
+
+			HRESULT hr = _Device.CreateRootSignature(_Nodemask, _Pdest->GetBufferPointer(), _Pdest->GetBufferSize(), IID_PPV_ARGS(_This._Impl.GetAddressOf()));
+			assert(SUCCEEDED(hr));
+
+			hr = D3D12CreateVersionedRootSignatureDeserializer(_Pdest->GetBufferPointer(), _Pdest->GetBufferSize(), IID_PPV_ARGS(_This._Mydeserializer.GetAddressOf()));
+			assert(SUCCEEDED(hr));
+		}
+
+		_Rootsignature_impl() = default;
+		_Rootsignature_impl(_Rootsignature_impl&& _Right) noexcept {
+			_Right.swap(*this);
+			_Right.release();
+		}
+		_Rootsignature_impl& operator=(_Rootsignature_impl&& _Right) noexcept {
+			_Right.swap(*this);
+			_Right.release();
+			return (*this);
+		}
+
+		_Rootsignature_impl(ID3D12Device& _Device,
+			const D3D12_VERSIONED_ROOT_SIGNATURE_DESC& _Desc, 
+			      UINT                                 _Nodemask = 0) {
+			_Initializer(*this, _Device, _Desc, _Nodemask);
+		}
+
+		// VERSION_1_0
+		_Rootsignature_impl(ID3D12Device& _Device,
+			const std::vector<D3D12_ROOT_PARAMETER>&      _Parameters, 
+			const std::vector<D3D12_STATIC_SAMPLER_DESC>& _Samplers,
+			      D3D12_ROOT_SIGNATURE_FLAGS              _Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT, 
+			      UINT                                    _Nodemask = 0) 
+		{
+			// 1. create D3D12_ROOT_SIGNATURE_DESC 
+			D3D12_VERSIONED_ROOT_SIGNATURE_DESC _Desc;
+			_Desc.Version = D3D_ROOT_SIGNATURE_VERSION_1_0;
+			_Desc.Desc_1_0.NumParameters     = _Parameters.size();
+			_Desc.Desc_1_0.pParameters       = _Parameters.data();
+			_Desc.Desc_1_0.NumStaticSamplers = _Samplers.size();
+			_Desc.Desc_1_0.pStaticSamplers   = _Samplers.data();
+			_Desc.Desc_1_0.Flags             = _Flags;
+
+			// 2. D3D12SerializeRootSignature(...) 
+			// 3._Device.CreateRootSignature(...)
+			_Initializer(*this, _Device, _Desc, _Nodemask);
+		}
+
+		// VERSION_1_1
+		_Rootsignature_impl(ID3D12Device& _Device,
+			const std::vector<D3D12_ROOT_PARAMETER1>&     _Parameters, 
+			const std::vector<D3D12_STATIC_SAMPLER_DESC>& _Samplers,
+			      D3D12_ROOT_SIGNATURE_FLAGS              _Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT, 
+			      UINT                                    _Nodemask = 0) 
+		{
+			// 1. create D3D12_ROOT_SIGNATURE_DESC 
+			D3D12_VERSIONED_ROOT_SIGNATURE_DESC _Desc;
+			_Desc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
+			_Desc.Desc_1_1.NumParameters     = _Parameters.size();
+			_Desc.Desc_1_1.pParameters       = _Parameters.data();
+			_Desc.Desc_1_1.NumStaticSamplers = _Samplers.size();
+			_Desc.Desc_1_1.pStaticSamplers   = _Samplers.data();
+			_Desc.Desc_1_1.Flags             = _Flags;
+
+			// 2. D3D12SerializeRootSignature(...) 
+			// 3._Device.CreateRootSignature(...)
+			_Initializer(*this, _Device, _Desc, _Nodemask);
+		}
+
+		ID3D12VersionedRootSignatureDeserializer& deserializer() const {
+			assert( valid() );
+			return *(_Mydeserializer.Get());
+		}
+
+		Microsoft::WRL::ComPtr<ID3D12VersionedRootSignatureDeserializer> _Mydeserializer;
+	};
 
 	inline std::string to_string(D3D12_DESCRIPTOR_RANGE _Desc, const std::string& _Prefix = std::string()) {
 		std::string _Str;
@@ -238,115 +317,5 @@ namespace d3d12 {
 		_Str += '}';
 		return _Str;
 	}
-
-
-	struct _Rootsignature_impl : public uncopyable {
-		static void _Initializer(_Rootsignature_impl& _This, ID3D12Device& _Device, const D3D12_VERSIONED_ROOT_SIGNATURE_DESC& _Desc, UINT _Nodemask = 0) {
-			Microsoft::WRL::ComPtr<ID3DBlob> _Perror;
-			Microsoft::WRL::ComPtr<ID3DBlob> _Pdest;
-			D3D12SerializeVersionedRootSignature(&_Desc, _Pdest.GetAddressOf(), _Perror.GetAddressOf());
-			if (_Perror != nullptr) {
-				MessageBoxA(nullptr, (char*)_Perror->GetBufferPointer(), "->[root_signature<>::root_signature(...)]", MB_OK);
-			}
-
-			HRESULT hr = _Device.CreateRootSignature(_Nodemask, _Pdest->GetBufferPointer(), _Pdest->GetBufferSize(), IID_PPV_ARGS(_This._Myimpl.GetAddressOf()));
-			assert(SUCCEEDED(hr));
-
-			hr = D3D12CreateVersionedRootSignatureDeserializer(_Pdest->GetBufferPointer(), _Pdest->GetBufferSize(), IID_PPV_ARGS(_This._Mydeserializer.GetAddressOf()));
-			assert(SUCCEEDED(hr));
-		}
-
-		_Rootsignature_impl() = default;
-		_Rootsignature_impl(_Rootsignature_impl&& _Right) noexcept {
-			_Right.swap(*this);
-			_Right.release();
-		}
-		_Rootsignature_impl& operator=(_Rootsignature_impl&& _Right) noexcept {
-			_Right.swap(*this);
-			_Right.release();
-			return (*this);
-		}
-
-		_Rootsignature_impl(ID3D12Device& _Device,
-			const D3D12_VERSIONED_ROOT_SIGNATURE_DESC& _Desc, 
-			      UINT                                 _Nodemask = 0) {
-			_Initializer(*this, _Device, _Desc, _Nodemask);
-		}
-
-		// VERSION_1_0
-		_Rootsignature_impl(ID3D12Device& _Device,
-			const std::vector<D3D12_ROOT_PARAMETER>&      _Parameters, 
-			const std::vector<D3D12_STATIC_SAMPLER_DESC>& _Samplers,
-			      D3D12_ROOT_SIGNATURE_FLAGS              _Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT, 
-			      UINT                                    _Nodemask = 0) 
-		{
-			// 1. create D3D12_ROOT_SIGNATURE_DESC 
-			D3D12_VERSIONED_ROOT_SIGNATURE_DESC _Desc;
-			_Desc.Version = D3D_ROOT_SIGNATURE_VERSION_1_0;
-			_Desc.Desc_1_0.NumParameters     = _Parameters.size();
-			_Desc.Desc_1_0.pParameters       = _Parameters.data();
-			_Desc.Desc_1_0.NumStaticSamplers = _Samplers.size();
-			_Desc.Desc_1_0.pStaticSamplers   = _Samplers.data();
-			_Desc.Desc_1_0.Flags             = _Flags;
-
-			// 2. D3D12SerializeRootSignature(...) 
-			// 3._Device.CreateRootSignature(...)
-			_Initializer(*this, _Device, _Desc, _Nodemask);
-		}
-
-		// VERSION_1_1
-		_Rootsignature_impl(ID3D12Device& _Device,
-			const std::vector<D3D12_ROOT_PARAMETER1>&     _Parameters, 
-			const std::vector<D3D12_STATIC_SAMPLER_DESC>& _Samplers,
-			      D3D12_ROOT_SIGNATURE_FLAGS              _Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT, 
-			      UINT                                    _Nodemask = 0) 
-		{
-			// 1. create D3D12_ROOT_SIGNATURE_DESC 
-			D3D12_VERSIONED_ROOT_SIGNATURE_DESC _Desc;
-			_Desc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
-			_Desc.Desc_1_1.NumParameters     = _Parameters.size();
-			_Desc.Desc_1_1.pParameters       = _Parameters.data();
-			_Desc.Desc_1_1.NumStaticSamplers = _Samplers.size();
-			_Desc.Desc_1_1.pStaticSamplers   = _Samplers.data();
-			_Desc.Desc_1_1.Flags             = _Flags;
-
-			// 2. D3D12SerializeRootSignature(...) 
-			// 3._Device.CreateRootSignature(...)
-			_Initializer(*this, _Device, _Desc, _Nodemask);
-		}
-
-		void release() {
-			_Myimpl = nullptr;
-		}
-		void swap(_Rootsignature_impl& _Right) {
-			_Myimpl.Swap(_Right._Myimpl);
-			_Mydeserializer.Swap(_Right._Mydeserializer);
-		}
-
-		ID3D12RootSignature* get() const {
-			return _Myimpl.Get();
-		}
-		ID3D12RootSignature* operator->() const {
-			return _Myimpl.Get();
-		}
-		ID3D12RootSignature& ref() const {
-			return *(_Myimpl.Get());
-		}
-		ID3D12RootSignature& operator*() const {
-			return *(_Myimpl.Get());
-		}
-
-		bool valid() const {// _Mydata.Get() != nullptr
-			return static_cast<bool>(_Myimpl);
-		}
-		ID3D12VersionedRootSignatureDeserializer& deserializer() const {
-			assert( valid() );
-			return *(_Mydeserializer.Get());
-		}
-
-	private:
-		Microsoft::WRL::ComPtr<ID3D12RootSignature> _Myimpl;
-		Microsoft::WRL::ComPtr<ID3D12VersionedRootSignatureDeserializer> _Mydeserializer;
-	};
 
 }// namespace DX12

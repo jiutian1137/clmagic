@@ -2,6 +2,8 @@
 #ifndef clmagic_directX12_h_
 #define clmagic_directX12_h_
 #include "dxcore.h"
+#include "dxwindow.h"
+#include "dxrenderable.h"
 #include "hlsl.h"
 
 // extend

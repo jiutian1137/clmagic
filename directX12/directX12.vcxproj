@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -143,13 +143,21 @@
     <ClInclude Include="..\src\clmagic\directX12\dxcore\D3D12_INPUT_LAYOUT_DESC.h" />
     <ClInclude Include="..\src\clmagic\directX12\dxcore\d3dx12.h" />
     <ClInclude Include="..\src\clmagic\directX12\dxcore\enum_string.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12CommandObjects.h" />
     <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12DescriptorHeap.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Device.h" />
     <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Fence.h" />
     <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Heap.h" />
     <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12PipelineState.h" />
     <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Resource.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Resource_b.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Resource_t.h" />
     <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12RootSignature.h" />
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\uncopyable.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\IDXGIFactory.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\IDXGISwapChain.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxcore\packaged_comptr.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxrenderable.h" />
+    <ClInclude Include="..\src\clmagic\directX12\dxwindow.h" />
     <ClInclude Include="..\src\clmagic\directX12\Frame_Resource.h" />
     <ClInclude Include="..\src\clmagic\directX12\hlsl.h" />
     <ClInclude Include="..\src\clmagic\directX12\mesh.h" />

@@ -1,0 +1,14 @@
+{
+	Titanium{ 
+		subsurface_albedo{ 0.04, 0.04, 0.04 },
+		reflect_value{ 0.542, 0.497, 0.449 },
+		roughness_x: 0,
+		roughness_y: 0 
+	},
+	Chromium{
+		subsurface_albedo{ 0.04, 0.04, 0.04 },
+		reflect_value{ 0.549, 0.556, 0.554 },
+		roughness_x: 0,
+		roughness_y: 0
+	},
+}
