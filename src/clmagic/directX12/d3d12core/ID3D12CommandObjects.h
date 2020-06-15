@@ -1,7 +1,5 @@
 #pragma once
-#include <d3d12.h>
-#include <assert.h>
-#include "ID3D12Fence.h"
+#include "ID3D12Device.h"
 
 namespace d3d12 {
 
@@ -108,13 +106,6 @@ namespace d3d12 {
 			_My_command_list->Close();
 			ID3D12CommandList* _Cmdlists[] = { _My_command_list.get() };
 			_My_command_queue->ExecuteCommandLists(1, _Cmdlists);
-		}
-		void close_execute_flush(ID3D12Fence& _Fence, UINT64& _Fence_point) {
-			close_execute();
-			flush_ID3D12CommandQueue(_My_command_queue.ref(), _Fence, _Fence_point);
-		}
-		void close_execute_flush(fence& _Fence) {
-			this->close_execute_flush(_Fence.ref(), _Fence._Fence_point);
 		}
 
 		void release() {

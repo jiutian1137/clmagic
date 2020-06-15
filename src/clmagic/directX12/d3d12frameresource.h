@@ -4,10 +4,11 @@
 #include <d3d12.h>
 #include <wrl.h>
 #include <assert.h>
+#include "d3d12renderable.h"
 
 namespace d3d12 {
 
-	struct basic_frame_resource {
+	struct basic_frame_resource : clmagic::renderable {
 		basic_frame_resource() = default;
 		basic_frame_resource(ID3D12Device& _Device, D3D12_COMMAND_LIST_TYPE _Type = D3D12_COMMAND_LIST_TYPE_DIRECT) {
 			HRESULT hr = _Device.CreateCommandAllocator(_Type, IID_PPV_ARGS(&_Myalloc));

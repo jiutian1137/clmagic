@@ -1,19 +1,18 @@
 #pragma once
-#include "dxcore/d3dx12.h"
-#include "dxcore/packaged_comptr.h"
-#include "dxcore/IDXGIFactory.h"
-#include "dxcore/ID3D12Device.h"
-#include "dxcore/ID3D12Fence.h"
-#include "dxcore/ID3D12CommandObjects.h"
-#include "dxcore/ID3D12Heap.h"
-#include "dxcore/ID3D12Resource.h"
-#include "dxcore/ID3D12Resource_b.h"
-#include "dxcore/ID3D12Resource_t.h"
-#include "dxcore/IDXGISwapChain.h"
-#include "dxcore/ID3D12DescriptorHeap.h"
-#include "dxcore/D3D12_INPUT_LAYOUT_DESC.h"
-#include "dxcore/ID3D12PipelineState.h"
-#include "dxcore/ID3D12RootSignature.h"
+#include "d3d12core/d3dx12.h"
+#include "d3d12core/packaged_comptr.h"
+#include "d3d12core/IDXGIFactory.h"
+#include "d3d12core/ID3D12Device.h"
+#include "d3d12core/ID3D12Fence.h"
+#include "d3d12core/ID3D12CommandObjects.h"
+#include "d3d12core/ID3D12Heap.h"
+#include "d3d12core/ID3D12Resource.h"
+#include "d3d12core/ID3D12Resource_b.h"
+#include "d3d12core/ID3D12Resource_t.h"
+#include "d3d12core/IDXGISwapChain.h"
+#include "d3d12core/ID3D12DescriptorHeap.h"
+#include "d3d12core/ID3D12PipelineState.h"
+#include "d3d12core/ID3D12RootSignature.h"
 
 namespace d3d12 {
 	
@@ -23,7 +22,6 @@ namespace d3d12 {
 
 	using shader_input     = _Vector_input_element_desc;
 	using shader_signature = _Rootsignature_impl;
-	using shader_program   = _Pipelinestate_impl;
 	
 	// ID3D12DescriptorHeap
 	template<size_t _Size> using CBV_SRV_UAV_array = descriptor_array<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, _Size>;
@@ -35,9 +33,7 @@ namespace d3d12 {
 	template<typename _Kty, size_t _Size> using RTV_array_map         = descriptor_array_map<_Kty, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, _Size>;
 	template<typename _Kty, size_t _Size> using DSV_array_map         = descriptor_array_map<_Kty, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, _Size>;
 
-	template<DXGI_FORMAT _Fmt> using swap_chain = _Swap_chain_impl<_Fmt>;
-	using swap_chain_rgba8u = swap_chain<DXGI_FORMAT_R8G8B8A8_UNORM>;
-	using swap_chain_d24s8  = swap_chain<DXGI_FORMAT_D24_UNORM_S8_UINT>;
+	
 
 
 	// ID3D12Resource

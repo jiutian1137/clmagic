@@ -1,5 +1,6 @@
 #pragma once
 #include <wrl.h>
+#include <assert.h>
 
 namespace d3d12 {
 	struct uncopyable {
@@ -29,6 +30,9 @@ namespace d3d12 {
 		_Ty& operator*() const {
 			return *(this->_Impl.Get());
 		}
+		operator _Ty& () const {
+			return *(this->_Impl.Get());
+		}
 
 		bool valid() const {
 			return static_cast<bool>(this->_Impl);
@@ -36,22 +40,5 @@ namespace d3d12 {
 
 		Microsoft::WRL::ComPtr<_Ty> _Impl;
 	};
-
-
-
-	template<typename _Ty>
-	Microsoft::WRL::ComPtr<ID3D12Device> get_device(_Ty& _d3d_obj) {
-		Microsoft::WRL::ComPtr<ID3D12Device> _Device;
-		_d3d_obj.GetDevice(IID_PPV_ARGS(&_Device));
-		return std::move(_Device);
-	}
-	
-	template<typename _Ty>
-	Microsoft::WRL::ComPtr<ID3D12Device> get_device(_Ty* pd3d_obj) {
-		Microsoft::WRL::ComPtr<ID3D12Device> _Device;
-		pd3d_obj->GetDevice(IID_PPV_ARGS(&_Device));
-		return std::move(_Device);
-	}
-
 
 }// namespace d3d12

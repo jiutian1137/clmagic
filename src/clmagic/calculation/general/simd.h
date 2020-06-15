@@ -3,8 +3,8 @@
 // All Rights Reserved
 //--------------------------------------------------------------------------------------
 #pragma once
-#ifndef clmagic_math_SIMD_h_
-#define clmagic_math_SIMD_h_
+#ifndef clmagic_calculation_general_SIMD_h_
+#define clmagic_calculation_general_SIMD_h_
 
 //#include "clmagic.h"
 

@@ -1,11 +1,6 @@
 #pragma once
-#include <d3d12.h>
-#include <wrl.h>// Windows 
-#include <assert.h>
+#include "ID3D12Resource.h"
 #include <map>
-
-#include "packaged_comptr.h"
-#include "enum_string.h"
 
 namespace d3d12 {
 	// I not like ID3D12DescriptorHeap
@@ -101,7 +96,7 @@ namespace d3d12 {
 		}
 
 		void swap(descriptor_array& _Right) {
-			_Right._Impl.Swap(this->_Impl);
+			std::swap(_Right._Impl, this->_Impl);
 			std::swap(_Right._My_stride, this->_My_stride);
 		}
 
@@ -118,7 +113,7 @@ namespace d3d12 {
 		}
 		void set(size_t _Pos, ID3D12Resource& _Map_resource, descriptor_type _Map_desc) {
 			assert(_Pos < _Mysize);
-			Microsoft::WRL::ComPtr<ID3D12Device> _Device = get_device(this->ref());
+			Microsoft::WRL::ComPtr<ID3D12Device> _Device = get_ID3D12Device(this->ref());
 			_Descriptor_creator<_Mytype>()(*_Device.Get(), _Map_resource, _Map_desc, get_CPUhandle(_Pos));
 		}
 
@@ -155,9 +150,9 @@ namespace d3d12 {
 		}
 
 		void swap(descriptor_array_map& _Right) {
-			_Right._Impl.Swap(this->_Impl);
-			std::swap(_Right._My_stride, _My_stride);
-			_Right._My_map.swap(_My_map);
+			std::swap(_Right._Impl, this->_Impl);
+			std::swap(_Right._My_stride, this->_My_stride);
+			std::swap(_Right._My_map, this->_My_map);
 		}
 
 		size_t size() const {
@@ -180,12 +175,12 @@ namespace d3d12 {
 				// 1. get _Mapval
 				size_t _Mapval = _My_map.size();
 				// 2. create resource_view into _Mapval-place
-				Microsoft::WRL::ComPtr<ID3D12Device> _Device = get_device(this->ref());
+				Microsoft::WRL::ComPtr<ID3D12Device> _Device = get_ID3D12Device(this->ref());
 				_Descriptor_creator<_Mytype>()(*_Device.Get(), _Map_resource, _Map_desc, get_D3D12_CPU_DESCRIPTOR_HANDLE(this->ref(), _Mapval, _My_stride));
 				// 3. sync _My_map
 				_My_map.insert_or_assign(_Keyval, _Mapval);
 			} else {// re-create
-				Microsoft::WRL::ComPtr<ID3D12Device> _Device = get_device(this->ref());
+				Microsoft::WRL::ComPtr<ID3D12Device> _Device = get_ID3D12Device(this->ref());
 				_Descriptor_creator<_Mytype>()(*_Device.Get(), _Map_resource, _Map_desc, get_D3D12_CPU_DESCRIPTOR_HANDLE(this->ref(), _Where->second, _My_stride));
 			}
 		}

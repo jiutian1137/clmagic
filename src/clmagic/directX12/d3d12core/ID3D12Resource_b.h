@@ -3,62 +3,6 @@
 
 namespace d3d12 {
 
-	template<typename _Ty>
-	Microsoft::WRL::ComPtr<ID3D12Resource> make_buffer_resource(ID3D12Device& _Device, size_t _Count, D3D12_HEAP_TYPE _Htype, 
-		D3D12_RESOURCE_FLAGS _Rflag = D3D12_RESOURCE_FLAG_NONE, D3D12_HEAP_FLAGS _Hflag = D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATES _Rstate = D3D12_RESOURCE_STATE_COMMON)
-	{
-		Microsoft::WRL::ComPtr<ID3D12Resource> _Result;
-		const auto _Rdesc  = CD3DX12_RESOURCE_DESC::Buffer(_Count * sizeof(_Ty), _Rflag);
-		           _Rstate = inital_resource_state(_Htype, _Rstate);
-		assert(SUCCEEDED(
-			_Device.CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(_Htype), _Hflag, &_Rdesc, _Rstate, nullptr, IID_PPV_ARGS(&_Result))
-		));
-		return std::move(_Result);
-	}
-
-	template<typename _Ty>
-	Microsoft::WRL::ComPtr<ID3D12Resource> make_dynamic_buffer_resource(ID3D12Device& _Device, size_t _Count,
-		D3D12_RESOURCE_FLAGS _Rflag = D3D12_RESOURCE_FLAG_NONE, D3D12_HEAP_FLAGS _Hflag = D3D12_HEAP_FLAG_NONE) 
-	{
-		return make_buffer_resource<_Ty>(_Device, _Count, D3D12_HEAP_TYPE_UPLOAD,_Rflag, _Hflag);
-	}
-	
-	template<typename _Ty>
-	Microsoft::WRL::ComPtr<ID3D12Resource> make_static_buffer_resource(ID3D12Device& _Device, size_t _Count,
-		D3D12_RESOURCE_FLAGS _Rflag = D3D12_RESOURCE_FLAG_NONE, D3D12_HEAP_FLAGS _Hflag = D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATES _Rstate = D3D12_RESOURCE_STATE_COMMON)
-	{
-		return make_buffer_resource<_Ty>(_Device, _Count, D3D12_HEAP_TYPE_DEFAULT,_Rflag, _Hflag, _Rstate);
-	}
-
-	template<typename _Ty>
-	D3D12_VERTEX_BUFFER_VIEW make_D3D12_VERTEX_BUFFER_VIEW(ID3D12Resource& _Resource, size_t _Count) {
-		D3D12_VERTEX_BUFFER_VIEW _Desc;
-		_Desc.BufferLocation = _Resource.GetGPUVirtualAddress();
-		_Desc.SizeInBytes    = sizeof(_Ty) * _Count;
-		_Desc.StrideInBytes  = sizeof(_Ty);
-		return _Desc;
-	}
-
-	template<typename _Ty>
-	struct _Index_buffer_format {
-		constexpr static auto format = DXGI_FORMAT_R16_UINT;
-	};
-
-	template<>
-	struct _Index_buffer_format<uint32_t> {
-		constexpr static auto format = DXGI_FORMAT_R32_UINT;
-	};
-
-	template<typename _Ty>
-	D3D12_INDEX_BUFFER_VIEW make_D3D12_INDEX_BUFFER_VIEW(ID3D12Resource& _Resource, size_t _Count) {
-		//static_assert(std::_Is_any_of_v(_Ty, uint16_t, uint32_t), "index_type must be uint16_t or uint32_t");
-		D3D12_INDEX_BUFFER_VIEW _Desc;
-		_Desc.BufferLocation = _Resource.GetGPUVirtualAddress();
-		_Desc.Format         = _Index_buffer_format<_Ty>::format;
-		_Desc.SizeInBytes    = sizeof(_Ty) * _Count;
-		return _Desc;
-	}
-
 	/*- - - - - - - - - - - - - - - - - - - - - dynamic_buffer - - - - - - - - - - - - - - - - - - - - - - - - -*/
 	template<typename _Ty>
 	struct dynamic_buffer : public packaged_comptr<ID3D12Resource>, public uncopyable {
@@ -189,7 +133,7 @@ namespace d3d12 {
 			}
 
 			// create new_resource
-			Microsoft::WRL::ComPtr<ID3D12Device>   _My_device    = get_device(this->get()); 
+			Microsoft::WRL::ComPtr<ID3D12Device>   _My_device    = get_ID3D12NoRaytracingDevice(this->get()); 
 			Microsoft::WRL::ComPtr<ID3D12Resource> _New_resource = make_dynamic_buffer_resource<_Ty>(*_My_device.Get(), _New_capacity, _My_resource_flag, _My_heap_flag);
 			// copy data
 			_Ty* _New_mapping = nullptr;
@@ -285,11 +229,11 @@ namespace d3d12 {
 		void _Copy_from(const _Bufty& _Right) {
 			assert( _Right.valid() );
 			// create resource
-			Microsoft::WRL::ComPtr<ID3D12Device>   _Device   = get_device(_Right.get());
+			Microsoft::WRL::ComPtr<ID3D12Device>   _Device   = get_ID3D12NoRaytracingDevice(_Right.get());
 			Microsoft::WRL::ComPtr<ID3D12Resource> _Resource = make_static_buffer_resource<_Ty>(*_Device.Get(), _Right.size(), _Right.get_D3D12_RESOURCE_FLAGS(), _Right.get_D3D12_HEAP_FLAGS());
 			// create copy_executor
 			command_objects _Executor = command_objects(*_Device.Get());
-			fence           _Fence    = fence(*_Device.Get(), 0);
+			fence           _Fence    = fence(*_Device.Get(), 1);
 			// execute copy
 			_Executor.reset();
 			_Executor->CopyBufferRegion(_Resource.Get(), 0, _Right.get(), 0, _Right.size()*sizeof(_Ty));
@@ -307,7 +251,7 @@ namespace d3d12 {
 			} else {
 				const size_t _New_size = this->size() + _Right.size();
 				// create resource
-				Microsoft::WRL::ComPtr<ID3D12Device>   _Device   = get_device(_Right.get());
+				Microsoft::WRL::ComPtr<ID3D12Device>   _Device   = get_ID3D12NoRaytracingDevice(_Right.get());
 				Microsoft::WRL::ComPtr<ID3D12Resource> _Resource = make_static_buffer_resource<_Ty>(*_Device.Get(), _New_size, this->get_D3D12_RESOURCE_FLAGS(), this->get_D3D12_HEAP_FLAGS(), this->get_D3D12_RESOURCE_STATES());
 				// create copy_executor
 				command_objects _Executor = command_objects(*_Device.Get());
@@ -324,10 +268,14 @@ namespace d3d12 {
 		
 	public:
 		void copy_from(const dynamic_buffer<_Ty>& _Right) {
-			this->_Copy_from(_Right);
+			assert( _Right.valid() );
+			this->_Impl = make_static_buffer_resource<_Ty>(_Right, 0, _Right.size());
+			_My_state   = D3D12_RESOURCE_STATE_COMMON;
 		}
 		void copy_from(const static_buffer<_Ty>& _Right) {
-			this->_Copy_from(_Right);
+			assert( _Right.valid() );
+			this->_Impl = make_static_buffer_resource<_Ty>(_Right, 0, _Right.size());
+			_My_state   = D3D12_RESOURCE_STATE_COMMON;
 		}
 		void merge_from(const dynamic_buffer<_Ty>& _Right) {
 			this->_Merge_from(_Right);

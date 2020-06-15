@@ -1,10 +1,9 @@
 #pragma once
-#include <d3d12.h>
-#include "d3dx12.h"
-#include <assert.h>
-
-#include "packaged_comptr.h"
+#include "ID3D12Device.h"
+#include "ID3D12Fence.h"
+#include "ID3D12CommandObjects.h"
 #include "enum_string.h"
+
 /*
 dynamic_buffer ----->----- static_buffer ----->----- \
 	                                                   \	
@@ -157,5 +156,84 @@ namespace d3d12 {
 		// upload_heapand readback_heap can't transition
 		D3D12_RESOURCE_STATES _Mystate = D3D12_RESOURCE_STATE_COMMON;
 	};
+
+
+	template<typename _Ty>
+	Microsoft::WRL::ComPtr<ID3D12Resource> make_buffer_resource(ID3D12Device& _Device, size_t _Count, D3D12_HEAP_TYPE _Htype, 
+		D3D12_RESOURCE_FLAGS _Rflag = D3D12_RESOURCE_FLAG_NONE, D3D12_HEAP_FLAGS _Hflag = D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATES _Rstate = D3D12_RESOURCE_STATE_COMMON)
+	{
+		Microsoft::WRL::ComPtr<ID3D12Resource> _Result;
+		const auto _Rdesc  = CD3DX12_RESOURCE_DESC::Buffer(_Count * sizeof(_Ty), _Rflag);
+		           _Rstate = inital_resource_state(_Htype, _Rstate);
+		assert(SUCCEEDED(
+			_Device.CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(_Htype), _Hflag, &_Rdesc, _Rstate, nullptr, IID_PPV_ARGS(&_Result))
+		));
+		return std::move(_Result);
+	}
+	
+	template<typename _Ty>
+	Microsoft::WRL::ComPtr<ID3D12Resource> make_buffer_resource(ID3D12Resource& _Source, size_t _Offset, size_t _Count, D3D12_HEAP_TYPE _Htype) {
+		// make <D3D12_RESOURCE_STATE_COMMON buffer resource> from _Source
+		device                                 _Device   = get_device(_Source);
+		Microsoft::WRL::ComPtr<ID3D12Resource> _Dest     = make_buffer_resource<_Ty>(_Device, _Count, _Htype, _Source.GetDesc().Flags);
+		command_objects                        _Executor = command_objects(_Device);
+		fence                                  _Fence    = fence(_Device);
+		_Executor.reset();
+		_Executor->CopyBufferRegion(_Dest.Get(), 0, &_Source, sizeof(_Ty)*_Offset, sizeof(_Ty)*_Count);
+		_Executor.close_execute();
+		_Fence.flush(_Executor._My_command_queue);
+		return std::move(_Dest);
+	}
+
+	template<typename _Ty>
+	Microsoft::WRL::ComPtr<ID3D12Resource> make_dynamic_buffer_resource(ID3D12Device& _Device, size_t _Count,
+		D3D12_RESOURCE_FLAGS _Rflag = D3D12_RESOURCE_FLAG_NONE, D3D12_HEAP_FLAGS _Hflag = D3D12_HEAP_FLAG_NONE) 
+	{
+		return make_buffer_resource<_Ty>(_Device, _Count, D3D12_HEAP_TYPE_UPLOAD, _Rflag, _Hflag);
+	}
+	
+	template<typename _Ty>
+	Microsoft::WRL::ComPtr<ID3D12Resource> make_static_buffer_resource(ID3D12Device& _Device, size_t _Count,
+		D3D12_RESOURCE_FLAGS _Rflag = D3D12_RESOURCE_FLAG_NONE, D3D12_HEAP_FLAGS _Hflag = D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATES _Rstate = D3D12_RESOURCE_STATE_COMMON)
+	{
+		return make_buffer_resource<_Ty>(_Device, _Count, D3D12_HEAP_TYPE_DEFAULT,_Rflag, _Hflag, _Rstate);
+	}
+
+	template<typename _Ty>
+	Microsoft::WRL::ComPtr<ID3D12Resource> make_static_buffer_resource(ID3D12Resource& _Source, size_t _Offset, size_t _Count) {
+		// make <D3D12_RESOURCE_STATE_COMMON static buffer resource> from _Source
+		return make_buffer_resource<_Ty>(_Source, _Offset, _Count, D3D12_HEAP_TYPE_DEFAULT);
+	}
+
+	template<typename _Ty>
+	Microsoft::WRL::ComPtr<ID3D12Resource> make_dynamic_buffer_resource(ID3D12Resource& _Source, size_t _Offset, size_t _Count) {
+		// make <D3D12_RESOURCE_STATE_GENERAL_READ dynamic buffer resource> from _Source
+		return make_buffer_resource<_Ty>(_Source, _Offset, _Count, D3D12_HEAP_TYPE_UPLOAD);
+	}
+
+	template<typename _Ty>
+	D3D12_VERTEX_BUFFER_VIEW make_D3D12_VERTEX_BUFFER_VIEW(ID3D12Resource& _Resource, size_t _Count) {
+		D3D12_VERTEX_BUFFER_VIEW _Desc;
+		_Desc.BufferLocation = _Resource.GetGPUVirtualAddress();
+		_Desc.SizeInBytes    = sizeof(_Ty) * _Count;
+		_Desc.StrideInBytes  = sizeof(_Ty);
+		return _Desc;
+	}
+
+	template<typename _Ty>
+	struct _Index_buffer_format { constexpr static auto format = DXGI_FORMAT_R32_UINT; };
+
+	template<>
+	struct _Index_buffer_format<uint16_t> { constexpr static auto format = DXGI_FORMAT_R16_UINT; };
+
+	template<typename _Ty>
+	D3D12_INDEX_BUFFER_VIEW make_D3D12_INDEX_BUFFER_VIEW(ID3D12Resource& _Resource, size_t _Count) {
+		//static_assert(std::_Is_any_of_v(_Ty, uint16_t, uint32_t), "index_type must be uint16_t or uint32_t");
+		D3D12_INDEX_BUFFER_VIEW _Desc;
+		_Desc.BufferLocation = _Resource.GetGPUVirtualAddress();
+		_Desc.Format         = _Index_buffer_format<_Ty>::format;
+		_Desc.SizeInBytes    = sizeof(_Ty) * _Count;
+		return _Desc;
+	}
 
 }// namespace d3d12

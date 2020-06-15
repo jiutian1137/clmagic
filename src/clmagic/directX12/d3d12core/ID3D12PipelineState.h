@@ -1,33 +1,26 @@
 #pragma once
-#include <d3d12.h>
-#include "d3dx12.h"
-
-#include <assert.h>
-#include <array>
-
-#include "packaged_comptr.h"
-#include "enum_string.h"
+#include "ID3D12Device.h"
 
 namespace d3d12 {
 
-	struct _Pipelinestate_impl : public packaged_comptr<ID3D12PipelineState>, public uncopyable {
-		_Pipelinestate_impl() = default;
-		_Pipelinestate_impl(_Pipelinestate_impl&& _Right) noexcept {
+	struct shader_pipeline : public packaged_comptr<ID3D12PipelineState>, public uncopyable {
+		shader_pipeline() = default;
+		shader_pipeline(shader_pipeline&& _Right) noexcept {
 			_Right.swap(*this);
 			_Right.release();
 		}
-		_Pipelinestate_impl& operator=(_Pipelinestate_impl&& _Right) noexcept {
+		shader_pipeline& operator=(shader_pipeline&& _Right) noexcept {
 			_Right.swap(*this);
 			_Right.release();
 			return (*this);
 		}
 		
-		_Pipelinestate_impl(ID3D12Device& _Device, const D3D12_GRAPHICS_PIPELINE_STATE_DESC& _Desc) {
+		shader_pipeline(ID3D12Device& _Device, const D3D12_GRAPHICS_PIPELINE_STATE_DESC& _Desc) {
 			assert(SUCCEEDED( 
 				_Device.CreateGraphicsPipelineState(&_Desc, IID_PPV_ARGS(&this->_Impl)) 
 			));
 		}
-		_Pipelinestate_impl(ID3D12Device& _Device,
+		shader_pipeline(ID3D12Device& _Device,
 			ID3D12RootSignature&    _Uniform_register,
 			D3D12_INPUT_LAYOUT_DESC _Varying_register,
 			D3D12_SHADER_BYTECODE   _Vertex_shader,
@@ -56,7 +49,23 @@ namespace d3d12 {
 			_Desc.SampleDesc        = _Sample;
 			HRESULT hr = _Device.CreateGraphicsPipelineState(&_Desc, IID_PPV_ARGS(this->_Impl.GetAddressOf()));
 			assert(SUCCEEDED(hr));
+			_My_puniform = &_Uniform_register;
+			_My_varying  = _Varying_register;
 		}
+	
+		void swap(shader_pipeline& _Right) {
+			std::swap(_Right._Impl, this->_Impl);
+			std::swap(_Right._My_puniform, this->_My_puniform);
+			std::swap(_Right._My_varying, this->_My_varying);
+		}
+
+		void release() {
+			this->_Impl = nullptr;
+			this->_My_puniform = nullptr;
+		}
+
+		ID3D12RootSignature*    _My_puniform;
+		D3D12_INPUT_LAYOUT_DESC _My_varying;
 	};
 
 }// namespace dx12

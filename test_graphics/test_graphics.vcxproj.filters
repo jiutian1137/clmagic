@@ -2,75 +2,19 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Common\Camera.cpp">
-      <Filter>Common</Filter>
-    </ClCompile>
-    <ClCompile Include="Common\d3dApp.cpp">
-      <Filter>Common</Filter>
-    </ClCompile>
-    <ClCompile Include="Common\d3dUtil.cpp">
-      <Filter>Common</Filter>
-    </ClCompile>
-    <ClCompile Include="Common\DDSTextureLoader.cpp">
-      <Filter>Common</Filter>
-    </ClCompile>
-    <ClCompile Include="Common\GameTimer.cpp">
-      <Filter>Common</Filter>
-    </ClCompile>
-    <ClCompile Include="Common\GeometryGenerator.cpp">
-      <Filter>Common</Filter>
-    </ClCompile>
-    <ClCompile Include="Common\MathHelper.cpp">
-      <Filter>Common</Filter>
-    </ClCompile>
     <ClCompile Include="Waves.cpp" />
+    <ClCompile Include="Common\GeometryGenerator.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="Common">
-      <UniqueIdentifier>{a0509d96-09a3-483f-9401-c1abae080b83}</UniqueIdentifier>
-    </Filter>
     <Filter Include="shader">
       <UniqueIdentifier>{c71161a0-a5d2-49b6-915a-4255c8a34407}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Common\Camera.h">
-      <Filter>Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\d3dApp.h">
-      <Filter>Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\d3dUtil.h">
-      <Filter>Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\d3dx12.h">
-      <Filter>Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\DDSTextureLoader.h">
-      <Filter>Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\GameTimer.h">
-      <Filter>Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\GeometryGenerator.h">
-      <Filter>Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\MathHelper.h">
-      <Filter>Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\UploadBuffer.h">
-      <Filter>Common</Filter>
-    </ClInclude>
     <ClInclude Include="Waves.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shader\norm.hlsl">
-      <Filter>shader</Filter>
-    </None>
-    <None Include="shader\Header.hlsl">
-      <Filter>shader</Filter>
-    </None>
-    <None Include="shader\LightingUtil.hlsl">
       <Filter>shader</Filter>
     </None>
   </ItemGroup>

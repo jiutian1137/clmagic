@@ -2,6 +2,7 @@
 #include "../src/clmagic/math.h"
 #include "../src/clmagic/directX12/directX12.h"
 #include <iostream>
+#include <fstream>
 #include <chrono>
 #include <map>
 #include "Common/GeometryGenerator.h"
@@ -16,217 +17,161 @@
 //#pragma comment(lib, "lib/opencv_world345d.lib")
 #pragma comment(lib, "lib/DirectXTK12.lib")
 
+
+
 using namespace::clmagic;
 
-struct PER_OBJECT {
-	matrix4x4<float> Mworld;
-};
+float* _Control_roughness = nullptr;
 
-struct PER_FRAME {
-	matrix4x4<float> Mview;
-	matrix4x4<float> MProj;
-	vector3<float>   Peye;
-	float __pand__;
-	vector2<float>   Resolution;
-	float            TotalTime;
-	float            DeltaTime;
-};
+struct test_window : public d3d12::window {
 
-struct PER_MATERIAL {
-	surface<float>      Mtl;
-};
-
-struct RENDERING {
-	environment<float>  Env;
-	light_source<float> Lights[3];
-};
-
-struct VInput {
-	vector3<float> POSITION0;
-	vector3<float> NORMAL0;
-	vector2<float> TEXCOORD0;
-};
-
-struct FrameResource : public d3d12::basic_frame_resource {
-	FrameResource() = default;
-
-	FrameResource(ID3D12Device& _Device, D3D12_COMMAND_LIST_TYPE _Type)
-		: d3d12::basic_frame_resource(_Device, _Type) {
-		// single descriptor
-		cb_PER_FRAME = d3d12::dynamic_buffer<PER_FRAME>(_Device, 1);
-		cb_RENDERING = d3d12::dynamic_buffer<RENDERING>(_Device, 1);
+	virtual void on_mouse(winapi_util::mouse_types button, winapi_util::button_states state) override {
+		if (button == winapi_util::mouse_types::right) {
+			if (state == winapi_util::button_states::release || state == winapi_util::button_states::repeat) {
+				_Change_direction = false;
+			} else {
+				_Change_direction = true;
+			}
+		}
 	}
 
-	virtual void release() override {
-		d3d12::basic_frame_resource::release();
-		cb_PER_FRAME.release();
-		cb_RENDERING.release();
+	virtual void on_cursor(POINT _Current, POINT _Prev) override {
+		if (_Change_direction) {
+			_My_camera.yaw_surround({0.f, 0.f, 0.f}, (_Current.x - _Prev.x) * 0.01);
+			_My_camera.pitch_surround({ 0.f, 0.f, 0.f }, (_Current.y - _Prev.y) * 0.01);
+			_My_camera.look_at({ 0.f, 0.f, 0.f });
+			//_My_camera.look();
+			//MessageBoxA(nullptr, _My_camera.to_string().c_str(), nullptr, MB_OK);
+		}
 	}
 
-	d3d12::dynamic_buffer<PER_FRAME> cb_PER_FRAME;// b0
-	d3d12::dynamic_buffer<RENDERING> cb_RENDERING;// b3
+	virtual void on_key(int key, winapi_util::button_states state) override {
+		if (state != winapi_util::button_states::release) {
+			switch (key) {
+			case 'D': _My_camera.strafe(+1.f); break;
+			case 'A': _My_camera.strafe(-1.f); break;
+			case 'W': _My_camera.walk(+1.f); break;
+			case 'S': _My_camera.walk(-1.f); break;
+			case 'Q': _My_camera._My_position += _My_camera._My_u_vector * (+1.f); break;
+			case 'E': _My_camera._My_position += _My_camera._My_u_vector * (-1.f); break;
+			case 'T': *_Control_roughness += 0.02f; break;
+			case 'G': *_Control_roughness -= 0.02f; break;
+			default:
+				break;
+			}
+			_My_camera.look();
+		}
+	}
+
+	bool _Change_direction = false;
+	bool _Change_position  = true;
+	perspective_viewer<float> _My_camera = perspective_viewer<float>({ 0.f, 1.7f, -1.f }, { 0.f, 0.f, 1.f }, clmagic::degrees<float>(60));
 };
 
+//struct wave_geometry : public d3d12::dynamic_mesh<norm_hlsl::varying> {
+//	using _Mybase = d3d12::dynamic_mesh<norm_hlsl::varying>;
+//	virtual ID3D12GraphicsCommandList& render(ID3D12GraphicsCommandList& _Cmdlist) override {
+//		_Mybase::render(_Cmdlist);
+//	}
+//	
+//	bool  _My_durty = true;
+//	Waves _My_generater;
+//};
 
 
-d3d12::factory gFactory;
-d3d12::device  gDevice;
-d3d12::fence   gFence;
-d3d12::window  gWindow;
+// basic
+test_window  gWindow;
+d3d12::fence gFence;
+#include "Waves.h"
+Waves gWaves;
 
-d3d12::shader_signature gSignature;
-constexpr uint32_t INDEX_FRAME = 0;
-constexpr uint32_t INDEX_TRANSFORM = 1;
-constexpr uint32_t INDEX_SUBSTANCE = 2;
-constexpr uint32_t INDEX_RENDERING = 3;// light and environment
+// shader_pipeline
+#define NORM_HLSL "shader/norm.hlsl"
+#define NORM_HLSL_L L"shader/norm.hlsl"
+#include NORM_HLSL
+std::map<std::string, d3d12::shader_program> gPrograms;
+std::map<std::string, d3d12::shader_input>    gVaryings;
+std::map<std::string, d3d12::shader_signature> gUniforms;
+std::map<std::string, std::shared_ptr<clmagic::uniform>> gFrameResources;
 
-d3d12::shader_program gProgram;
-
+// resources
 d3d12::CBV_SRV_UAV_array_map<std::string, 100> gSRVs;
-
-d3d12::static_texture2D<DXGI_FORMAT_BC3_UNORM> gTexture;
-
+std::map<std::string, 
+	d3d12::static_texture2D<DXGI_FORMAT_BC3_UNORM>> gTextures;
+std::map<std::string, 
+	std::shared_ptr<clmagic::substance>> gSubstances;
 std::map<std::string, 
 	std::shared_ptr<clmagic::geometry>> gGeometrys;
 
-std::map<std::string, 
-	std::shared_ptr<clmagic::substance>> gSubstances;
-
+// composite resources to object_system
 std::map<std::string, 
 	clmagic::object_system>  gObjectSystems;
 
-timer_wheel<FrameResource> gFrameResources;
-
-std::map<std::string, perspective_camera<float, __m128>> gCameras;
 
 
+void init_shader_pipeline(ID3D12Device& _Device) {
+	hlsl::shader _StandardVS = hlsl::shader_compile(NORM_HLSL_L, nullptr, "VS", "vs_5_0");
+	hlsl::shader _StandardPS = hlsl::shader_compile(NORM_HLSL_L, nullptr, "PS", "ps_5_0");
 
-void initial_geometry(ID3D12Device& _Device);
-void initial_material(ID3D12Device& _Device);
-void initial_light();
-void initial_object();
+	gUniforms[NORM_HLSL] = norm_hlsl::make_shader_signature(_Device);
+	gVaryings[NORM_HLSL] = norm_hlsl::make_input_decs();
+	gPrograms[NORM_HLSL] = d3d12::shader_program(d3d12::shader_pipeline(_Device, gUniforms[NORM_HLSL], gVaryings[NORM_HLSL].get(), _StandardVS.get_dx12(), _StandardPS.get_dx12(),
+		gWindow._My_color_buffer.format, gWindow._My_depth_buffer.format, DXGI_SAMPLE_DESC{ 1, 0 }) );
 
-void initializer(ID3D12Device& _Device) {
-	d3d12::command_objects _Command = d3d12::command_objects(_Device);
-
-	{// gShaderSignature = ...
-		std::vector<D3D12_ROOT_PARAMETER> _Parameters(5);
-		CD3DX12_ROOT_PARAMETER::InitAsConstantBufferView(_Parameters[INDEX_FRAME], 0/*b0*/);
-		CD3DX12_ROOT_PARAMETER::InitAsConstants(_Parameters[INDEX_TRANSFORM], 16, 1/*b1*/);
-		CD3DX12_ROOT_PARAMETER::InitAsConstants(_Parameters[INDEX_SUBSTANCE], 8, 2/*b2*/);
-		CD3DX12_ROOT_PARAMETER::InitAsConstantBufferView(_Parameters[INDEX_RENDERING], 3/*b3*/);
-		CD3DX12_ROOT_PARAMETER::InitAsDescriptorTable(_Parameters[4], 1, &CD3DX12_DESCRIPTOR_RANGE(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0));
-		
-		std::vector<D3D12_STATIC_SAMPLER_DESC> _Samplers(1);
-		_Samplers[0] = CD3DX12_STATIC_SAMPLER_DESC(0/*s0*/, D3D12_FILTER_ANISOTROPIC);
-		
-		gSignature = d3d12::shader_signature(_Device, _Parameters, _Samplers);
-
-		//// load texture
-		//DirectX::ResourceUploadBatch _Upload(_Device.get());
-		//_Upload.Begin();
-		//DirectX::CreateDDSTextureFromFile(_Device.get(), _Upload, L"media/WoodCrate01.dds", &gTexture._Impl);
-		//_Upload.End(_Command._My_command_queue.get());
-		//gFence.flush(_Command._My_command_queue.ref());
-
-		//// create and insert shader_resource_view
-		//gSRVs = d3d12::CBV_SRV_UAV_array_map<std::string, 100>(_Device.ref(), D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-		//gSRVs.insert_or_assign("gTexture", gTexture.ref(), d3d12::make_D3D12_SHADER_RESOURCE_VIEW_DESC_with_TEXTURE2D(gTexture.ref()));
-	}
-
-	{// gShaderProgram = ...
-		d3d12::shader_input _Varyings;
-		_Varyings.push_back("POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA);
-		_Varyings.push_back("NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA);
-		_Varyings.push_back("TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA);
-	
-		hlsl::shader _StandardVS = hlsl::shader_compile(L"shader/norm.hlsl", nullptr, "VS", "vs_5_0");
-		hlsl::shader _StandardPS = hlsl::shader_compile(L"shader/norm.hlsl", nullptr, "PS", "ps_5_0");
-
-		gProgram = d3d12::shader_program(_Device, gSignature.ref(), _Varyings.get(), _StandardVS.get_dx12(), _StandardPS.get_dx12(),
-			gWindow._My_color_buffer.format, gWindow._My_depth_buffer.format, DXGI_SAMPLE_DESC{ 1, 0 });
-	}
-
-	for (size_t i = 0; i != 1; ++i) {
-		gFrameResources.expend_cycle(FrameResource(_Device, D3D12_COMMAND_LIST_TYPE_DIRECT));
-	}
-
-	gCameras["default"] = perspective_camera<float, __m128>();
-
-	initial_geometry(_Device);
-	initial_material(_Device);
-	initial_light();
-	initial_object();
+	gFrameResources[NORM_HLSL] = std::make_shared<norm_hlsl::uniform_frame>(_Device);
 }
 
+void init_shader_frame_resources() {
+	auto* _Norm_hlsl_fs = dynamic_cast<norm_hlsl::uniform_frame*>(gFrameResources[NORM_HLSL].get());
+	norm_hlsl::uniform_frame::_My_data_type* _Ptr = nullptr;
+	_Norm_hlsl_fs->map(reinterpret_cast<void**>(&_Ptr));
 
-//
-//void display() {
-//	TW_frame_resource.turn();
-//	if (TW_frame_resource->fence != 0 && gFence->GetCompletedValue() < TW_frame_resource->fence) {
-//		HANDLE _Event = CreateEventEx(nullptr, nullptr, 0, EVENT_ALL_ACCESS);
-//		gFence->SetEventOnCompletion(TW_frame_resource->fence, _Event);
-//		WaitForSingleObject(_Event, INFINITE);
-//		CloseHandle(_Event);
-//	}
-//
-//	
-//
-//	/*auto  _Color_buffer_view = gRTVs.get_CPUhandle(gBackbuffer_color.timer_pointer);
-//	auto  _Depth_buffer_view = gDSVs.get_CPUhandle(0);*/
-//
-//	auto _Cmdlist_alloc = TW_frame_resource->command_allocator_ptr();
-//	_Cmdlist_alloc->Reset();
-//	gCommandObjects->Reset(_Cmdlist_alloc, gShaderProgram.get());
-//
-//	gCommandObjects->RSSetViewports(1, &gWindow.get_D3D12_VIEWPORT());
-//	gCommandObjects->RSSetScissorRects(1, &gWindow.get_D3D12_RECT());
-//	gCommandObjects->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(gBackbuffer_color.clock().get(),
-//		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-//
-//	/*gCommandObjects->ClearRenderTargetView(_Color_buffer_view, DirectX::Colors::LightSteelBlue, 0, nullptr);
-//	gCommandObjects->ClearDepthStencilView(_Depth_buffer_view, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-//	gCommandObjects->OMSetRenderTargets(1, &_Color_buffer_view, true, &_Depth_buffer_view);*/
-//
-//	
-//	//ID3D12DescriptorHeap* descriptorHeaps[] = { gSRVs.get() };
-//	//gCommandObjects->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-//	gCommandObjects->SetGraphicsRootSignature(gShaderSignature.get());
-//	gCommandObjects->SetGraphicsRootConstantBufferView(0, TW_frame_resource->cb_PER_FRAME->GetGPUVirtualAddress());
-//	gCommandObjects->SetGraphicsRootConstantBufferView(3, TW_frame_resource->cb_RENDERING->GetGPUVirtualAddress());
-//
-//	{// draw
-//		auto       _First = CPU_static_Actors.begin();
-//		const auto _Last = CPU_static_Actors.end();
-//		for (; _First != _Last; ++_First) {
-//
-//			gCommandObjects->SetGraphicsRoot32BitConstants(1, 16, transpose(_First->second._Myworld).ptr(), 0);
-//
-//			auto& _Shape = *(_First->second._Myshape);
-//			gCommandObjects->IASetPrimitiveTopology(_Shape.type);
-//			gCommandObjects->IASetVertexBuffers(0, 1, &(_Shape._GPU_vertex_resource->as_D3D12_VERTEX_BUFFER_VIEW()));
-//			gCommandObjects->IASetIndexBuffer(&(_Shape._GPU_index_resource->as_D3D12_INDEX_BUFFER_VIEW()));
-//
-//			auto& _Trait = *(_First->second._Mytrait);
-//			gCommandObjects->SetGraphicsRootConstantBufferView(2, (*_Trait._GPU_resource)[_Trait._GPU_resource_index]);
-//			//gCommandObjects->SetGraphicsRootDescriptorTable(4, gSRVs->GetGPUDescriptorHandleForHeapStart());
-//
-//			gCommandObjects->DrawIndexedInstanced(_Shape.index_count, 1, _Shape.start_index_location, _Shape.base_vertex_location, 0);
-//		}
-//	}
-//
-//	gCommandObjects->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(gBackbuffer_color.clock().get(),
-//		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
-//	gCommandObjects.close_execute();
-//
-//	gBackbuffer_color.chain().Present(0, 0);
-//	gBackbuffer_color.turn();
-//	//FlushCommandQueue();
-//	TW_frame_resource->fence = ++gFence_value;
-//	gCommandObjects._My_command_queue->Signal(gFence.get(), gFence_value);
-//	//gFence.flush(gCommandObjects._My_command_queue.ref(), gFence_value);
-//}
-void initial_geometry(ID3D12Device& _Device) {
+	_Ptr->env.particles_ratio = 0.09f;
+	_Ptr->env.particles_color = { 0.f, 0.f, 0.f };
+
+	_Ptr->light_sources[0].color = { 0.7f, 0.7f, 0.7f };
+	_Ptr->light_sources[0].intensity = 100.f;
+	_Ptr->light_sources[0].position = { 0.f, 30.f, 0.f };
+	_Ptr->light_sources[0].direction = { 0.f, -1.f, 0.f };
+	_Ptr->light_sources[0].penumbra = 3.14f;
+	_Ptr->light_sources[0].umbra = 3.14f;
+
+	_Ptr->light_sources[1].color = { 1.f, 1.f, 1.f };
+	_Ptr->light_sources[1].intensity = 50.f;
+	_Ptr->light_sources[1].position = { -20.f, 2.f, 0.f };
+	_Ptr->light_sources[1].direction = { 1.f, 0.f, 0.f };
+	_Ptr->light_sources[1].penumbra = 3.14f;
+	_Ptr->light_sources[1].umbra = 3.14f;
+
+	_Ptr->light_sources[2].color = { 1.f, 1.f, 1.f };
+	_Ptr->light_sources[2].intensity = 50.f;
+	_Ptr->light_sources[2].position = { 0.f, 2.f, -10.f };
+	_Ptr->light_sources[2].direction = { 0.f, 0.f, 1.f };
+	_Ptr->light_sources[2].penumbra = 3.14f;
+	_Ptr->light_sources[2].umbra = 3.14f;
+
+	_Ptr->view_matrix = matrix_cast<matrix4x4<float, float>>(transpose(gWindow._My_camera.view_matrix()));
+	_Ptr->proj_matrix = matrix_cast<matrix4x4<float, float>>(transpose(gWindow._My_camera.proj_matrix()));
+	_Ptr->eye_position = vector_cast<vector3<float, float>>(gWindow._My_camera.position());
+
+	_Norm_hlsl_fs->unmap(reinterpret_cast<void**>(&_Ptr));
+}
+
+void init_texture_resources(ID3D12Device& _Device) {
+	d3d12::command_objects _Command = d3d12::command_objects(_Device);
+
+	DirectX::ResourceUploadBatch _Upload(&_Device);
+	_Upload.Begin();
+	DirectX::CreateDDSTextureFromFile(&_Device, _Upload, L"media/WoodCrate01.dds", &gTextures["gTexture"]._Impl);
+	_Upload.End(_Command._My_command_queue.get());
+	gFence.flush(_Command._My_command_queue.ref());
+
+	// create and insert shader_resource_view
+	gSRVs = d3d12::CBV_SRV_UAV_array_map<std::string, 100>(_Device, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+	gSRVs.insert_or_assign("gTexture", gTextures["gTexture"], d3d12::make_D3D12_SHADER_RESOURCE_VIEW_DESC_with_TEXTURE2D(gTextures["gTexture"]));
+}
+
+void init_geometry_resources(ID3D12Device& _Device) {
 	GeometryGenerator geoGen;
 	GeometryGenerator::MeshData box = geoGen.CreateBox(1.5f, 0.5f, 1.5f, 3);
 	GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.0f, 30.0f, 60, 40);
@@ -261,30 +206,30 @@ void initial_geometry(ID3D12Device& _Device) {
 		sphere.Vertices.size() +
 		cylinder.Vertices.size();
 	
-	std::vector<VInput> _Static_vertices(totalVertexCount);
+	std::vector<norm_hlsl::varying> _Static_vertices(totalVertexCount);
 	UINT k = 0;
 	for (size_t i = 0; i < box.Vertices.size(); ++i, ++k) {
-		_Static_vertices[k].POSITION0 = reinterpret_cast<vector3<float>&>(box.Vertices[i].Position);
-		_Static_vertices[k].NORMAL0   = reinterpret_cast<vector3<float>&>(box.Vertices[i].Normal);
-		_Static_vertices[k].TEXCOORD0 = reinterpret_cast<vector2<float>&>(box.Vertices[i].TexC);
+		_Static_vertices[k].position = reinterpret_cast<vector3<float, float>&>(box.Vertices[i].Position);
+		_Static_vertices[k].normal   = reinterpret_cast<vector3<float, float>&>(box.Vertices[i].Normal);
+		_Static_vertices[k].texcoord = reinterpret_cast<vector2<float, float>&>(box.Vertices[i].TexC);
 	}
 	
 	for (size_t i = 0; i < grid.Vertices.size(); ++i, ++k) {
-		_Static_vertices[k].POSITION0 = reinterpret_cast<vector3<float>&>(grid.Vertices[i].Position);
-		_Static_vertices[k].NORMAL0   = reinterpret_cast<vector3<float>&>(grid.Vertices[i].Normal);
-		_Static_vertices[k].TEXCOORD0 = reinterpret_cast<vector2<float>&>(grid.Vertices[i].TexC);
+		_Static_vertices[k].position = reinterpret_cast<vector3<float, float>&>(grid.Vertices[i].Position);
+		_Static_vertices[k].normal   = reinterpret_cast<vector3<float, float>&>(grid.Vertices[i].Normal);
+		_Static_vertices[k].texcoord = reinterpret_cast<vector2<float, float>&>(grid.Vertices[i].TexC);
 	}
 	
 	for (size_t i = 0; i < sphere.Vertices.size(); ++i, ++k) {
-		_Static_vertices[k].POSITION0 = reinterpret_cast<vector3<float>&>(sphere.Vertices[i].Position);
-		_Static_vertices[k].NORMAL0   = reinterpret_cast<vector3<float>&>(sphere.Vertices[i].Normal);
-		_Static_vertices[k].TEXCOORD0 = reinterpret_cast<vector2<float>&>(sphere.Vertices[i].TexC);
+		_Static_vertices[k].position = reinterpret_cast<vector3<float, float>&>(sphere.Vertices[i].Position);
+		_Static_vertices[k].normal = reinterpret_cast<vector3<float, float>&>(sphere.Vertices[i].Normal);
+		_Static_vertices[k].texcoord = reinterpret_cast<vector2<float, float>&>(sphere.Vertices[i].TexC);
 	}
 	
 	for (size_t i = 0; i < cylinder.Vertices.size(); ++i, ++k) {
-		_Static_vertices[k].POSITION0 = reinterpret_cast<vector3<float>&>(cylinder.Vertices[i].Position);
-		_Static_vertices[k].NORMAL0   = reinterpret_cast<vector3<float>&>(cylinder.Vertices[i].Normal);
-		_Static_vertices[k].TEXCOORD0 = reinterpret_cast<vector2<float>&>(cylinder.Vertices[i].TexC);
+		_Static_vertices[k].position = reinterpret_cast<vector3<float, float>&>(cylinder.Vertices[i].Position);
+		_Static_vertices[k].normal   = reinterpret_cast<vector3<float, float>&>(cylinder.Vertices[i].Normal);
+		_Static_vertices[k].texcoord = reinterpret_cast<vector2<float, float>&>(cylinder.Vertices[i].TexC);
 	}
 	
 	std::vector<uint32_t> _Static_indices;
@@ -293,9 +238,9 @@ void initial_geometry(ID3D12Device& _Device) {
 	_Static_indices.insert(_Static_indices.end(), sphere.Indices32.begin(), sphere.Indices32.end());
 	_Static_indices.insert(_Static_indices.end(), cylinder.Indices32.begin(), cylinder.Indices32.end());
 	
-	std::shared_ptr<d3d12::static_mesh<VInput>> _All_mesh = std::make_shared<d3d12::static_mesh<VInput>>();
-	d3d12::dynamic_buffer<VInput>   _Vertex_intermediator;
-	d3d12::dynamic_buffer<uint32_t> _Index_intermediator;
+	std::shared_ptr<d3d12::static_mesh<norm_hlsl::varying>> _All_mesh = std::make_shared<d3d12::static_mesh<norm_hlsl::varying>>();
+	d3d12::dynamic_buffer<norm_hlsl::varying> _Vertex_intermediator;
+	d3d12::dynamic_buffer<uint32_t>           _Index_intermediator;
 	{
 		auto&   _Source        = _Static_vertices;
 		_Vertex_intermediator  = d3d12::make_dynamic_buffer(_Device, _Source);
@@ -304,76 +249,104 @@ void initial_geometry(ID3D12Device& _Device) {
 		auto&     _Source    = _Static_indices;
 		_Index_intermediator = d3d12::make_dynamic_buffer(_Device, _Source);
 	}
-	_All_mesh->_My_vertices = std::make_shared<d3d12::static_buffer<VInput>>(_Vertex_intermediator);
+	_All_mesh->_My_vertices = std::make_shared<d3d12::static_buffer<norm_hlsl::varying>>( _Vertex_intermediator );
 	_All_mesh->_My_indices  = std::make_shared<d3d12::static_buffer<uint32_t>>(_Index_intermediator);
 
-	gGeometrys.insert_or_assign("AllGeometry", std::make_shared<clmagic::geometry>());
-	gGeometrys["AllGeometry"]->_My_mesh      = _All_mesh;
+	gGeometrys.insert_or_assign("AllGeometry", _All_mesh);
 	//gGeometrys["AllGeometry"]->_My_transform = std::make_shared<d3d12::matrix_transform<1, float>>(1.f);
-
 	gGeometrys["Box"] = gGeometrys["AllGeometry"]->reduce(boxVertexOffset, boxIndexOffset, box.Indices32.size());
 	gGeometrys["Grid"] = gGeometrys["AllGeometry"]->reduce(gridVertexOffset, gridIndexOffset, grid.Indices32.size());
 	gGeometrys["Sphere"] = gGeometrys["AllGeometry"]->reduce(sphereVertexOffset, sphereIndexOffset, sphere.Indices32.size());
 	gGeometrys["Cylinder"] = gGeometrys["AllGeometry"]->reduce(cylinderVertexOffset, cylinderIndexOffset, cylinder.Indices32.size());
+
+
+	// Waves geometry
+	std::vector<std::uint32_t> _Waves_indices(3 * gWaves.TriangleCount()); // 3 indices per face
+	assert(gWaves.VertexCount() < 0x0000ffff);
+
+	// Iterate over each quad.
+	//int m = gWaves.RowCount();
+	//int n = gWaves.ColumnCount();
+	//    k = 0;
+	//for (int i = 0; i < m - 1; ++i)
+	//{
+	//	for (int j = 0; j < n - 1; ++j)
+	//	{
+	//		_Waves_indices[k] = i * n + j;
+	//		_Waves_indices[k + 1] = i * n + j + 1;
+	//		_Waves_indices[k + 2] = (i + 1) * n + j;
+
+	//		_Waves_indices[k + 3] = (i + 1) * n + j;
+	//		_Waves_indices[k + 4] = i * n + j + 1;
+	//		_Waves_indices[k + 5] = (i + 1) * n + j + 1;
+
+	//		k += 6; // next quad
+	//	}
+	//}
+	//{
+	//	auto& _Source = _Waves_indices;
+	//	_Index_intermediator = d3d12::make_dynamic_buffer(_Device, _Source);
+	//}
+	//std::shared_ptr<d3d12::static_mesh<norm_hlsl::varying>> _Waves_mesh = std::make_shared<d3d12::static_mesh<norm_hlsl::varying>>();
+	//_Waves_mesh->_My_vertices = nullptr;
+	//_Waves_mesh->_My_indices  = std::make_shared<d3d12::static_buffer<uint32_t>>(_Index_intermediator);
 }
 
-void initial_material(ID3D12Device& _Device) {
-	std::vector<surface<float>> static_traits;
-	
+void init_substance_resource(ID3D12Device& _Device) {
 	// chemical element of atomic number 22
-	auto _Titanium = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
-	_Titanium->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
-	_Titanium->reflect_value     = { 0.542f, 0.497f, 0.449f };
-	_Titanium->roughness_x       = 0.f;
-	_Titanium->roughness_y       = 0.f;
-	gSubstances["Titanium"] = _Titanium;
-	
-	// chemical element of atomic number 24
-	auto _Chromium = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
-	_Chromium->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
-	_Chromium->reflect_value     = { 0.549f, 0.556f, 0.554f };
-	_Chromium->roughness_x       = 0.f;
-	_Chromium->roughness_y       = 0.f;
-	gSubstances["_Chromium"] = _Chromium;
-	
-	// chemical element of atomic number 26
-	auto _Iron = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
-	_Iron->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
-	_Iron->reflect_value     = { 0.562f, 0.565f, 0.578f };
-	_Iron->roughness_x       = 0.f;
-	_Iron->roughness_y       = 0.f;
-	gSubstances["Iron"] = _Iron;
-		
-	// chemical elelemtn of atomic number 28
-	auto _Nickel = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
-	_Nickel->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
-	_Nickel->reflect_value     = { 0.660f, 0.609f, 0.526f };
-	_Nickel->roughness_x       = 0.f;
-	_Nickel->roughness_y       = 0.f;
-	gSubstances["Nickel"] = _Nickel;
-	
-	// chemical element of atomic number 78
-	auto _Platinum = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
-	_Platinum->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
-	_Platinum->reflect_value     = { 0.673f, 0.637f, 0.585f };
-	_Platinum->roughness_x       = 0.f;
-	_Platinum->roughness_y       = 0.f;
-	gSubstances["Platinum"] = _Platinum;
-	
-	// chemical element of atomic number 29
-	auto _Copper = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
-	_Copper->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
-	_Copper->reflect_value     = { 0.955f, 0.638f, 0.538f };
-	_Copper->roughness_x       = 0.f;
-	_Copper->roughness_y       = 0.f;
-	gSubstances["Copper"] = _Copper;
+	//auto _Titanium = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
+	//_Titanium->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
+	//_Titanium->reflect_value     = { 0.542f, 0.497f, 0.449f };
+	//_Titanium->roughness_x       = 0.f;
+	//_Titanium->roughness_y       = 0.f;
+	//gSubstances["Titanium"] = _Titanium;
+	//
+	//// chemical element of atomic number 24
+	//auto _Chromium = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
+	//_Chromium->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
+	//_Chromium->reflect_value     = { 0.549f, 0.556f, 0.554f };
+	//_Chromium->roughness_x       = 0.f;
+	//_Chromium->roughness_y       = 0.f;
+	//gSubstances["_Chromium"] = _Chromium;
+	//
+	//// chemical element of atomic number 26
+	//auto _Iron = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
+	//_Iron->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
+	//_Iron->reflect_value     = { 0.562f, 0.565f, 0.578f };
+	//_Iron->roughness_x       = 0.f;
+	//_Iron->roughness_y       = 0.f;
+	//gSubstances["Iron"] = _Iron;
+	//	
+	//// chemical elelemtn of atomic number 28
+	//auto _Nickel = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
+	//_Nickel->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
+	//_Nickel->reflect_value     = { 0.660f, 0.609f, 0.526f };
+	//_Nickel->roughness_x       = 0.f;
+	//_Nickel->roughness_y       = 0.f;
+	//gSubstances["Nickel"] = _Nickel;
+	//
+	//// chemical element of atomic number 78
+	//auto _Platinum = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
+	//_Platinum->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
+	//_Platinum->reflect_value     = { 0.673f, 0.637f, 0.585f };
+	//_Platinum->roughness_x       = 0.f;
+	//_Platinum->roughness_y       = 0.f;
+	//gSubstances["Platinum"] = _Platinum;
+	//
+	//// chemical element of atomic number 29
+	//auto _Copper = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
+	//_Copper->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
+	//_Copper->reflect_value     = { 0.955f, 0.638f, 0.538f };
+	//_Copper->roughness_x       = 0.f;
+	//_Copper->roughness_y       = 0.f;
+	//gSubstances["Copper"] = _Copper;
 
-	auto _Palladium = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
-	_Palladium->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
-	_Palladium->reflect_value     = { 0.733f, 0.697f, 0.652f };
-	_Palladium->roughness_x       = 0.f;
-	_Palladium->roughness_y       = 0.f;
-	gSubstances["Palladium"] = _Palladium;
+	//auto _Palladium = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
+	//_Palladium->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
+	//_Palladium->reflect_value     = { 0.733f, 0.697f, 0.652f };
+	//_Palladium->roughness_x       = 0.f;
+	//_Palladium->roughness_y       = 0.f;
+	//gSubstances["Palladium"] = _Palladium;
 	
 	//CPU_static_traits["Mercury"].roughness_x       = 0.f;
 	//CPU_static_traits["Mercury"].roughness_y       = 0.f;
@@ -401,35 +374,36 @@ void initial_material(ID3D12Device& _Device) {
 	//static_traits.push_back( CPU_static_traits["Zinc"] );
 	//
 	// chemical element of atomic number 79
-	auto _Gold = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
-	_Gold->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
-	_Gold->reflect_value     = { 1.000f, 0.782f, 0.344f };
-	_Gold->roughness_x       = 0.f;
-	_Gold->roughness_y       = 0.f;
+	auto _Gold = std::make_shared<norm_hlsl::uniform_surface>();
+	//_Gold->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
+	_Gold->set_albedo(gSRVs.get_GPUhandle("gTexture"));
+	_Gold->set_reflect( { 1.000f, 0.782f, 0.344f } );
+	_Gold->set_roughness(0.6f);
+	_Control_roughness = &_Gold->_My_prop.roughness_x;
 	gSubstances["Gold"] = _Gold;
 	
 	// chemical element of atomic number 13
-	auto _Aluminum = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
-	_Aluminum->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
-	_Aluminum->reflect_value     = { 0.913f, 0.922f, 0.924f };
-	_Aluminum->roughness_x       = 0.f;
-	_Aluminum->roughness_y       = 0.f;
-	gSubstances["Aluminum"] = _Aluminum;
-	
-	// chemical element of atomic number 47
-	auto _Silver = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
-	_Silver->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
-	_Silver->reflect_value     = { 0.972f, 0.960f, 0.915f };
-	_Silver->roughness_x       = 0.f;
-	_Silver->roughness_y       = 0.f;
-	gSubstances["Silver"] = _Silver;
+	//auto _Aluminum = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
+	//_Aluminum->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
+	//_Aluminum->reflect_value     = { 0.913f, 0.922f, 0.924f };
+	//_Aluminum->roughness_x       = 0.f;
+	//_Aluminum->roughness_y       = 0.f;
+	//gSubstances["Aluminum"] = _Aluminum;
+	//
+	//// chemical element of atomic number 47
+	//auto _Silver = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
+	//_Silver->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
+	//_Silver->reflect_value     = { 0.972f, 0.960f, 0.915f };
+	//_Silver->roughness_x       = 0.f;
+	//_Silver->roughness_y       = 0.f;
+	//gSubstances["Silver"] = _Silver;
 
-	auto _Diamond = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
-	_Diamond->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
-	_Diamond->reflect_value     = { 0.171f, 0.172f, 0.176f };
-	_Diamond->roughness_x       = 0.f;
-	_Diamond->roughness_y       = 0.f;
-	gSubstances["Diamond"] = _Diamond;
+	//auto _Diamond = std::make_shared<d3d12::surface_substance<INDEX_SUBSTANCE, float>>();
+	//_Diamond->subsurface_albedo = { 0.04f, 0.04f, 0.04f };
+	//_Diamond->reflect_value     = { 0.171f, 0.172f, 0.176f };
+	//_Diamond->roughness_x       = 0.f;
+	//_Diamond->roughness_y       = 0.f;
+	//gSubstances["Diamond"] = _Diamond;
 	
 	//// chemical element of atomic number 14
 	//CPU_static_traits["Silicon"].roughness_x       = 0.f;
@@ -441,155 +415,135 @@ void initial_material(ID3D12Device& _Device) {
 	//static_traits.push_back(CPU_static_traits["Diamond"]);
 }
 
-void initial_light() {
-	for (size_t i = 0; i != gFrameResources.cycle(); ++i, gFrameResources.turn()) {
-		RENDERING* _Ptr = nullptr;
-		gFrameResources->cb_RENDERING->Map(0, nullptr, reinterpret_cast<void**>(&_Ptr));
-		_Ptr->Env.particles_ratio = 0.09f;
-		_Ptr->Env.particles_color = {0.f, 0.f, 0.f};
-		
-		_Ptr->Lights[0].color     = { 0.7f, 0.7f, 0.7f };
-		_Ptr->Lights[0].intensity = 100.f;
-		_Ptr->Lights[0].position  = { 0.f, 30.f, 0.f };
-		_Ptr->Lights[0].direction = { 0.f, -1.f, 0.f };
-		_Ptr->Lights[0].penumbra  = 3.14f;
-		_Ptr->Lights[0].umbra     = 3.14f;
-		
-		_Ptr->Lights[1].color     = { 1.f, 1.f, 1.f };
-		_Ptr->Lights[1].intensity = 50.f;
-		_Ptr->Lights[1].position  = { -20.f, 2.f, 0.f };
-		_Ptr->Lights[1].direction = { 1.f, 0.f, 0.f };
-		_Ptr->Lights[1].penumbra  = 3.14f;
-		_Ptr->Lights[1].umbra     = 3.14f;
-		
-		_Ptr->Lights[2].color     = { 1.f, 1.f, 1.f };
-		_Ptr->Lights[2].intensity = 50.f;
-		_Ptr->Lights[2].position  = { 0.f, 2.f, -10.f };
-		_Ptr->Lights[2].direction = { 0.f, 0.f, 1.f };
-		_Ptr->Lights[2].penumbra  = 3.14f;
-		_Ptr->Lights[2].umbra     = 3.14f;
-		gFrameResources->cb_RENDERING->Unmap(0, nullptr);
+void init_object_systems() {
+	gPrograms[NORM_HLSL].push_descriptor_heap(gSRVs);
 
-		PER_FRAME* _Cbpass = nullptr;
-		gFrameResources->cb_PER_FRAME->Map(0, nullptr, reinterpret_cast<void**>(&_Cbpass));
-		_Cbpass->Mview = matrix_cast<clmagic::matrix4x4<float>>(transpose(gCameras["default"].view_matrix()));
-		_Cbpass->MProj = matrix_cast<clmagic::matrix4x4<float>>(transpose(gCameras["default"].projection_matrix()));
-		_Cbpass->Peye = vector_cast<clmagic::vector<float, 3>>(gCameras["default"].eye_position());
-		gFrameResources->cb_PER_FRAME->Unmap(0, nullptr);
-	}
-}
+	gPrograms[NORM_HLSL].push_render_object(*gFrameResources[NORM_HLSL]);
 
-void initial_object() {
-	using matrix4x4 = clmagic::matrix4x4<float>;
-	
-	gObjectSystems["box"]._My_transform = std::make_shared<d3d12::matrix_transform<INDEX_TRANSFORM, float>>(
-		translation<matrix4x4>::get_matrix(0.f, 1.5f, 11.f) * scaling<matrix4x4>::get_matrix(2.f));
+	gObjectSystems["box"]._My_transform = std::make_shared<norm_hlsl::uniform_transform>(
+		translation<float, float>(0.f, 1.5f, 11.f) * scaling<float, float>(2.f, 2.f, 2.f));
 	gObjectSystems["box"]._My_components["1"] = std::make_shared<clmagic::object>();
 	gObjectSystems["box"]._My_components["1"]->_My_geometry  = gGeometrys["Box"];
-	gObjectSystems["box"]._My_components["1"]->_My_substance = gSubstances["Copper"];
-	
-	gObjectSystems["grid"]._My_transform = std::make_shared<d3d12::matrix_transform<INDEX_TRANSFORM, float>>(matrix4x4(1.f));
+	gObjectSystems["box"]._My_components["1"]->_My_substance = gSubstances["Gold"];
+	gPrograms[NORM_HLSL].push_render_object(gObjectSystems["box"]);
+
+	gObjectSystems["grid"]._My_transform = std::make_shared<norm_hlsl::uniform_transform>(matrix4x4<float, float>(1.f));
 	gObjectSystems["grid"]._My_components["1"] = std::make_shared<clmagic::object>();
 	gObjectSystems["grid"]._My_components["1"]->_My_geometry  = gGeometrys["Grid"];
-	gObjectSystems["grid"]._My_components["1"]->_My_substance = gSubstances["Iron"];
+	gObjectSystems["grid"]._My_components["1"]->_My_substance = gSubstances["Gold"];
+	gPrograms[NORM_HLSL].push_render_object(gObjectSystems["grid"]);
 	
 	for (int i = 0; i < 5; ++i) {
-		gObjectSystems["leftCyl" + std::to_string(i)]._My_transform = std::make_shared<d3d12::matrix_transform<INDEX_TRANSFORM, float>>(
-			translation<matrix4x4>::get_matrix(-5.0f, 1.5f, -10.0f + i * 5.0f));
+		gObjectSystems["leftCyl" + std::to_string(i)]._My_transform = std::make_shared<norm_hlsl::uniform_transform>(
+			translation<float, float>(-5.0f, 1.5f, -10.0f + i * 5.0f));
 		gObjectSystems["leftCyl" + std::to_string(i)]._My_components["1"] = std::make_shared<clmagic::object>();
 		gObjectSystems["leftCyl" + std::to_string(i)]._My_components["1"]->_My_geometry  = gGeometrys["Cylinder"];
-		gObjectSystems["leftCyl" + std::to_string(i)]._My_components["1"]->_My_substance = gSubstances["Aluminum"];
+		gObjectSystems["leftCyl" + std::to_string(i)]._My_components["1"]->_My_substance = gSubstances["Gold"];
+		gPrograms[NORM_HLSL].push_render_object(gObjectSystems["leftCyl" + std::to_string(i)]);
 	
-		gObjectSystems["rightCyl" + std::to_string(i)]._My_transform = std::make_shared<d3d12::matrix_transform<INDEX_TRANSFORM, float>>(
-			translation<matrix4x4>::get_matrix(+5.0f, 1.5f, -10.0f + i * 5.0f));
+		gObjectSystems["rightCyl" + std::to_string(i)]._My_transform = std::make_shared<norm_hlsl::uniform_transform>(
+			translation<float, float>(+5.0f, 1.5f, -10.0f + i * 5.0f));
 		gObjectSystems["rightCyl" + std::to_string(i)]._My_components["1"] = std::make_shared<clmagic::object>();
 		gObjectSystems["rightCyl" + std::to_string(i)]._My_components["1"]->_My_geometry  = gGeometrys["Cylinder"];
 		gObjectSystems["rightCyl" + std::to_string(i)]._My_components["1"]->_My_substance = gSubstances["Gold"];
+		gPrograms[NORM_HLSL].push_render_object(gObjectSystems["rightCyl" + std::to_string(i)]);
 	
-		gObjectSystems["leftSph" + std::to_string(i)]._My_transform = std::make_shared<d3d12::matrix_transform<INDEX_TRANSFORM, float>>(
-			translation<matrix4x4>::get_matrix(-5.0f, 3.0f, -10.0f + i * 5.0f));
+		gObjectSystems["leftSph" + std::to_string(i)]._My_transform = std::make_shared<norm_hlsl::uniform_transform>(
+			translation<float, float>(-5.0f, 3.0f, -10.0f + i * 5.0f));
 		gObjectSystems["leftSph" + std::to_string(i)]._My_components["1"] = std::make_shared<clmagic::object>();
 		gObjectSystems["leftSph" + std::to_string(i)]._My_components["1"]->_My_geometry  = gGeometrys["Sphere"];
-		gObjectSystems["leftSph" + std::to_string(i)]._My_components["1"]->_My_substance = gSubstances["Silver"];
+		gObjectSystems["leftSph" + std::to_string(i)]._My_components["1"]->_My_substance = gSubstances["Gold"];
+		gPrograms[NORM_HLSL].push_render_object(gObjectSystems["leftSph" + std::to_string(i)]);
 	
-		gObjectSystems["rightSph" + std::to_string(i)]._My_transform = std::make_shared<d3d12::matrix_transform<INDEX_TRANSFORM, float>>(
-			translation<matrix4x4>::get_matrix(+5.0f, 3.0f, -10.0f + i * 5.0f));
+		gObjectSystems["rightSph" + std::to_string(i)]._My_transform = std::make_shared<norm_hlsl::uniform_transform>(
+			translation<float, float>(+5.0f, 3.0f, -10.0f + i * 5.0f));
 		gObjectSystems["rightSph" + std::to_string(i)]._My_components["1"] = std::make_shared<clmagic::object>();
 		gObjectSystems["rightSph" + std::to_string(i)]._My_components["1"]->_My_geometry  = gGeometrys["Sphere"];
-		gObjectSystems["rightSph" + std::to_string(i)]._My_components["1"]->_My_substance = gSubstances["Silver"];
+		gObjectSystems["rightSph" + std::to_string(i)]._My_components["1"]->_My_substance = gSubstances["Gold"];
+		gPrograms[NORM_HLSL].push_render_object(gObjectSystems["rightSph" + std::to_string(i)]);
 	}
 }
+
+#include <sstream>
 
 int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int showCmd) {
 #if defined(DEBUG) | defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
+	//std::cout << clmagic::normalize(dddd()) << std::endl;
+
 	try { 
-		gFactory = d3d12::factory(1);
-		gDevice  = d3d12::device(gFactory.ref());
-		gFence   = d3d12::fence(gDevice.ref(), 0);
-		gWindow.init(&gFactory, &gDevice, &gFence, hInstance, L"test_graphics", 0, 0, 1600, 900);
+		gWindow.init(hInstance, L"test_graphics", 0, 0, 1600, 900);
+		gFence   = d3d12::fence(gWindow.get_ID3D12Device(), 1);
 		gWindow.show();
 
-		initializer(gDevice.ref());
+		init_shader_pipeline(gWindow.get_ID3D12Device());
+		init_shader_frame_resources();
+		init_texture_resources(gWindow.get_ID3D12Device());
+		init_geometry_resources(gWindow.get_ID3D12Device());
+		init_substance_resource(gWindow.get_ID3D12Device());
+		init_object_systems();
 		
 		using namespace::d3d12;
+		command_allocator     _Cmd_allocator = command_allocator(gWindow.get_ID3D12Device(), D3D12_COMMAND_LIST_TYPE_DIRECT);
+		graphics_command_list _Cmd_list      = graphics_command_list(gWindow.get_ID3D12Device(), D3D12_COMMAND_LIST_TYPE_DIRECT, _Cmd_allocator);
 		MSG msg = { 0 };
-		graphics_command_list _Cmdlist = graphics_command_list(gDevice.ref(), D3D12_COMMAND_LIST_TYPE_DIRECT, *gFrameResources->command_allocator_ptr());
+		//std::vector<clmagic::renderable*> _Renderales;
 		while (msg.message != WM_QUIT) {
 			if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
 			} else {
-				gFrameResources->command_allocator_ptr()->Reset();
-				_Cmdlist->Reset(gFrameResources->command_allocator_ptr(), gProgram.get());
-				_Cmdlist->ResourceBarrier(1, &gWindow._My_color_buffer->transition(D3D12_RESOURCE_STATE_RENDER_TARGET));
-			
-				gWindow.clear_buffer(_Cmdlist.ref(),DirectX::Colors::LightSteelBlue);
-					
-				{
-					_Cmdlist->OMSetRenderTargets(1, &gWindow.get_color_view(), true, &gWindow.get_depth_view());
-					_Cmdlist->RSSetViewports(1, &gWindow.get_D3D12_VIEWPORT());
-					_Cmdlist->RSSetScissorRects(1, &gWindow.get_D3D12_RECT());
-					_Cmdlist->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-						
-					_Cmdlist->SetGraphicsRootSignature(gSignature.get());
-					_Cmdlist->SetGraphicsRootConstantBufferView(INDEX_FRAME, gFrameResources->cb_PER_FRAME->GetGPUVirtualAddress());
-					_Cmdlist->SetGraphicsRootConstantBufferView(INDEX_RENDERING, gFrameResources->cb_RENDERING->GetGPUVirtualAddress());
-					auto       _First = gObjectSystems.begin();
-					const auto _Last  = gObjectSystems.end();
-					for ( ; _First != _Last; ++_First) {
-						_First->second.render(_Cmdlist.ref());
-					}
-				}
-	
-				_Cmdlist->ResourceBarrier(1, &gWindow._My_color_buffer->transition(D3D12_RESOURCE_STATE_PRESENT));
-				_Cmdlist->Close();
-			}
+				auto* _Norm_hlsl_fs = dynamic_cast<norm_hlsl::uniform_frame*>(gFrameResources[NORM_HLSL].get());
+				norm_hlsl::uniform_frame::_My_data_type* _Ptr = nullptr;
+				_Norm_hlsl_fs->map(reinterpret_cast<void**>(&_Ptr));
+				_Ptr->view_matrix  = matrix_cast<matrix4x4<float, float>>(transpose(gWindow._My_camera.view_matrix()));
+				_Ptr->eye_position = vector_cast<vector3<float, float>>(gWindow._My_camera.position());
+				_Norm_hlsl_fs->unmap(reinterpret_cast<void**>(&_Ptr));
 
-			gWindow.execute_command_list(_Cmdlist.ref());
+				gFence.flush(gWindow._My_executer);
+
+				_Cmd_allocator->Reset();
+				_Cmd_list->Reset(_Cmd_allocator.get(), nullptr);
+				_Cmd_list->ResourceBarrier(1, &gWindow.current_color_buffer().transition(D3D12_RESOURCE_STATE_RENDER_TARGET));
 			
-			gWindow.swap_buffer();
-			
-			gFence.flush(gWindow._My_executer.ref());
+				gWindow.clear_current_buffer(_Cmd_list, DirectX::Colors::LightSteelBlue);
+				gWindow.set_current_render_target(_Cmd_list);
+				_Cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+				gPrograms[NORM_HLSL].render(_Cmd_list);
+				/*ID3D12DescriptorHeap* _Heaps[] = { gSRVs.get() };
+				_Cmd_list->SetDescriptorHeaps(1, _Heaps);
+				_Cmd_list->SetPipelineState(gPrograms[NORM_HLSL].get());
+				_Cmd_list->SetGraphicsRootSignature(gUniforms[NORM_HLSL].get());
+				gFrameResources[NORM_HLSL]->render(_Cmd_list);
+				auto       _First = gObjectSystems.begin();
+				const auto _Last = gObjectSystems.end();
+				for (; _First != _Last; ++_First) {
+					_First->second.render(_Cmd_list);
+				}*/
+	
+				_Cmd_list->ResourceBarrier(1, &gWindow.current_color_buffer().transition(D3D12_RESOURCE_STATE_PRESENT));
+				_Cmd_list->Close();
+				
+				gWindow.execute_command_list(_Cmd_list);
+				
+				gWindow.swap_buffer();
+			}
 		}
 		//d3d12::window::run();
 	} catch (const std::exception& e) {
 		MessageBoxA(nullptr, e.what(), "Error", MB_OK);
 	}
 
-	gCameras.clear();
 	gFrameResources.clear();
 	gObjectSystems.clear();
 	gGeometrys.clear();
 	gSubstances.clear();
-	gSignature.release();
-	gProgram.release();
-	gWindow.release();
+	gUniforms.clear();
+	gPrograms.clear();
 	gFence.release();
-	gDevice.release();
-	gFactory.release();
+	gWindow.release();
 
 	return 0;
 }
@@ -656,6 +610,14 @@ clmagic::box<_Ts, _Tb> get_bound(const std::vector<VECTOR3>& P) {
 
 int main() {
 	using namespace::clmagic;
+
+	auto v0 = vector<float, 3>(2.f, 3.f, 4.f);
+	std::cout << v0 << std::endl;
+	std::cout << 3 * v0 * 3 << std::endl;
+	std::cout << 3.f * v0 * 3.f << std::endl;
+	std::cout << 3.0 * v0 * 3.0 << std::endl;
+	std::cin.get();
+
 	/*matrix<float, 5, 5, __m128, _COL_MAJOR_> M(1.f);
 	for (auto _First = M.begin(), _Last = M.end(); _First != _Last; ++_First) {
 		*_First = randf(10.f, 30.f);
@@ -701,7 +663,7 @@ int main() {
 	//cv::imwrite(_Name, _Source);
 
 	using _Ts = float;
-	using _Tb = __m128;
+	using _Tb = clmagic::_SIMD4_t<float>;
 
 	struct face {
 		uint32_t _Myindices[4];// quad

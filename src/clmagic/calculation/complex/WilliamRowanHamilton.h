@@ -25,7 +25,7 @@ namespace WilliamRowanHamilton {
 		<matrix>
 	</Describ>
 	*/
-	template<typename _Ts, typename _Tb = _Ts>
+	template<typename _Ts, typename _Tb = clmagic::_SIMD4_t<_Ts>>
 	struct __declspec(align(std::alignment_of_v<_Tb>)) quaternion {
 		using real_type = _Ts;
 		using imag_type = ::clmagic::vector<_Ts, 3, _Tb>;
@@ -51,7 +51,7 @@ namespace WilliamRowanHamilton {
 		std::string to_string() const {
 			std::array<char, 256> _Temp;
 			auto _Last_index = snprintf(_Temp.data(), _Temp.size() - 1,
-				"[%s + i*%s + j*%s + k*%s]",
+				"\"quaternion\":{ %s + i*%s + j*%s + k*%s }",
 				std::to_string(this->real()).c_str(),
 				std::to_string(this->imag()[0]).c_str(),
 				std::to_string(this->imag()[1]).c_str(),
@@ -102,12 +102,11 @@ namespace WilliamRowanHamilton {
 			q2.real() = q.real()*r.real() - dot(q.imag(), r.imag())
 			q2.imag() = (cross3(q.imag(), r.imag()) + q.real()*r.imag() + r.real()*q.imag())
 			*/
-			const auto& q_real = this->real();
-			const auto& q_imag = this->imag();
-			const auto& r_real = _Right.real();
-			const auto& r_imag = _Right.imag();
-			return quaternion(q_real * r_real - dot(q_imag, r_imag),
-				cross3(q_imag, r_imag) + q_real*r_imag + r_real*q_imag);
+			const auto& qw = this->real();
+			const auto& qv = this->imag();
+			const auto& rw = _Right.real();
+			const auto& rv = _Right.imag();
+			return quaternion(qw*rw - dot(qv, rv), cross3(qv, rv) + rw*qv + qw*rv);
 		}
 		
 		quaternion operator*(const _Ts& _Scalar) const {
@@ -123,27 +122,34 @@ namespace WilliamRowanHamilton {
 			return quaternion(_Scalar / _Right.real(), _Scalar / _Right.imag());
 		}
 
-		quaternion operator()(const quaternion& p) const {// theta/2 in polar(...)
+		quaternion rotate(quaternion p) const {// theta/2 in polar(...)
 			const auto& q     = *this;
 			const auto  q_inv = quaternion(real(), -imag());// conj(*this);
 			return (q * p * q_inv);
 		}
+		quaternion operator()(quaternion p) const {// theta/2 in polar(...)
+			return this->rotate(p);
+		}
 		VECTOR4    operator()(VECTOR4 p) const {
-			const auto qpq = (*this)( reinterpret_cast<const quaternion&>(p) );
+			const auto qpq = this->rotate( quaternion(static_cast<_Ts>(0), p[0], p[1], p[2]) );
 			return reinterpret_cast<const VECTOR4&>(qpq);
 		}
 		VECTOR3    operator()(VECTOR3 p) const {
-			const auto qpq = (*this)(quaternion(static_cast<_Ts>(1), p[0], p[1], p[2]));
+			const auto qpq = this->rotate( quaternion(static_cast<_Ts>(0), p[0], p[1], p[2]) );
 			return reinterpret_cast<const VECTOR3&>(qpq);
 		}
 
 		friend std::ostream& operator<<(std::ostream& _Ostr, const quaternion& _Quat) {
 			return (_Ostr << _Quat.to_string());
 		}
-	
+		friend std::istream& operator>>(std::istream& _Istr, quaternion& _Quat) {
+			_Istr >> _Quat.real() >> _Quat.imag();
+			return _Istr;
+		}
 	private:
 		_Ts _Mydata[4];
 	};
+#define QUATERNION ::WilliamRowanHamilton::quaternion<_Ts, _Tb>
 
 	template<typename _Ts, typename _Tb> inline
 	std::string to_string(const quaternion<_Ts, _Tb>& q) {
@@ -198,163 +204,24 @@ namespace WilliamRowanHamilton {
 
 	template<typename _Ts, typename _Tb> inline
 	quaternion<_Ts, _Tb> slerp(const quaternion<_Ts, _Tb>& q1, const quaternion<_Ts, _Tb>& q2, const _Ts& t) {
-		// from Book<<pbrt>> -2.9.2 Quaternion Interpolation
+		// <Reference> Book<pbrt> Section<2.9.2 Quaternion Interpolation> </Reference>
+		using clmagic::lerp;
+		using clmagic::clamp;
+		using clmagic::acos;
+		using clmagic::cos;
+		using clmagic::sin;
 		auto cos_theta = dot(q1, q2);
-		if (cos_theta > static_cast<_Ts>(0.9995f)) {	// q1 q2 parallel
-			return normalize(clmagic::lerp(q1, q2, t));
+		if (cos_theta > static_cast<_Ts>(0.9995f)) {// q1 q2 parallel
+			return normalize(lerp(q1, q2, t));
 		} else {
-			const auto theta  = clmagic::acos( clmagic::clamp(cos_theta, static_cast<_Ts>(-1), static_cast<_Ts>(1)) );
+			const auto theta  = acos( clamp(cos_theta, static_cast<_Ts>(-1), static_cast<_Ts>(1)) );
 			const auto thetap = theta * t;
 			quaternion<_Ts, _Tb> qperp = normalize(q2 - q1 * cos_theta);
-			return ( q1 * clmagic::cos(thetap) + qperp * clmagic::sin(thetap) );
+			return ( q1 * cos(thetap) + qperp * sin(thetap) );
 		}
 	}
 
 	// q = cos(theta) + axis*sin(theta) = pow(e, axis*theta). 
-
-	/*<Reference>RealTimeRendering-4th-Edition.</Reference>*/
-	template<typename _Tm>
-	struct rotation {// default common-function
-		template<typename _Tq, typename _Ts/*auto*/, typename _TTm/*auto*/>
-		static _Tq _Get_quaternion(_Ts qw, const _TTm& M) {
-			/*
-			s = 2/pow(norm(q),2)
-
-			tr(M) = 4-2s(qx*qx+qy*qy+qz*qz), 
-			      = 4-4*(qx*qx+qy*qy+qz*qz)/pow(norm(q),2)
-				  = 4 * (1 - (qx*qx+qy*qy+qz*qz)/pow(norm(q),2))
-				  = 4 * (1 - (qx*qx+qy*qy+qz*qz)/(qx*qx+qy*qy+qz*qz+qw*qw))
-				  = 4 * ((qw*qw)/(qx*qx+qy*qy+qz*qz+qw*qw))
-				  = 4*qw*qw / pow(norm(q),2)
-			4*qw*qw = tr(M)
-			qw = sqrt( tr(M)/4 ) <------------
-
-			M[2,0]-M[0,2] = s*(qx*qz+qw*qy)-s*(qx*qz-qw*qy)
-			              = s*qx*qz + s*qw*qy - s*qx*qz + s*qw*qy
-					      = 2*s*qw*qy
-			qy = (M[2,0]-M[0,2])/(2*s*qw)
-			   = (M[2,0]-M[0,2])/(4/pow(norm(q),2)*qw)
-			qy = (M[2,0]-M[0,2])/(4*qw) <------------
-
-			M[0,1]-M[1,0] = s*(qx*qy+qw*qz) - s*(qx*qy-qw*qz)
-			              = s*qx*qy + s*qw*qz - s*qx*qy + s*qw*qz
-						  = 2*s*qw*qz
-			qz = (M[0,1]-M[1,0])/(2*s*qw)
-			   = (M[0,1]-M[1,0])/(4/pow(norm(q),2)*qw)
-			qz = (M[0,1]-M[1,0])/(4*qw) <------------
-
-			M[1,2]-M[2,1] = s*(qy*qz+qw*qx)-s*(qy*qz-qw*qx)
-			              = s*qy*qz + s*qw*qx - s*qy*qz + s*qw*qx
-						  = 2*s*qw*qx
-			qx = (M[1,2]-M[2,1]) / (2*s*qw)
-			   = (M[1,2]-M[2,1]) / (4*qw) <------------
-			*/
-			const auto qw_mul4 = qw * static_cast<_Ts>(4);
-
-			if _CONSTEXPR_IF( M.col_major() ) {
-				const auto qx = (M.at(2,1) - M.at(1,2)) / qw_mul4;
-				const auto qy = (M.at(0,2) - M.at(2,0)) / qw_mul4;
-				const auto qz = (M.at(1,0) - M.at(0,1)) / qw_mul4;
-				return _Tq(qw, qx, qy, qz);
-			} else {
-				const auto qx = (M.at(1,2) - M.at(2,1)) / qw_mul4;
-				const auto qy = (M.at(2,0) - M.at(0,2)) / qw_mul4;
-				const auto qz = (M.at(0,1) - M.at(1,0)) / qw_mul4;
-				return _Tq(qw, qx, qy, qz);
-			}
-		}
-		
-		template<typename _Tq, typename _Ts/*auto*/>
-		static _Tq _Get_quaternion_0qw(_Ts qw, _Ts M00, _Ts M11, _Ts M22) {
-			using clmagic::sqrt;
-			const auto M33 = static_cast<_Ts>(1);
-			const auto qx  = sqrt((+M00 - M11 - M22 + M33) / static_cast<_Ts>(4));
-			const auto qy  = sqrt((-M00 + M11 - M22 + M33) / static_cast<_Ts>(4));
-			const auto qz  = sqrt((-M00 - M11 + M22 + M33) / static_cast<_Ts>(4));
-			return _Tq(qw, qx, qy, qz);
-		}
-	};
-
-	template<typename _Ts, typename _Tb, bool _Major>
-	struct rotation< clmagic::matrix3x3<_Ts, _Tb, _Major> > {// matrix3x3
-		
-		using matrix_type     = clmagic::matrix3x3<_Ts, _Tb, _Major>;
-		using quaternion_type = WilliamRowanHamilton::quaternion<_Ts, _Tb>;
-
-		static matrix_type get_matrix(const quaternion_type& q) {
-			const auto qx = q.imag()[0];
-			const auto qy = q.imag()[1];
-			const auto qz = q.imag()[2];
-			const auto qw = q.real();
-			const auto s  = static_cast<_Ts>(2)/(qx*qx + qy*qy + qz*qz + qw*qw);
-			
-			if _CONSTEXPR_IF(matrix_type::col_major()) {
-				return matrix_type{
-					_Ts(1)-s*(qy*qy+qz*qz),        s*(qx*qy-qw*qz),        s*(qx*qz+qw*qy),
-					       s*(qx*qy+qw*qz), _Ts(1)-s*(qx*qx+qz*qz),        s*(qy*qz-qw*qx),
-						   s*(qx*qz-qw*qy),		   s*(qy*qz+qw*qx), _Ts(1)-s*(qx*qx+qy*qy) };
-			} else {
-				return matrix_type{
-					_Ts(1)-s*(qy*qy+qz*qz),        s*(qx*qy+qw*qz),        s*(qx*qz-qw*qy),
-					       s*(qx*qy-qw*qz), _Ts(1)-s*(qx*qx+qz*qz),        s*(qy*qz+qw*qx),
-						   s*(qx*qz+qw*qy),		   s*(qy*qz-qw*qx), _Ts(1)-s*(qx*qx+qy*qy) };
-			}
-		}
-	
-		static quaternion_type get_quaternion(const matrix_type& M) {
-			const auto M00 = M.at(0, 0);
-			const auto M11 = M.at(1, 1);
-			const auto M22 = M.at(2, 2);
-			const auto qw  = clmagic::sqrt( ( M00+M11+M22+static_cast<_Ts>(1) ) / static_cast<_Ts>(4) );
-
-			if ( qw > std::numeric_limits<_Ts>::epsilon() ) {
-				return rotation<void>::_Get_quaternion<quaternion_type>(qw, M);
-			} else {
-				return rotation<void>::_Get_quaternion_0qw<quaternion_type>(qw, M00, M11, M22);
-			}
-		}
-	};
-
-	template<typename _Ts, typename _Tb, bool _Major>
-	struct rotation< clmagic::matrix4x4<_Ts, _Tb, _Major> > {// matrix4x4
-		using matrix_type     = clmagic::matrix4x4<_Ts, _Tb, _Major>;
-		using quaternion_type = WilliamRowanHamilton::quaternion<_Ts, _Tb>;
-
-		static matrix_type get_matrix(const quaternion_type& q) {
-			const auto qx = q.imag()[0];
-			const auto qy = q.imag()[1];
-			const auto qz = q.imag()[2];
-			const auto qw = q.real();
-			const auto s  = static_cast<_Ts>(2)/(qx*qx + qy*qy + qz*qz + qw*qw);
-
-			if _CONSTEXPR_IF(matrix_type::col_major()) {
-				return matrix_type{
-					_Ts(1)-s*(qy*qy+qz*qz),        s*(qx*qy-qw*qz),        s*(qx*qz+qw*qy), (_Ts)0,
-					       s*(qx*qy+qw*qz), _Ts(1)-s*(qx*qx+qz*qz),        s*(qy*qz-qw*qx), (_Ts)0,
-						   s*(qx*qz-qw*qy),		   s*(qy*qz+qw*qx), _Ts(1)-s*(qx*qx+qy*qy), (_Ts)0,
-					                (_Ts)0,                 (_Ts)0,                 (_Ts)0, (_Ts)1 };
-			} else {
-				return matrix_type{
-					_Ts(1)-s*(qy*qy+qz*qz),        s*(qx*qy+qw*qz),        s*(qx*qz-qw*qy), (_Ts)0,
-					       s*(qx*qy-qw*qz), _Ts(1)-s*(qx*qx+qz*qz),        s*(qy*qz+qw*qx), (_Ts)0,
-						   s*(qx*qz+qw*qy),		   s*(qy*qz-qw*qx), _Ts(1)-s*(qx*qx+qy*qy), (_Ts)0,
-						            (_Ts)0,                 (_Ts)0,                 (_Ts)0, (_Ts)1 };
-			}
-		}
-	
-		static quaternion<_Ts, _Tb> get_quaternion(const matrix_type& M) {
-			const auto M00 = M.at(0, 0);
-			const auto M11 = M.at(1, 1);
-			const auto M22 = M.at(2, 2);
-			const auto qw  = clmagic::sqrt( ( M00+M11+M22+static_cast<_Ts>(1) ) / static_cast<_Ts>(4) );
-
-			if ( qw > std::numeric_limits<_Ts>::epsilon() ) {
-				return rotation<void>::_Get_quaternion<quaternion_type>(qw, M);
-			} else {
-				return rotation<void>::_Get_quaternion_0qw<quaternion_type>(qw, M00, M11, M22);
-			}
-		}
-	};
 
 }// WilliamRowanHamilton
 

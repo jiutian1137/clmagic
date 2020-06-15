@@ -10,64 +10,61 @@
     <ClInclude Include="..\src\clmagic\directX12\mesh.h">
       <Filter>private</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\d3dx12.h">
-      <Filter>private\dxcore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\enum_string.h">
-      <Filter>private\dxcore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12RootSignature.h">
-      <Filter>private\dxcore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12PipelineState.h">
-      <Filter>private\dxcore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\D3D12_INPUT_LAYOUT_DESC.h">
-      <Filter>private\dxcore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12DescriptorHeap.h">
-      <Filter>private\dxcore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Heap.h">
-      <Filter>private\dxcore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\Frame_Resource.h">
+    <ClInclude Include="..\src\clmagic\directX12\d3d12core.h">
       <Filter>private</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Fence.h">
-      <Filter>private\dxcore</Filter>
+    <ClInclude Include="..\src\clmagic\directX12\d3d12core\d3dx12.h">
+      <Filter>private\d3d12core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore.h">
+    <ClInclude Include="..\src\clmagic\directX12\d3d12core\enum_string.h">
+      <Filter>private\d3d12core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\d3d12core\ID3D12CommandObjects.h">
+      <Filter>private\d3d12core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\d3d12core\ID3D12DescriptorHeap.h">
+      <Filter>private\d3d12core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\d3d12core\ID3D12Device.h">
+      <Filter>private\d3d12core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\d3d12core\ID3D12Fence.h">
+      <Filter>private\d3d12core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\d3d12core\ID3D12Heap.h">
+      <Filter>private\d3d12core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\d3d12core\ID3D12PipelineState.h">
+      <Filter>private\d3d12core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\d3d12core\ID3D12Resource.h">
+      <Filter>private\d3d12core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\d3d12core\ID3D12Resource_b.h">
+      <Filter>private\d3d12core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\d3d12core\ID3D12Resource_t.h">
+      <Filter>private\d3d12core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\d3d12core\ID3D12RootSignature.h">
+      <Filter>private\d3d12core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\d3d12core\IDXGIFactory.h">
+      <Filter>private\d3d12core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\d3d12core\IDXGISwapChain.h">
+      <Filter>private\d3d12core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\d3d12core\packaged_comptr.h">
+      <Filter>private\d3d12core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\directX12\d3d12renderable.h">
       <Filter>private</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Device.h">
-      <Filter>private\dxcore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\packaged_comptr.h">
-      <Filter>private\dxcore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\IDXGISwapChain.h">
-      <Filter>private\dxcore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12CommandObjects.h">
-      <Filter>private\dxcore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\IDXGIFactory.h">
-      <Filter>private\dxcore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxwindow.h">
+    <ClInclude Include="..\src\clmagic\directX12\d3d12window.h">
       <Filter>private</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Resource_b.h">
-      <Filter>private\dxcore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Resource_t.h">
-      <Filter>private\dxcore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxcore\ID3D12Resource.h">
-      <Filter>private\dxcore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\directX12\dxrenderable.h">
+    <ClInclude Include="..\src\clmagic\directX12\d3d12frameresource.h">
       <Filter>private</Filter>
     </ClInclude>
   </ItemGroup>
@@ -78,7 +75,7 @@
     <Filter Include="private">
       <UniqueIdentifier>{46e6f6f7-24da-4ba5-a9ef-71dfbba73d51}</UniqueIdentifier>
     </Filter>
-    <Filter Include="private\dxcore">
+    <Filter Include="private\d3d12core">
       <UniqueIdentifier>{bb96361f-f3d6-460b-8757-86521ae9f63a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>

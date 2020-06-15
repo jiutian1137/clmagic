@@ -20,7 +20,7 @@ namespace clmagic {
 		VECTOR3 direction;
 		SCALAR  penumbra;
 	};
-	
+
 	template<typename _Ts, typename _Tb = _Ts>
 	struct surface {
 		VECTOR3 subsurface_albedo;
@@ -29,6 +29,9 @@ namespace clmagic {
 		SCALAR  roughness_y;// anisotripic
 	};
 
+#define ENVIRONMENT ::clmagic::environment<_Ts, _Tb>
+#define LIGHT_SOURCE ::clmagic::light_source<_Ts, _Tb>
+#define SURFACE ::clmagic::surface<_Ts, _Tb>
 }// namespace clmagic
 
 
@@ -54,7 +57,7 @@ namespace tri_Ace {
 		VECTOR3 H  = normalize(E + L);
     
 		VECTOR3 Fdiff = F0 + (1 - F0) * pow(1 - max(0, dot(N, L)), 5);
-		VECTOR3 Fspec = F0 + (1 - F0) * pow(1 - max(0, dot(E, H)), 2);
+		VECTOR3 Fspec = F0 + (1 - F0) * pow(1 - max(0, dot(E, H)), 5);
 		return (Pss/Pi)*(1-Fdiff) +               (n + 2)              *  Fspec * pow(max(0,dot(N, H)),n)    
 									/*------------------------------*/  /*-------------------------------*/
 										/ (4*Pi * (2 - pow(2,-n/2)))        / max(dot(N, L), dot(N, E));

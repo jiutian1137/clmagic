@@ -87,210 +87,208 @@ namespace clmagic {
 		_Ts height;
 	};
 
-	enum Coordinates{
-		_LH_,
-		_RH_
+	enum coordinate_system{
+		LEFT_HAND,
+		RIGHT_HAND,
+		DEFAULT_HAND = LEFT_HAND
 	};
-
 
 	/*- - - - - - - - - - - - - - - - - - perspective - - - - - - - - - - - - - - -*/
-	template<typename _Tm, int _Cd = Coordinates::_LH_>
-	struct perspective {};
-
-	template<typename _Ts, typename _Tb, bool _Major>
-	struct perspective< MATRIX4x4, Coordinates::_LH_ > {// perspective_left_hand
-		using matrix_type  = MATRIX4x4;
-		using scalar_type  = _Ts;
-		using radians_type = radians<_Ts>;
-
-		/* @_fov: virtical field of angle
-		   @_r: aspect, window-width/window-height
-		   @_n: near-plane Z, must grater 0.000002
-		   @_f: far-plane Z
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR>
+	MATRIX4x4 perspectiveLH(RADIANS fov, SCALAR r, SCALAR n, SCALAR f) {
+		const auto d  = 1 / tan(static_cast<SCALAR>(fov) / 2);// cot(fov/2)
+		const auto fn = f / (f - n);
+		/* A*z+B = (z-n)*f/(f-n)
+				 = z*(f/(f-n)]) + -n*(f/(f-n))
 		*/
-		static matrix_type get_matrix(radians_type fov, scalar_type aspect, scalar_type n, scalar_type f) {
-			/* aspect = w/h
-			   => w = aspect*h
-			   => h = w/aspect
+		
+		if _CONSTEXPR_IF( MATRIX4x4::col_major() ) {
+			return MATRIX4x4{
+				d/r, 0,   0,   0,
+				0,   d,   0,   0,
+				0,   0,   fn, -n*fn,
+				0,   0,   1,   0 };
+		} else {
+			return MATRIX4x4{
+				d/r, 0,   0,   0,
+				0,   d,   0,   0,
+				0,   0,   fn,  1,
+				0,   0, -n*fn, 0 };
+		}
+	}
 
-			   w = 1
-			   h = 1/aspect
-			*/
-			const auto d  = 1 / tan( static_cast<_Ts>(fov)/2 );// cot(fov/2)
-			const auto fn = f / (f - n);
-			/* A*z+B = (z-n)*f/(f-n)
-					 = z*(f/(f-n)]) + -n*(f/(f-n))
-			*/
-			if _CONSTEXPR_IF(matrix_type::col_major()) {
-				return matrix_type{
-					d/aspect, (_Ts)0, (_Ts)0, (_Ts)0,
-					(_Ts)0,        d, (_Ts)0, (_Ts)0,
-					(_Ts)0,   (_Ts)0,     fn,  -n*fn,
-					(_Ts)0,   (_Ts)0, (_Ts)1, (_Ts)0 };
-			} else {
-				return matrix_type{
-					d/aspect, (_Ts)0, (_Ts)0, (_Ts)0,
-					(_Ts)0,        d, (_Ts)0, (_Ts)0,
-					(_Ts)0,   (_Ts)0,     fn, (_Ts)1,
-					(_Ts)0,   (_Ts)0,  -n*fn, (_Ts)0 };
-			}
-		}
-		static matrix_type get_matrix(scalar_type w, scalar_type h, scalar_type n, scalar_type f) {
-			/* h/2 / n = tan(fov/2)
-			   => h/(2n)  = tan(fov/2)
-			   => 2n/h    = d
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR>
+	MATRIX4x4 perspectiveLH(SCALAR w, SCALAR h, SCALAR n, SCALAR f) {
+		/* h/2 / n = tan(fov/2)
+			=> h/(2n)  = tan(fov/2)
+			=> 2n/h    = d
 
-			   w/h=aspect
-			   => w=aspect*h
-			   d/aspect = (2n/h) / aspect
-			   => d/aspect = 2n/(h*aspect)
-			   => d/aspect = 2n / w
-			*/
-			const auto n_m2 = ((_Ts)2) * n;
-			const auto fn   = f / (f - n);
-			if _CONSTEXPR_IF(matrix_type::col_major()) {
-				return matrix_type{
-					n_m2/w, (_Ts)0, (_Ts)0, (_Ts)0,
-					(_Ts)0, n_m2/h, (_Ts)0, (_Ts)0,
-					(_Ts)0, (_Ts)0,     fn,  -n/fn,
-					(_Ts)0, (_Ts)0, (_Ts)1, (_Ts)0 };
-			} else {
-				return matrix_type{
-					n_m2/w, (_Ts)0, (_Ts)0, (_Ts)0,
-					(_Ts)0, n_m2/h, (_Ts)0, (_Ts)0,
-					(_Ts)0, (_Ts)0,     fn, (_Ts)1,
-					(_Ts)0, (_Ts)0,  -n/fn, (_Ts)0 };
-			}
+			w/h=aspect
+			=> w=aspect*h
+			d/aspect = (2n/h) / aspect
+			=> d/aspect = 2n/(h*aspect)
+			=> d/aspect = 2n / w
+		*/
+		const auto n_m2 = 2 * n;
+		const auto fn   = f / (f - n);
+		
+		if _CONSTEXPR_IF( MATRIX4x4::col_major() ) {
+			return MATRIX4x4{
+				n_m2/w,    0,    0,   0,
+				   0,   n_m2/h,  0,   0,
+				   0,      0,   fn, -n/fn,
+				   0,      0,    1,   0 };
+		} else {
+			return MATRIX4x4{
+				n_m2/w,    0,     0,   0,
+				   0,   n_m2/h,   0,   0,
+				   0,      0,    fn,   1,
+				   0,      0,   -n/fn, 0 };
 		}
+	}
 
-		static scalar_type get_Znear(const matrix_type& M) {
-			if _CONSTEXPR_IF(_Major == _COL_MAJOR_) {
-				// M[2][3] = -Znear*M[2][2]
-				// Znear   = -M[2][3] / M[2][2]
-				return -(M.at(2, 3) / M.at(2, 2));
-			} else {
-				return -(M.at(3, 2) / M.at(2, 2));
-			}
+	template<typename _Ts, typename _Tb, matrix_major _Major>
+	SCALAR perspectiveLH_Znaer(MATRIX4x4 M) {
+		/*<solve-col_major>
+			M[2][3] = -n * M[2][2]
+			n       = -M[2][3] / M[2][2]
+		</solve-col_major>*/
+		if _CONSTEXPR_IF( MATRIX4x4::col_major() ) {
+			return -M.at(2, 3) / M.at(2, 2);
+		} else {
+			return -M.at(3, 2) / M.at(2, 2);
 		}
-		static scalar_type get_Zfar(const matrix_type& _Matrix, scalar_type _Znear) {
-			/* M[2][2] = fn = _Zfar / (_Zfar - _Znear)
-			M[2][2] * (_Zfar - _Znear)     = _Zfar
-			M[2][2]*_Zfar - M[2][2]*_Znear = _Zfar
-				            - M[2][2]*_Znear = _Zfar - M[2][2]*_Zfar
-				            - M[2][2]*_Znear = _Zfar(1 - M[2][2])
-			( - M[2][2]*_Znear)/(1-M[2][2])= _Zfar
-			*/
-			const scalar_type fn = _Matrix.at(2, 2);
-			return ((-fn*_Znear) / (1 - fn));
+	}
+
+	template<typename _Ts, typename _Tb, matrix_major _Major>
+	SCALAR perspectiveLH_Zfar(MATRIX4x4 M, SCALAR& n) {
+		/*<solve>
+			 M[2][2] = fn = f/(f-n)
+			    M22*(f-n) = f
+			  M22*f-M22*n = f
+			       -M22*n = f - M22*f
+				   -M22*n = f(1 - M22)
+			-M22*n/(1-M22)= f
+		</solve>*/
+		SCALAR M22 = M.at(2, 2);
+		n = perspectiveLH_Znaer(M);
+		return ( -M22*n/(1-M22) );
+	}
+
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR>
+	MATRIX4x4 perspectiveRH(RADIANS fov, SCALAR r, SCALAR n, SCALAR f) {
+		auto d  = 1 / tan( static_cast<SCALAR>(fov)/2 );// cot(fov/2)
+		auto fn = f / (n - f);
+		
+		if _CONSTEXPR_IF( MATRIX4x4::col_major() ) {
+			return MATRIX4x4{
+				d/r, 0,   0,   0,
+				0,   d,   0,   0,
+				0,   0,  fn,  n*fn,
+				0,   0,  -1,   0 };
+		} else {
+			return MATRIX4x4{
+				d/r, 0,   0,   0,
+				0,   d,   0,   0,
+				0,   0,   fn, -1,
+				0,   0, n*fn,  0 };
 		}
-		static scalar_type get_Zfar(const matrix_type& _Matrix) {
-			return get_Zfar(_Matrix, get_Znear(_Matrix));
-		}
-		static std::pair<scalar_type, scalar_type> get_Zrange(const matrix_type& _Matrix) {
-			const scalar_type _Znear = get_Znear(_Matrix);
-			const scalar_type _Zfar  = get_Zfar(_Matrix, _Znear);
-			return std::pair<scalar_type, scalar_type>{ _Znear, _Zfar };
-		}
+	}
+
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR>
+	MATRIX4x4 perspectiveRH(SCALAR w, SCALAR h, SCALAR n, SCALAR f) {
+		const auto n_m2 = 2 * n;
+		const auto fn   = f / (n - f);
 	
-		// Lh == RH
-		static scalar_type get_aspect(const matrix_type& M) {
-			/* M11 = d, M00 = d/r
-			   => r = d * (r/d)
-			   => r = M11/M00
-			*/
-			return M.at(1,1) / M.at(0,0);
+		if _CONSTEXPR_IF( MATRIX4x4::col_major() ) {
+			return MATRIX4x4{
+				n_m2/w,    0,    0,   0,
+				   0,   n_m2/h,  0,   0,
+				   0,      0,   fn, n*fn,
+				   0,      0,   -1,   0 };
+		} else {
+			return MATRIX4x4{
+				n_m2/w,    0,     0,   0,
+				   0,   n_m2/h,   0,   0,
+				   0,      0,     fn, -1,
+				   0,      0,   n*fn,  0 };
 		}
-		static radians_type get_fov(const matrix_type& M) {// get virtical_field_of_angle
-			/* d = 1 / tan(_Fov / 2)
-			  => 1/d = tan(_Fov / 2)
-			  => atan(1/d)*2 = _Fov
-			  M11 = d
-			  => atan(1/M11)*2 = _Fov
-			*/
-			const auto M11 = M.at(1, 1);
-			return atan( 1 / M11 ) * 2;
-		}
-		static radians_type get_foh(radians_type fov, scalar_type aspect) {
-			return atan( aspect * tan(static_cast<_Ts>(fov)/2) ) * 2;
-		}
-		static radians_type get_foh(const matrix_type& M) {
-			return get_foh(get_fov(M), get_aspect(M));
-		}
-	};
+	}
 
-	template<typename _Ts, typename _Tb, bool _Major>
-	struct perspective< MATRIX4x4, Coordinates::_RH_ > : public perspective< MATRIX4x4, Coordinates::_LH_ > {// perspective_right_hand
-		using matrix_type  = MATRIX4x4;
-		using scalar_type  = _Ts;
-		using radians_type = radians<_Ts>;
+	template<typename _Ts, typename _Tb, matrix_major _Major>
+	SCALAR perspectiveRH_Znaer(MATRIX4x4 M) {
+		/*<solve-col_major>
+			M[2][3] = n * M[2][2]
+			n       = M[2][3] / M[2][2]
+		</solve-col_major>*/
+		if _CONSTEXPR_IF( MATRIX4x4::col_major() ) {
+			return M.at(2, 3) / M.at(2, 2);
+		} else {
+			return M.at(3, 2) / M.at(2, 2);
+		}
+	}
 
-		static matrix_type get_matrix(radians_type fov, scalar_type aspect, scalar_type n, scalar_type f) {
-			auto d  = 1 / tan( static_cast<_Ts>(fov)/2 );// cot(fov/2)
-			auto fn = f / (n - f);
-			if _CONSTEXPR_IF( matrix_type::col_major() ) {
-				return matrix_type{
-					d/aspect, (_Ts)0,  (_Ts)0, (_Ts)0,
-					(_Ts)0,        d,  (_Ts)0, (_Ts)0,
-					(_Ts)0,   (_Ts)0,      fn,   n*fn,
-					(_Ts)0,   (_Ts)0, (_Ts)-1, (_Ts)0 };
-			} else {
-				return matrix_type{
-					d/aspect, (_Ts)0, (_Ts)0, (_Ts)0,
-					(_Ts)0,        d, (_Ts)0, (_Ts)0,
-					(_Ts)0,   (_Ts)0,     fn, (_Ts)-1,
-					(_Ts)0,   (_Ts)0,   n*fn, (_Ts)0 };
-			}
+	template<typename _Ts, typename _Tb, matrix_major _Major>
+	SCALAR perspectiveRH_Zfar(MATRIX4x4 M, SCALAR& n) {
+		/*<solve>
+			 M[2][2] = fn = f/(n-f)
+			    M22*(n-f) = f
+			  M22*n-M22*f = f
+			        M22*n = f + M22*f
+				    M22*n = f(1 + M22)
+			 M22*n/(1+M22)= f
+		</solve>*/
+		SCALAR M22 = M.at(2, 2);
+		n = perspectiveRH_Znaer(M);
+		return ( M22*n/(1+M22) );
+	}
+
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR, coordinate_system _Cs = DEFAULT_HAND>
+	MATRIX4x4 perspective(RADIANS fov, SCALAR r, SCALAR n, SCALAR f) {
+		/* 
+		@_fov: virtical field of angle
+		@_r: aspect, width/height 16/9
+		@_n: near-plane Z, must grater 0.000002
+		@_f: far-plane Z
+		*/
+		if _CONSTEXPR_IF(_Cs == LEFT_HAND){
+			return perspectiveLH<_Ts, _Tb, _Major>(fov, r, n, f);
+		} else {
+			return perspectiveRH<_Ts, _Tb, _Major>(fov, r, n, f);
 		}
-		static matrix_type get_matrix(scalar_type w, scalar_type h, scalar_type n, scalar_type f) {
-			const auto n_m2 = 2 * n;
-			const auto fn   = f / (n - f);
-			if _CONSTEXPR_IF(matrix_type::col_major()) {
-				return matrix_type{
-					n_m2/w, (_Ts)0,  (_Ts)0, (_Ts)0,
-					(_Ts)0, n_m2/h,  (_Ts)0, (_Ts)0,
-					(_Ts)0, (_Ts)0,      fn,   n*fn,
-					(_Ts)0, (_Ts)0, (_Ts)-1, (_Ts)0 };
-			} else {
-				return matrix_type{
-					n_m2/w, (_Ts)0, (_Ts)0, (_Ts)0,
-					(_Ts)0, n_m2/h, (_Ts)0, (_Ts)0,
-					(_Ts)0, (_Ts)0,     fn, (_Ts)-1,
-					(_Ts)0, (_Ts)0,   n*fn, (_Ts)0 };
-			}
+	}
+
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR, coordinate_system _Cs = DEFAULT_HAND>
+	MATRIX4x4 perspective(SCALAR w, SCALAR h, SCALAR n, SCALAR f) {
+		if _CONSTEXPR_IF(_Cs == LEFT_HAND) {
+			return perspectiveLH<_Ts, _Tb, _Major>(w, h, n, f);
+		} else {
+			return perspectiveRH<_Ts, _Tb, _Major>(w, h, n, f);
 		}
-	
-		static scalar_type get_Znear(const matrix_type& M) {
-			if _CONSTEXPR_IF(matrix_type::col_major()) {
-				/* M23 = n*fn, M22 = fn
-				   => n = M23/M22
-				*/
-				return (M.at(2,3) / M.at(2,2));
-			} else {
-				return (M.at(3,2) / M.at(2,2));
-			}
-		}
-		static scalar_type get_Zfar(const matrix_type& M, scalar_type Znear) {
-			/* <idea> Sovle: M22 = fn = f/(n-f) </idea>
-			=> f = M22 * (n - f)
-			=> f = M22*n - M22*f
-			=> f(1+M22) = M22*n
-			=> f = M22*n/(1+M22) or f = fn*n/(1+fn)
-			*/
-			const scalar_type fn = M.at(2, 2);
-			return ( fn * Znear / (1 + fn) );
-		}
-		static scalar_type get_Zfar(const matrix_type& M) {
-			return get_Zfar(M, get_Znear(M));
-		}
-		static std::pair<scalar_type, scalar_type> get_Zrange(const matrix_type& M) {
-			const auto _Znear = get_Znear(M);
-			const auto _Zfar  = get_Zfar(M, _Znear);
-			return std::pair<scalar_type, scalar_type>{ _Znear, _Zfar };
-		}
-	};
+	}
+
+	template<typename _Ts, typename _Tb, matrix_major _Major>
+	RADIANS perspective_fov(MATRIX4x4 M) {
+		/*<solve>
+			M[1][1] = 1/tan(fov/2)
+			1/M11   = tan(fov/2)
+			fov     = atan(1/M11)*2
+		</solve>*/
+		const auto M11 = M.at(1, 1);
+		return RADIANS( atan(1 / M11) * 2 );
+	}
+
+	template<typename _Ts, typename _Tb, matrix_major _Major>
+	SCALAR perspective_aspect(MATRIX4x4 M) {
+		/*<solve>
+			M[1][1]/aspect = M[0][0]
+			M11 / M00      = aspect
+		</solve>*/
+		return M.at(1, 1) / M.at(0, 0);
+	}
 
 	/*- - - - - - - - - - - - - - - - - - planar_projection - - - - - - - - - - - - - - -*/
-	template<typename _Ts, typename _Tb = _Ts, bool _Major = _COL_MAJOR_>
+	template<typename _Ts, typename _Tb = _Ts, matrix_major _Major = DEFAULT_MAJOR>
 	struct planar_projection {
 		// convert V to P in the Plane
 		using matrix_type       = matrix4x4<_Ts, _Tb, _Major, normal_matrix_tag>;
@@ -407,171 +405,264 @@ namespace clmagic {
 		}
 	};
 
-	/*- - - - - - - - - - - - - - - - - - rotation - - - - - - - - - - - - - - -*/
-	template<typename _Tm>
-	struct rotation { };
-
-	template<typename _Ts, size_t _Rows, typename _Tb, bool _Major>
-	struct rotation< SQUARE_MATRIXN > :
-		public Rodrigues::rotation< SQUARE_MATRIXN >, Euler::rotation< SQUARE_MATRIXN >, WilliamRowanHamilton::rotation< SQUARE_MATRIXN > {
-		// inverse( rotation(theta) ) = rotation(-theta)
-		// inverse( rotation(theta) ) = transpose( rotation(theta) )
-		// reflection() = rotation( Pi/2 )
-		using matrix_type       = square_matrix<_Ts, _Rows, _Tb, _Major>;
-		using quaternion_type   = WilliamRowanHamilton::quaternion<_Ts, _Tb>;
-		using radians_type      = radians<_Ts>;
-		using unit_vector3_type = unit_vector3<_Ts, _Tb>;
-
-		static matrix_type get_matrix(unit_vector3_type axis, radians_type angle) {
-			return ::Rodrigues::rotation<matrix_type>::get_matrix(axis, angle);
-		}
-
-		static matrix_type get_matrix(quaternion_type q) {
-			return ::WilliamRowanHamilton::rotation<matrix_type>::get_matrix(q);
-		}
-	};
-
 	/*- - - - - - - - - - - - - - - - - - translation - - - - - - - - - - - - - - -*/
-	template<typename _Tm>
-	struct translation {};
-
-	template<typename _Ts, typename _Tb, bool _Major>
-	struct translation< MATRIX4x4 > {
-		// inverse( translation(x,y,z) ) = translation(-x,-y,-z)
-		using matrix_type  = MATRIX4x4;
-		using scalar_type  = _Ts;
-		using vector3_type = vector3<_Ts, _Tb>;
-
-		static matrix_type get_matrix(scalar_type x, scalar_type y, scalar_type z) {
-			if _CONSTEXPR_IF(matrix_type::col_major()) {
-				return matrix_type{
-					(_Ts)1, (_Ts)0, (_Ts)0,     x,
-					(_Ts)0, (_Ts)1, (_Ts)0,     y,
-					(_Ts)0, (_Ts)0, (_Ts)1,     z, 
-					(_Ts)0, (_Ts)0, (_Ts)0, (_Ts)1 };
-			} else {
-				return matrix_type{
-					(_Ts)1, (_Ts)0, (_Ts)0, (_Ts)0,
-					(_Ts)0, (_Ts)1, (_Ts)0, (_Ts)0,
-					(_Ts)0, (_Ts)0, (_Ts)1, (_Ts)0,
-					     x,      y,      z, (_Ts)1 };
-			}
-		}
-		static matrix_type get_matrix(const matrix_type& M, scalar_type x, scalar_type y, scalar_type z) {
-			/*
-			<idea>
-				M*TM(x,y,z,1) = E*TM(x1,y1,z1,1)
-				M*TM(x,y,z,1) = TM(x1,y1,z1,1)
-			</idea>
-			<col-major-order>
-				[rx ux fx 0]   [1 0 0 x]   [rx ux fx rx*x+ux*y+fx*z]
-				[ry uy fy 0]   [0 1 0 y]   [ry uy fy ry*x+uy*y+fy*z]
-				[rz uz fz 0] * [0 0 1 z] = [rz uz fz rz*x+uz*y+fz*z]
-				[ 0  0  0 1]   [0 0 0 1]   [ 0  0  0       1       ]
-			</col-major-order>
-			<row-major-order>
-				[1 0 0 0]   [rx ry rz 0]   [rx ry rz 0]
-				[0 1 0 0]   [ux uy uz 0]   [ux uy uz 0]
-				[0 0 1 0] * [fx fy fz 0] = [fx fy fz 0]
-				[x y z 1]   [ 0  0  0 1]   [rx*x+ux*y+fx*z ry*x+uy*y+fy*z rz*x+uz*y+fz*z 1]
-			</row-major-order>
-			*/
-			if _CONSTEXPR_IF( matrix_type::col_major() ) {
-				const auto rx = M.ref(0), ry = M.ref(4), rz = M.ref(8);// col(0)
-				const auto ux = M.ref(1), uy = M.ref(5), uz = M.ref(9);// col(1)
-				const auto fx = M.ref(2), fy = M.ref(6), fz = M.ref(10);// col(2)
-				return matrix_type{
-					    rx,     ux,     fx,   rx*x+ux*y+fx*z,
-					    ry,     uy,     fy,   ry*x+uy*y+fy*z,
-					    rz,     uz,     fz,   rz*x+uz*y+fz*z,
-					(_Ts)0, (_Ts)0, (_Ts)0,           (_Ts)1 };
-				/*<another> (M * get_matrix(x, y, z)) </another>*/
-			} else {
-				const auto rx = M.ref(0), ry = M.ref(1), rz = M.ref(2);// row(0)
-				const auto ux = M.ref(4), uy = M.ref(5), uz = M.ref(6);// row(1)
-				const auto fx = M.ref(8), fy = M.ref(9), fz = M.ref(10);// row(2)
-				return matrix_type{
-					      rx,             ry,             rz,       (_Ts)0,
-					      ux,             uy,             uz,       (_Ts)0,
-					      fx,             fy,             fz,       (_Ts)0,
-					rx*x+ux*y+fx*z, ry*x+uy*y+fy*z, rz*x+uz*y+fz*z, (_Ts)1 };
-				/*<another> (get_matrix(x, y, z) * M) </another>*/
-			}
-		}
-		static matrix_type get_matrix(const matrix_type& _Axis, vector3_type pos) {
-			return get_matrix(_Axis, pos[0], pos[1], pos[2]);
-		}
-	};
-
-	/*- - - - - - - - - - - - - - - - - - scaling - - - - - - - - - - - - - - -*/
-	template<typename _Tm>
-	struct scaling {};
-
-	template<typename _Ts, typename _Tb, bool _Major>
-	struct scaling< MATRIX3x3 > {
-		using matrix_type = MATRIX3x3;
-
-		static matrix_type get_matrix(_Ts x, _Ts y, _Ts z) {
-			return matrix_type{ 
-				  x,    (_Ts)0, (_Ts)0, 
-				(_Ts)0,   y,    (_Ts)0,
-				(_Ts)0, (_Ts)0,   z 
-			};
-		}
-	};
-
-	template<typename _Ts, typename _Tb, bool _Major>
-	struct scaling< MATRIX4x4 > {
-		using matrix_type = MATRIX4x4;
-
-		static matrix_type get_matrix(_Ts x, _Ts y, _Ts z) {
-			return matrix_type{
-				  x,    (_Ts)0, (_Ts)0, (_Ts)0,
-				(_Ts)0,   y,    (_Ts)0, (_Ts)0,
-				(_Ts)0, (_Ts)0,   z,    (_Ts)0,
-				(_Ts)0, (_Ts)0, (_Ts)0, (_Ts)1
-			};
-		}
-		static matrix_type get_matrix(_Ts s) {
-			return matrix_type{
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR>
+	MATRIX4x4 translation(SCALAR x, SCALAR y, SCALAR z) {
+		if _CONSTEXPR_IF( MATRIX4x4::col_major() ) {
+			return MATRIX4x4{
+				(_Ts)1, (_Ts)0, (_Ts)0,     x,
+				(_Ts)0, (_Ts)1, (_Ts)0,     y,
+				(_Ts)0, (_Ts)0, (_Ts)1,     z, 
+				(_Ts)0, (_Ts)0, (_Ts)0, (_Ts)1 };
+		} else {
+			return MATRIX4x4{
 				(_Ts)1, (_Ts)0, (_Ts)0, (_Ts)0,
 				(_Ts)0, (_Ts)1, (_Ts)0, (_Ts)0,
 				(_Ts)0, (_Ts)0, (_Ts)1, (_Ts)0,
-				(_Ts)0, (_Ts)0, (_Ts)0, ((_Ts)1) / s
-			};
+					 x,      y,      z, (_Ts)1 };
 		}
-	};
-
-	template<typename _Ts, typename _Tb, bool _Major>
-	struct scaling< DIAG_MATRIX3x3 > {
-		using matrix_type = DIAG_MATRIX3x3;
-
-		static matrix_type get_matrix(_Ts x, _Ts y, _Ts z) {
-			return matrix_type{ x, y, z };
+	}
+	template<typename _Ts, typename _Tb, matrix_major _Major>
+	MATRIX4x4 translation(MATRIX4x4 axis, SCALAR x, SCALAR y, SCALAR z) {
+		/*
+		<idea>
+			axis * translation(x,y,z,1) = translation(x1,y1,z1,1)
+		</idea>
+		<col-major-order>
+			[rx ux fx 0]   [1 0 0 x]   [rx ux fx rx*x+ux*y+fx*z]
+			[ry uy fy 0]   [0 1 0 y]   [ry uy fy ry*x+uy*y+fy*z]
+			[rz uz fz 0] * [0 0 1 z] = [rz uz fz rz*x+uz*y+fz*z]
+			[ 0  0  0 1]   [0 0 0 1]   [ 0  0  0       1       ]
+		</col-major-order>
+		<row-major-order>
+			[1 0 0 0]   [rx ry rz 0]   [rx ry rz 0]
+			[0 1 0 0]   [ux uy uz 0]   [ux uy uz 0]
+			[0 0 1 0] * [fx fy fz 0] = [fx fy fz 0]
+			[x y z 1]   [ 0  0  0 1]   [rx*x+ux*y+fx*z ry*x+uy*y+fy*z rz*x+uz*y+fz*z 1]
+		</row-major-order>
+		*/
+		if _CONSTEXPR_IF( MATRIX4x4::col_major() ) {
+			const auto rx = axis.ref(0), ry = axis.ref(4), rz = axis.ref(8);// col(0)
+			const auto ux = axis.ref(1), uy = axis.ref(5), uz = axis.ref(9);// col(1)
+			const auto fx = axis.ref(2), fy = axis.ref(6), fz = axis.ref(10);// col(2)
+			return MATRIX4x4{
+					rx,     ux,     fx,   rx*x+ux*y+fx*z,
+					ry,     uy,     fy,   ry*x+uy*y+fy*z,
+					rz,     uz,     fz,   rz*x+uz*y+fz*z,
+				(_Ts)0, (_Ts)0, (_Ts)0,           (_Ts)1 };
+		} else {
+			const auto rx = axis.ref(0), ry = axis.ref(1), rz = axis.ref(2);// row(0)
+			const auto ux = axis.ref(4), uy = axis.ref(5), uz = axis.ref(6);// row(1)
+			const auto fx = axis.ref(8), fy = axis.ref(9), fz = axis.ref(10);// row(2)
+			return MATRIX4x4{
+					  rx,             ry,             rz,       (_Ts)0,
+					  ux,             uy,             uz,       (_Ts)0,
+					  fx,             fy,             fz,       (_Ts)0,
+				rx*x+ux*y+fx*z, ry*x+uy*y+fy*z, rz*x+uz*y+fz*z, (_Ts)1 };
 		}
-	};
-
-	template<typename _Ts, typename _Tb, bool _Major>
-	struct scaling< DIAG_MATRIX4x4 > {
-		using matrix_type = DIAG_MATRIX4x4;
-
-		static matrix_type get_matrix(_Ts x, _Ts y, _Ts z) {
-			return matrix_type{ x, y, z, (_Ts)1 };
+	}
+	template<typename _Ts, typename _Tb, matrix_major _Major>
+	VECTOR3 translation_vector(MATRIX4x4 _Tm) {
+		if _CONSTEXPR_IF( MATRIX4x4::col_major() ) {
+			return VECTOR3{ _Tm.ref(3), _Tm.ref(3+4), _Tm.ref(3+4+4) };
+		} else {
+			return VECTOR3{ _Tm.ref(8), _Tm.ref(8+1), _Tm.ref(8+2) };
 		}
-		static matrix_type get_matrix(_Ts s) {
-			return matrix_type{ (_Ts)1, (_Ts)1, (_Ts)1, ((_Ts)1) / s };
+	}
+	
+	template<typename _Ts, typename _Tb, matrix_major _Major>
+	MATRIX4x4 translate(MATRIX4x4 M, SCALAR x, SCALAR y, SCALAR z) {
+		if _CONSTEXPR_IF( MATRIX4x4::col_major() ) {
+			M.ref(3) += x; 
+			M.ref(3+4) += y; 
+			M.ref(3+4+4) += z;
+		} else {
+			M.ref(8) += x;
+			M.ref(8 + 1) += y;
+			M.ref(3 + 2) += z;
 		}
-	};
+		return M;
+	}
+	template<typename _Ts, typename _Tb, matrix_major _Major>
+	MATRIX4x4 translate_local(MATRIX4x4 M, SCALAR x, SCALAR y, SCALAR z) {
+		MATRIX4x4 Tm = translation(x, y, z);
+		return Tm(M);
+	}
+
+	/*- - - - - - - - - - - - - - - - - - scaling - - - - - - - - - - - - - - -*/
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR>
+	DIAG_MATRIX4x4 scaling(SCALAR sx, SCALAR sy, SCALAR sz) {
+		return DIAG_MATRIX4x4{ sx, sy, sz, static_cast<SCALAR>(1) };
+	}
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR>
+	DIAG_MATRIX4x4 scaling(SCALAR s) {
+		return DIAG_MATRIX4x4{ static_cast<SCALAR>(1), static_cast<SCALAR>(1), static_cast<SCALAR>(1), s };
+	}
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR>
+	DIAG_MATRIX3x3 scaling3x3(SCALAR sx, SCALAR sy, SCALAR sz) {
+		return DIAG_MATRIX3x3{ sx, sy, sz };
+	}
+
+	template<typename _Ts, typename _Tb, matrix_major _Major>
+	MATRIX4x4 scale(MATRIX4x4 M, SCALAR sx, SCALAR sy, SCALAR sz) {
+		return scaling(sx, sy, sz) * M;// diag_matrix left multiples same of the right multiples  
+	}
+
+	/*- - - - - - - - - - - - - - - - - - rotation - - - - - - - - - - - - - - -*/
+	using Euler::yaw;
+	using Euler::yaw3x3;
+	using Euler::pitch;
+	using Euler::pitch3x3;
+	using Euler::roll;
+	using Euler::roll3x3;
+	using Rodrigues::rotation;
+	using Rodrigues::rotation_angle;
+	using Rodrigues::rotation_axis;
+	using Rodrigues::rotation3x3;
+	using Rodrigues::rotation3x3_angle;
+	using Rodrigues::rotation3x3_axis;
+	using WilliamRowanHamilton::quaternion;
+	using WilliamRowanHamilton::polar;
+
+	/*<Reference>RealTimeRendering-4th-Edition.</Reference>*/
+	template<typename _Ts, typename _Tb, matrix_major _Major = DEFAULT_MAJOR>
+	MATRIX4x4 rotation(QUATERNION q) {
+		const auto qx = q.imag()[0];
+		const auto qy = q.imag()[1];
+		const auto qz = q.imag()[2];
+		const auto qw = q.real();
+		const auto s  = 2/(qx*qx + qy*qy + qz*qz + qw*qw);
+			
+		if _CONSTEXPR_IF( MATRIX4x4::col_major() ) {
+			return MATRIX4x4{
+				1-s*(qy*qy+qz*qz),   s*(qx*qy-qw*qz),   s*(qx*qz+qw*qy), 0,
+				  s*(qx*qy+qw*qz), 1-s*(qx*qx+qz*qz),   s*(qy*qz-qw*qx), 0,
+				  s*(qx*qz-qw*qy),	 s*(qy*qz+qw*qx), 1-s*(qx*qx+qy*qy), 0,
+				        0,                 0,                 0,         1 };
+		} else {
+			return MATRIX4x4{
+				1-s*(qy*qy+qz*qz),   s*(qx*qy+qw*qz),   s*(qx*qz-qw*qy), 0,
+				  s*(qx*qy-qw*qz), 1-s*(qx*qx+qz*qz),   s*(qy*qz+qw*qx), 0,
+				  s*(qx*qz+qw*qy),   s*(qy*qz-qw*qx), 1-s*(qx*qx+qy*qy), 0,
+				        0,                 0,                 0,         1 };
+		}
+	}
+	template<typename _Ts, typename _Tb, matrix_major _Major = DEFAULT_MAJOR>
+	MATRIX3x3 rotation3x3(QUATERNION q) {
+		const auto qx = q.imag()[0];
+		const auto qy = q.imag()[1];
+		const auto qz = q.imag()[2];
+		const auto qw = q.real();
+		const auto s  = 2/(qx*qx + qy*qy + qz*qz + qw*qw);
+			
+		if _CONSTEXPR_IF( MATRIX3x3::col_major() ) {
+			return MATRIX3x3{
+				1-s*(qy*qy+qz*qz),   s*(qx*qy-qw*qz),   s*(qx*qz+qw*qy),
+				  s*(qx*qy+qw*qz), 1-s*(qx*qx+qz*qz),   s*(qy*qz-qw*qx),
+				  s*(qx*qz-qw*qy),	 s*(qy*qz+qw*qx), 1-s*(qx*qx+qy*qy) };
+		} else {
+			return MATRIX3x3{
+				1-s*(qy*qy+qz*qz),   s*(qx*qy+qw*qz),   s*(qx*qz-qw*qy),
+				  s*(qx*qy-qw*qz), 1-s*(qx*qx+qz*qz),   s*(qy*qz+qw*qx),
+				  s*(qx*qz+qw*qy),   s*(qy*qz-qw*qx), 1-s*(qx*qx+qy*qy) };
+		}
+	}
+
+	template<typename _Tq, typename _Tm, typename _Ts>
+	_Tq _Matrix_to_quaternion(SCALAR qw, _Tm M) {
+		/*
+		s = 2/pow(norm(q),2)
+
+		tr(M) = 4-2s(qx*qx+qy*qy+qz*qz), 
+			    = 4-4*(qx*qx+qy*qy+qz*qz)/pow(norm(q),2)
+				= 4 * (1 - (qx*qx+qy*qy+qz*qz)/pow(norm(q),2))
+				= 4 * (1 - (qx*qx+qy*qy+qz*qz)/(qx*qx+qy*qy+qz*qz+qw*qw))
+				= 4 * ((qw*qw)/(qx*qx+qy*qy+qz*qz+qw*qw))
+				= 4*qw*qw / pow(norm(q),2)
+		4*qw*qw = tr(M)
+		qw = sqrt( tr(M)/4 ) <------------
+
+		M[2,0]-M[0,2] = s*(qx*qz+qw*qy)-s*(qx*qz-qw*qy)
+			            = s*qx*qz + s*qw*qy - s*qx*qz + s*qw*qy
+					    = 2*s*qw*qy
+		qy = (M[2,0]-M[0,2])/(2*s*qw)
+		   = (M[2,0]-M[0,2])/(4/pow(norm(q),2)*qw)
+		qy = (M[2,0]-M[0,2])/(4*qw) <------------
+
+		M[0,1]-M[1,0] = s*(qx*qy+qw*qz) - s*(qx*qy-qw*qz)
+			            = s*qx*qy + s*qw*qz - s*qx*qy + s*qw*qz
+						= 2*s*qw*qz
+		qz = (M[0,1]-M[1,0])/(2*s*qw)
+		   = (M[0,1]-M[1,0])/(4/pow(norm(q),2)*qw)
+		qz = (M[0,1]-M[1,0])/(4*qw) <------------
+
+		M[1,2]-M[2,1] = s*(qy*qz+qw*qx)-s*(qy*qz-qw*qx)
+			            = s*qy*qz + s*qw*qx - s*qy*qz + s*qw*qx
+						= 2*s*qw*qx
+		qx = (M[1,2]-M[2,1]) / (2*s*qw)
+		   = (M[1,2]-M[2,1]) / (4*qw) <------------
+		*/
+		const auto qw_mul4 = qw * 4;
+
+		if _CONSTEXPR_IF(_Tm::col_major() ) {
+			const auto qx = (M.at(2,1) - M.at(1,2)) / qw_mul4;
+			const auto qy = (M.at(0,2) - M.at(2,0)) / qw_mul4;
+			const auto qz = (M.at(1,0) - M.at(0,1)) / qw_mul4;
+			return _Tq(qw, qx, qy, qz);
+		} else {
+			const auto qx = (M.at(1,2) - M.at(2,1)) / qw_mul4;
+			const auto qy = (M.at(2,0) - M.at(0,2)) / qw_mul4;
+			const auto qz = (M.at(0,1) - M.at(1,0)) / qw_mul4;
+			return _Tq(qw, qx, qy, qz);
+		}
+	}
+	template<typename _Tq, typename _Tm, typename _Ts>
+	_Tq _Matrix_to_quaternion_0qw(SCALAR qw, _Tm M) {
+		const auto M00 = M.at(0, 0);
+		const auto M11 = M.at(1, 1);
+		const auto M22 = M.at(2, 2);
+		const auto M33 = static_cast<SCALAR>(1);
+		const auto qx  = clmagic::sqrt((+M00 - M11 - M22 + M33) / 4);
+		const auto qy  = clmagic::sqrt((-M00 + M11 - M22 + M33) / 4);
+		const auto qz  = clmagic::sqrt((-M00 - M11 + M22 + M33) / 4);
+		return _Tq(qw, qx, qy, qz);
+	}
+
+	template<typename _Ts, typename _Tb, matrix_major _Major>
+	QUATERNION rotation_quaternion(const MATRIX4x4& M) {
+		const auto trM = M.at(0,0) + M.at(1,1) + M.at(2,2) + M.at(3,3);
+		const auto qw  = clmagic::sqrt(trM / 4);
+		if (qw > std::numeric_limits<_Ts>::epsilon()) {
+			return _Matrix_to_quaternion<QUATERNION>(qw, M);
+		} else {
+			return _Matrix_to_quaternion_0qw<QUATERNION>(qw, M);
+		}
+	}
+	template<typename _Ts, typename _Tb, matrix_major _Major>
+	QUATERNION rotation3x3_quaternion(const MATRIX4x4& M) {
+		const auto trM = M.at(0,0) + M.at(1,1) + M.at(2,2) + 1;
+		const auto qw  = clmagic::sqrt(trM / 4);
+		if (qw > std::numeric_limits<_Ts>::epsilon()) {
+			return _Matrix_to_quaternion<QUATERNION>(qw, M);
+		} else {
+			return _Matrix_to_quaternion_0qw<QUATERNION>(qw, M);
+		}
+	}
+
+	template<typename _Ts, typename _Tb, matrix_major _Major>
+	MATRIX4x4 rotate(MATRIX4x4 M, UNIT_VECTOR3 axis, RADIANS angle) {
+		MATRIX4x4 Rm = rotation(axis, angle);
+		return Rm(M);
+	}
+
 
 	/*- - - - - - - - - - - - - - - - - - rigid_body_transform - - - - - - - - - - - - - - -*/
 	template<typename _Tm>
 	struct rigid_body_transform {};
 
-	template<typename _Ts, typename _Tb, bool _Major>
+	template<typename _Ts, typename _Tb, matrix_major _Major>
 	struct rigid_body_transform< MATRIX4x4 > {
 		using matrix_type = MATRIX4x4;
-		using translation = clmagic::translation< matrix_type >;
-		using rotation    = clmagic::rotation< matrix_type >;
 		
 		using vector3_type      = vector3<_Ts, _Tb>;
 		using unit_vector3_type = unit_vector3<_Ts, _Tb>;
@@ -622,41 +713,90 @@ namespace clmagic {
 	};
 
 	/*- - - - - - - - - - - - - - - - - - look_at - - - - - - - - - - - - - - -*/
-	template<typename _Tm, int _Cd = Coordinates::_LH_>
-	struct look_at {};
-
-	template<typename _Ts, typename _Tb, bool _Major>
-	struct look_at< MATRIX4x4, Coordinates::_LH_ > {
-		using matrix_type       = MATRIX4x4;
-		using vector3_type      = vector3<_Ts, _Tb>;
-		using unit_vector3_type = unit_vector3<_Ts, _Tb>;
-
-		static matrix_type get_matrix(vector3_type Peye, unit_vector3_type f, unit_vector3_type u) {
-			/* decompose M = QR, col-major-order
-			invser(M) = inverse(Q*R)
-			          = inverse(R) * inverse(Q)
-					              [r u f 0]    [1 0 0 -x]
-						          [r u f 0]    [0 1 0 -y]
-					  = transpose([r u f 0]) * [0 0 1 -z]
-					              [0 0 0 1]    [0 0 0  1]
-			From Book<<3D-Game-Programming-With-DirectX12>>
-			*/
-			auto r = unit_vector3_type(cross3(u, f));
-			     u = unit_vector3_type(cross3(f, r), true);
-			return rigid_body_transform<matrix_type>::inverse(r, u, f, Peye);
+	template<typename _Ts, typename _Tb, matrix_major _Major = DEFAULT_MAJOR, coordinate_system _Cs = DEFAULT_HAND>
+	MATRIX4x4 look_to(VECTOR3 Peye, UNIT_VECTOR3 f_vector, UNIT_VECTOR3 u_vector) {
+		if _CONSTEXPR_IF(_Cs == LEFT_HAND) {
+			auto r_vector = UNIT_VECTOR3(cross3(u_vector, f_vector));
+			     u_vector = UNIT_VECTOR3(cross3(f_vector, r_vector));
+			return rigid_body_transform<MATRIX4x4>::inverse(r_vector, u_vector, f_vector, Peye);
+		} else {
+			auto r_vector = UNIT_VECTOR3(cross3(f_vector, u_vector));
+				 u_vector = UNIT_VECTOR3(cross3(r_vector, f_vector));
+			return rigid_body_transform<MATRIX4x4>::inverse(r_vector, u_vector, f_vector, Peye);
 		}
-	};
-
-	template<typename _Ts, typename _Tb, bool _Major>
-	struct look_at< MATRIX4x4, Coordinates::_RH_ > {
-		using matrix_type       = MATRIX4x4;
-		using vector3_type      = vector3<_Ts, _Tb>;
-		using unit_vector3_type = unit_vector3<_Ts, _Tb>;
-
-		static matrix_type get_matrix(vector3_type Peye, unit_vector3_type f, unit_vector3_type u) {
-			return look_at<matrix_type, Coordinates::_LH_>::get_matrix(Peye, -f, u);
+	}
+	template<typename _Ts, typename _Tb, matrix_major _Major = DEFAULT_MAJOR, coordinate_system _Cs = DEFAULT_HAND>
+	MATRIX4x4 look_at(VECTOR3 Peye, VECTOR3 Ptarget, UNIT_VECTOR3 u_vector) {
+		return look_to<_Ts, _Tb, _Major, _Cs>(Peye, UNIT_VECTOR3(Ptarget - Peye), u_vector);
+	}
+	
+	template<typename _Ts, typename _Tb, matrix_major _Major = DEFAULT_MAJOR, coordinate_system _Cs = DEFAULT_HAND>
+	MATRIX4x4 look_to(VECTOR3 Peye, UNIT_VECTOR3 _Target_vector, UNIT_VECTOR3& r_vector, UNIT_VECTOR3& u_vector, UNIT_VECTOR3& f_vector) {
+		if _CONSTEXPR_IF(_Cs == LEFT_HAND) {
+			f_vector = _Target_vector;
+			r_vector = UNIT_VECTOR3(cross3(u_vector, f_vector));
+			u_vector = UNIT_VECTOR3(cross3(f_vector, r_vector));
+			return rigid_body_transform<MATRIX4x4>::inverse(r_vector, u_vector, f_vector, Peye);
+		} else {
+			f_vector = _Target_vector;
+			r_vector = UNIT_VECTOR3(cross3(f_vector, u_vector));
+			u_vector = UNIT_VECTOR3(cross3(r_vector, f_vector));
+			return rigid_body_transform<MATRIX4x4>::inverse(r_vector, u_vector, f_vector, Peye);
 		}
+	}
+	template<typename _Ts, typename _Tb, matrix_major _Major = DEFAULT_MAJOR, coordinate_system _Cs = DEFAULT_HAND>
+	MATRIX4x4 look_at(VECTOR3 Peye, VECTOR3 Ptarget, UNIT_VECTOR3& r_vector, UNIT_VECTOR3& u_vector, UNIT_VECTOR3& f_vector) {
+		return look_to<_Ts, _Tb, _Major, _Cs>(Peye, UNIT_VECTOR3(Ptarget - Peye), std::ref(r_vector), std::ref(u_vector), std::ref(f_vector));
+	}
+
+	/*- - - - - - - - - - - - - - - - - - transform - - - - - - - - - - - - - - -*/
+	/*template<typename _Ts>
+	struct linear_momentum {
+		using scalar_type = _Ts;
+
+		template<typename _Ts2, typename _Tb2, typename _Major2>
+		matrix4x4<_Ts2, _Tb2, _Major2> to_translation() const {
+			return translation<_Ts2, _Tb2, _Major2>(this->x, this->y, this->z);
+		}
+
+		template<typename _Ts2, size_t _Size2, typename _Tb2>
+		vector<_Ts2, _Size2, _Tb2> to_vector() const {
+			return vector<_Ts2, _Size2, _Tb2>{ this->x, this->y, this->z };
+		}
+
+		scalar_type& operator[](size_t _Pos) { 
+			return *((&x) + _Pos);
+		}
+		scalar_type operator[](size_t _Pos) const { 
+			return *((&x) + _Pos);
+		}
+
+		scalar_type x;
+		scalar_type y;
+		scalar_type z;
 	};
+	template<typename _Ts>
+	struct angular_momentum {
+		translator() = default;
+		translator(_Ts _Tx, _Ts _Ty, _Ts _Tz) : _My_data{ _Tx, _Ty, _Tz } {}
+
+		template<typename _Ts2, typename _Tb2, matrix_major _Major2>
+		matrix4x4<_Ts2, _Tb2, _Major2> translate(const matrix4x4<_Ts2, _Tb2, _Major2>& _Right) {
+			auto _Transform = translation<_Ts2, _Tb2, _Major2>(_My_data[0], _My_data[1], _My_data[2]);
+			return _Transform(_Right);
+		}
+
+		template<typename _Ts2, size_t _Size2, typename _Tb2>
+		vector<_Ts2, _Size2, _Tb2> translate(vector<_Ts2, _Size2, _Tb2> _Right) {
+			auto _Displacement = vector<_Ts2, _Size2, _Tb2>(0);
+			_Displacement[0] = _My_data[0];
+			_Displacement[1] = _My_data[1];
+			_Displacement[2] = _My_data[2];
+			return _Right + _Displacement;
+		}
+
+		_Ts _My_data[3];
+	};*/
 
 }// namespace clmagic
 

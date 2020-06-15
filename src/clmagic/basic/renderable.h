@@ -3,76 +3,50 @@
 #include <map>
 #include <string>
 #include <d3d12.h>
+#include "../math.h"
+
+/*
+								+- geometry
+								|
+				+-"N": object -+- substance
+				|              |
+				|              +- transform
+				|
+				+-"2": object
+				|
+object_system -+-"0": object
+				|
+				+-"1": object
+				|
+				+-"4": object
+				|
+				+- transform
+uniform
+*/
 
 namespace clmagic {
-	// not manage memory
+	/*- - - - - - - - - - - - - - - - - - - - - - interface - - - - - - - - - - - - - - - - - - - - -*/
 	struct renderable {
 		virtual ID3D12GraphicsCommandList& render(ID3D12GraphicsCommandList&) = 0;
-	};
+	};	
 
-	struct mesh : public renderable {
-		size_t base_vertex_location = 0;
-		size_t start_index_location = 0;
-		size_t index_count = 0;
-		
-		mesh() = default;
-		~mesh() { this->release(); }
-
-		virtual void release() {}
-		virtual ID3D12GraphicsCommandList& render(ID3D12GraphicsCommandList&) override = 0;
-		virtual std::shared_ptr<mesh> reduce(size_t _Base_vertex_location, size_t _Start_index_location, size_t _Index_count) = 0;
-	};
-
-	struct transform : public renderable {
-		void set_parent(const transform& _Parent) {
-			_My_parent = &_Parent;
-		}
-
-		transform* join(transform* _Parent) {
-			_My_parent = _Parent;
-			return _Parent;
-		}
-
-		virtual ID3D12GraphicsCommandList& render(ID3D12GraphicsCommandList& _Cmdlist) override = 0;
-		virtual std::shared_ptr<transform> clone() = 0;
+	struct animatable {
 		virtual void translate(float x, float y, float z) = 0;
-		virtual void rotate(float axis_x, float axis_y, float axis_z, float _Radians) = 0;
-		virtual void scale(float scale_x, float scale_y, float scale_z) = 0;
+		virtual void scale(float sx, float sy, float sz) = 0;
+		virtual void rotate(unit_vector3<float> axis, radians<float> angle) = 0;
 
-		const transform* _My_parent = nullptr;
+		virtual void translate_parent(float x, float y, float z) = 0;
+		virtual void scale_parent(float sx, float sy, float sz) = 0;
+		virtual void rotate_parent(unit_vector3<float> axis, radians<float> angle) = 0;
 	};
+
 
 	struct geometry : public renderable {
 		geometry() = default;
 		~geometry() { this->release(); }
 
-		virtual void release() {
-			_My_mesh      = nullptr;
-			_My_transform = nullptr;
-		}
-		virtual ID3D12GraphicsCommandList& render(ID3D12GraphicsCommandList& _Cmdlist) override {
-			if (_My_transform != nullptr) {
-				_My_transform->render(_Cmdlist);
-			}
-			if (_My_mesh != nullptr) {
-				_My_mesh->render(_Cmdlist);
-			}
-			return _Cmdlist;
-		}
-		virtual std::shared_ptr<geometry> reduce(size_t _Base_vertex_location, size_t _Start_index_location, size_t _Index_count) {
-			// mesh reduce, transform clone
-			std::shared_ptr<geometry> _Geometry_ptr = std::make_shared<geometry>();
-			if (_My_mesh != nullptr) {
-				_Geometry_ptr->_My_mesh      = _My_mesh->reduce(_Base_vertex_location, _Start_index_location, _Index_count);
-			}
-			if (_My_transform != nullptr) {
-				_Geometry_ptr->_My_transform = _My_transform->clone();
-			}
-			return _Geometry_ptr;
-		}
-
-		std::shared_ptr<mesh> _My_mesh;
-		std::shared_ptr<transform> _My_transform;
+		virtual void release() { }
+		virtual std::shared_ptr<geometry> reduce(size_t _Base_vertex_location, size_t _Start_index_location, size_t _Index_count) = 0;
 	};
 
 	struct substance : public renderable{
@@ -80,10 +54,23 @@ namespace clmagic {
 		~substance() { this->release(); }
 
 		virtual void release() {}
-		virtual ID3D12GraphicsCommandList& render(ID3D12GraphicsCommandList&) override = 0;
 	};
 
-	struct object {
+	struct transform : public renderable, public animatable {
+		void set_parent(transform& _Parent) {
+			_Parent._My_sub.push_back(this);
+		}
+		transform* join(transform* _Parent) {
+			_Parent->_My_sub.push_back(this);
+			return _Parent;
+		}
+
+		virtual std::shared_ptr<transform> clone() const = 0;
+
+		std::vector<transform*> _My_sub;
+	};
+
+	struct object : public renderable {
 		~object() {
 			this->release();
 		}
@@ -91,15 +78,7 @@ namespace clmagic {
 		virtual void release() {
 			_My_geometry  = nullptr;
 			_My_substance = nullptr;
-		}
-		virtual ID3D12GraphicsCommandList& render(ID3D12GraphicsCommandList& _Cmdlist) {
-			if (_My_substance != nullptr) {
-				_My_substance->render(_Cmdlist);
-			}
-			if (_My_geometry != nullptr) {
-				_My_geometry->render(_Cmdlist);
-			}
-			return _Cmdlist;
+			_My_transform = nullptr;
 		}
 		virtual std::shared_ptr<object> reduce(size_t _Base_vertex_location, size_t _Start_index_location, size_t _Index_count) {
 			// geometry reduce, substance shared
@@ -110,14 +89,30 @@ namespace clmagic {
 			if (_My_substance != nullptr) {
 				_Object_ptr->_My_substance = _My_substance;
 			}
+			if (_My_transform != nullptr) {
+				_Object_ptr->_My_transform = _My_transform->clone();
+			}
 			return _Object_ptr;
+		}
+		virtual ID3D12GraphicsCommandList& render(ID3D12GraphicsCommandList& _Cmdlist) override {
+			if (_My_transform != nullptr) {
+				_My_transform->render(_Cmdlist);
+			}
+			if (_My_substance != nullptr) {
+				_My_substance->render(_Cmdlist);
+			}
+			if (_My_geometry != nullptr) {
+				_My_geometry->render(_Cmdlist);
+			}
+			return _Cmdlist;
 		}
 
 		std::shared_ptr<geometry>  _My_geometry;
 		std::shared_ptr<substance> _My_substance;
+		std::shared_ptr<transform> _My_transform;
 	};
 
-	struct object_system {
+	struct object_system : public renderable {
 		~object_system() {
 			this->release();
 		}
@@ -126,7 +121,7 @@ namespace clmagic {
 			_My_components.clear();
 			_My_transform = nullptr;
 		}
-		virtual ID3D12GraphicsCommandList& render(ID3D12GraphicsCommandList& _Cmdlist) {
+		virtual ID3D12GraphicsCommandList& render(ID3D12GraphicsCommandList& _Cmdlist) override {
 			if (_My_transform != nullptr) {
 				_My_transform->render(_Cmdlist);
 			}
@@ -142,7 +137,16 @@ namespace clmagic {
 		}
 		
 		std::map<std::string, std::shared_ptr<object>> _My_components;
-		std::shared_ptr<transform>                     _My_transform;
+		std::shared_ptr<transform> _My_transform;
+	};
+
+	struct uniform : public renderable {
+		uniform() = default;
+		~uniform() { this->release(); }
+
+		virtual void release() { }
+		virtual void map(void** _Pptr) = 0;
+		virtual void unmap(void** _Pptr) = 0;
 	};
 
 }// namespace clmagic

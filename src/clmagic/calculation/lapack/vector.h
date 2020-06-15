@@ -6,7 +6,7 @@
 #pragma once
 #ifndef clmagic_math_lapack_VECTOR_h_
 #define clmagic_math_lapack_VECTOR_h_
-#include "../general/simd.h"// block_traits<>, simd_operator
+//#include "../general/simd.h"// block_traits<>, simd_operator
 #include "../general/general.h"// include shuffle<>
 #include "../real/bitset.h"// include ceil(Number, Bound)
 #include "../real/real.h"// include CSTD math
@@ -17,6 +17,21 @@
 #include <algorithm>
 
 namespace clmagic{
+#ifndef clmagic_calculation_general_SIMD_h_
+	template<typename _Ty>
+	struct block_traits {
+		using block_type  = _Ty;
+		using scalar_type = _Ty;
+
+		static constexpr size_t size() {
+			return 1;
+		}
+
+		static block_type set1(const scalar_type& _Val) {
+			return block_type(_Val);
+		}
+	};
+#endif
 
 	/*- - - - - - - - - - - - - - - - - - - - vector_size<> - - - - - - - - - - - - - - - - - - - - - - -*/
 	/*
@@ -82,7 +97,7 @@ namespace clmagic{
 		}
 	};
 
-	/*- - - - - - - - - - - - - - - - - - - _Vector_operation<> - - - - - - - - - - - - - - - - - - - - -*/
+	/*- - - - - - - - - - - - - - - - - - - * _Vector_operation<> * - - - - - - - - - - - - - - - - - - - - -*/
 	enum class _Vector_accelerate_level {
 		Fastest,
 		Fast,
@@ -290,7 +305,7 @@ namespace clmagic{
 			}
 
 			if (_Tail_size != 0) {// vector-length is usually large, when _Tail_size != 0
-				const _Tb       _Temp       = _Func(*_First1, *_First2);
+				const _Tb          _Temp       = _Transform_op(*_First1, *_First2);
 				const scalar_type* _First_temp = reinterpret_cast<const scalar_type*>(&_Temp);
 				std::copy(_First_temp, _First_temp+_Tail_size, (scalar_type*)_Dest);
 			}
@@ -432,7 +447,7 @@ namespace clmagic{
 					const auto _Blast1  = _Bfirst1 + _Vsize1.block_size;
 					auto       _Bfirst2 = reinterpret_cast<const block_type*>((const scalar_type*)(_First2) + _Vsize1.leading_size);
 					auto       _Bdest   = reinterpret_cast<block_type*>(      (scalar_type*)(_Dest)         + _Vsize1.leading_size);
-					return fast_operation::func_2nd(_Bfirst1, _Blast1, _Bfirst2, _Bdest, _Transform_op, _Vsize1.leading_size, _Vsize1.tail_size);
+					return fast_operation::transform(_Bfirst1, _Blast1, _Bfirst2, _Bdest, _Transform_op, _Vsize1.leading_size, _Vsize1.tail_size);
 				}
 			}
 
@@ -554,27 +569,45 @@ namespace clmagic{
 	template<typename _Ts, typename _Tb>
 		using auto_vector_operation = _Vector_operation<_Ts, _Tb, _Vector_accelerate_level::Auto>;
 
-	#define _Generate_block_iter_1st(LEFT, RESULT)        \
-	auto       _First = (##LEFT##).begin<_Tb>();       \
-	const auto _Last  = _First + (##LEFT##).block_size(); \
-	auto       _Dest  = (##RESULT##).begin<_Tb>()
-
-	#define _Generate_block_iter_2nd(LEFT, RIGHT, RESULT)   \
-	auto       _First1 = (##LEFT##).begin<_Tb>();        \
-	const auto _Last1  = _First1 + (##LEFT##).block_size(); \
-	auto       _First2 = (##RIGHT##).begin<_Tb>();       \
-	auto       _Dest   = (##RESULT##).begin<_Tb>()
-
-	#define _Generate_block_iter_nodest_1st(LEFT)   \
-	auto       _First = (##LEFT##).begin<_Tb>(); \
-	const auto _Last  = _First + (##LEFT##).block_size()
-
-	#define _Generate_iter_nodest_2nd(LEFT, RIGHT)          \
-	auto       _First1 = (##LEFT##).begin<_Tb>();        \
-	const auto _Last1  = _First1 + (##LEFT##).block_size(); \
-	auto       _First2 = (##RIGHT##).begin<_Tb>()
-
-
+	/*- - - - - - - - - - - - - - - - - - - _Tb_t<> - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ts>
+	struct _SIMD4_enum {
+		using type = _Ts;
+	};
+	template<typename _Ts>
+	struct _SIMD8_enum {
+		using type = _Ts;
+	};
+#ifdef clmagic_calculation_general_SIMD_h_
+	template<>
+	struct _SIMD4_enum<float> {
+		using type = __m128;
+	};
+	template<>
+	struct _SIMD4_enum<double> {
+		using type = __m256d;
+	};
+	template<>
+	struct _SIMD4_enum<int> {
+		using type = __m128i;
+	};
+	template<>
+	struct _SIMD8_enum<float> {
+		using type = __m256;
+	};
+	template<>
+	struct _SIMD8_enum<double> {
+		using type = __m512d;
+	};
+	template<>
+	struct _SIMD8_enum<int> {
+		using type = __m256i;
+	};
+#endif
+	template<typename _Ts>
+		using _SIMD4_t = typename _SIMD4_enum<_Ts>::type;
+	template<typename _Ts>
+		using _SIMD8_t = typename _SIMD8_enum<_Ts>::type;
 
 	/*- - - - - - - - - - - - - - - - - - stack_allocator<> - - - - - - - - - - - - - - - - - - - - -*/
 	template<typename _Ts, typename _Tb>
@@ -639,700 +672,582 @@ namespace clmagic{
 
 
 	/*- - - - - - - - - - - - - - - - - - - subvector<> - - - - - - - - - - - - - - - - - - - - - -*/
-	// forward declare
 	template<typename _Ts, typename _Tb>
-		struct const_subvector;
-	template<typename _Ts, typename _Tb>
-		struct subvector;
-
-	template<typename _Ts, typename _Tb>
-	struct const_subvector {// const _Ts
-		using iterator_category = std::random_access_iterator_tag;
-		using difference_Tspe   = ptrdiff_t;
-
-		using scalar_type      = _Ts;
-		using block_type       = _Tb;
-		using size_type        = clmagic::vector_size<_Ts, _Tb>;
-		using block_traits     = clmagic::block_traits<_Tb>;
-		using allocator_traits = clmagic::stack_allocator<_Ts, _Tb>;
-
-		const_subvector(const const_subvector&) = delete;
-		const_subvector() = default;
-		const_subvector(const_subvector&& _Right) noexcept
-			: _Fptr(_Right._Fptr), _Lptr(_Right._Lptr), _Nx(_Right._Nx), _Mem(_Right._Mem) {
-			_Right._Mem = false;
-		}
-		const_subvector(const scalar_type* _First, const scalar_type* _Last)
-			: _Fptr(_First), _Lptr(_Last), _Nx(1), _Mem(false) {}
-		const_subvector(const scalar_type* _First, const scalar_type* _Last, size_t _Stride)// &_First[1] = &_First[0] + _Stride
-			: _Fptr(_First), _Lptr(_Last), _Nx(_Stride), _Mem(false) {}
-		~const_subvector() {
-			if (_Mem) {
-				allocator_traits::deallocate(this->size());
+	struct _Subvector_data {
+		~_Subvector_data() {
+			if (_Is_owner) {
+				delete[] _My_first;
+				_My_first = nullptr;
+				_My_last  = nullptr;
+				_Is_owner = false;
 			}
 		}
 
-		const_subvector& operator=(const const_subvector&) = delete;
-		const_subvector& operator=(const_subvector&& _Right) {
-			this->_Fptr  = _Right._Fptr;
-			this->_Lptr  = _Right._Lptr;
-			this->_Nx    = _Right._Nx;
-			this->_Mem   = _Right._Mem;
-			_Right._Mem  = false;
-			return (*this);
+		_Ts* ptr() {
+			return _My_first;
+		}
+		_Ts* ptr(size_t _Pos) {
+			return _My_first + _Pos * _My_stride;
+		}
+		_Ts* begin() {
+			return _My_first;
+		}
+		_Ts* end() {
+			return _My_last;
+		}
+		const _Ts* ptr() const {
+			return _My_first;
+		}
+		const _Ts* ptr(size_t _Pos) const {
+			return (_My_first + _Pos * _My_stride);
+		}
+		const _Ts* begin() const {
+			return _My_first;
+		}
+		const _Ts* end() const {
+			return _My_last;
 		}
 		
-		const scalar_type* ptr() const {
-			return _Fptr; }
-		const scalar_type* ptr(size_t _Pos) const {
-			return _Fptr + _Pos * _Nx; }
-		const scalar_type* begin() const {
-			return _Fptr; }
-		const scalar_type* end() const {
-			return _Lptr; }
-		const scalar_type& operator[](size_t _Pos) const {
-			return (*ptr(_Pos)); }
 		size_t size() const {
-			return (_Lptr - _Fptr) / _Nx; }
+			return (_My_last - _My_first) / _My_stride; 
+		}
 		size_t stride() const {
-			return _Nx; }
-		size_type vsize() const {
-			return size_type(_Fptr, _Lptr, _Nx); }
-		void reset(const scalar_type* _First, const scalar_type* _Last, size_t _Stride = 1, bool _Memory = false) {
-			_Fptr  = _First;
-			_Lptr  = _Last;
-			_Nx    = _Stride;
-			_Mem   = _Memory;
+			return _My_stride;
 		}
 		bool empty() const {
-			return (_Lptr == _Fptr);
+			return (_My_first == _My_last);
 		}
 		bool is_continue() const {
-			return _Nx == 1;
+			return (_My_stride == 1);
 		}
-
-		subvector<_Ts, _Tb> neg() const;
-		subvector<_Ts, _Tb> add(const const_subvector&) const;
-		subvector<_Ts, _Tb> sub(const const_subvector&) const;
-		subvector<_Ts, _Tb> mul(const const_subvector&) const;
-		subvector<_Ts, _Tb> div(const const_subvector&) const;
-		subvector<_Ts, _Tb> mod(const const_subvector&) const;
-		subvector<_Ts, _Tb> add(scalar_type) const;
-		subvector<_Ts, _Tb> sub(scalar_type) const;
-		subvector<_Ts, _Tb> mul(scalar_type) const;
-		subvector<_Ts, _Tb> div(scalar_type) const;
-		subvector<_Ts, _Tb> mod(scalar_type) const;
-		subvector<_Ts, _Tb> added(scalar_type) const;
-		subvector<_Ts, _Tb> subed(scalar_type) const;
-		subvector<_Ts, _Tb> muled(scalar_type) const;
-		subvector<_Ts, _Tb> dived(scalar_type) const;
-		subvector<_Ts, _Tb> moded(scalar_type) const;
+		vector_size<_Ts, _Tb> vsize() const {
+			return vector_size<_Ts, _Tb>(_My_first, _My_last, _My_stride); 
+		}
+		
 		std::string to_string() const {
-			using std::to_string;
-			const auto  _Inc   = this->stride();
-			auto        _First = this->begin();
-			const auto  _Last  = this->end();
-			std::string _Str   = "subvector{";
-			for ( ; _First != _Last; _First += _Inc) {
-				_Str += to_string(*_First);
-				_Str += ',';
+			assert(!this->empty());
+			auto       _First = this->begin();
+			const auto _Last  = this->end();
+			std::string _Str  = std::to_string(*_First); _First += _My_stride;
+			for (; _First != _Last; _First += _My_stride) {
+				_Str += ' ';
+				_Str += std::to_string(*_First);
 			}
-			_Str.back() = '}';
-			return _Str;
-		}
-
-		const_subvector operator()(size_t _First1, size_t _Last1) const {
-			return const_subvector(this->ptr(_First1), this->ptr(_Last1), this->stride());
-		}
-		subvector<_Ts, _Tb> operator-() const {
-			return this->neg();
-		}
-		subvector<_Ts, _Tb> operator+(const const_subvector& _Right) const {
-			return this->add(_Right);
-		}
-		subvector<_Ts, _Tb> operator-(const const_subvector& _Right) const {
-			return this->sub(_Right);
-		}
-		subvector<_Ts, _Tb> operator*(const const_subvector& _Right) const {
-			return this->mul(_Right);
-		}
-		subvector<_Ts, _Tb> operator/(const const_subvector& _Right) const {
-			return this->div(_Right);
-		}
-		subvector<_Ts, _Tb> operator%(const const_subvector& _Right) const {
-			return this->mod(_Right);
-		}
-		
-		subvector<_Ts, _Tb> operator+(int _Scalar) const {
-			return this->add(static_cast<_Ts>(_Scalar));
-		}
-		subvector<_Ts, _Tb> operator-(int _Scalar) const {
-			return this->sub(static_cast<_Ts>(_Scalar));
-		}
-		subvector<_Ts, _Tb> operator*(int _Scalar) const {
-			return this->mul(static_cast<_Ts>(_Scalar));
-		}
-		subvector<_Ts, _Tb> operator/(int _Scalar) const {
-			return this->div(static_cast<_Ts>(_Scalar));
-		}
-		subvector<_Ts, _Tb> operator%(int _Scalar) const {
-			return this->mod(static_cast<_Ts>(_Scalar));
-		}
-		subvector<_Ts, _Tb> operator+(float _Scalar) const {
-			return this->add(static_cast<_Ts>(_Scalar));
-		}
-		subvector<_Ts, _Tb> operator-(float _Scalar) const {
-			return this->sub(static_cast<_Ts>(_Scalar));
-		}
-		subvector<_Ts, _Tb> operator*(float _Scalar) const {
-			return this->mul(static_cast<_Ts>(_Scalar));
-		}
-		subvector<_Ts, _Tb> operator/(float _Scalar) const {
-			return this->div(static_cast<_Ts>(_Scalar));
-		}
-		subvector<_Ts, _Tb> operator%(float _Scalar) const {
-			return this->mod(static_cast<_Ts>(_Scalar));
-		}
-		subvector<_Ts, _Tb> operator+(double _Scalar) const {
-			return this->add(static_cast<_Ts>(_Scalar));
-		}
-		subvector<_Ts, _Tb> operator-(double _Scalar) const {
-			return this->sub(static_cast<_Ts>(_Scalar));
-		}
-		subvector<_Ts, _Tb> operator*(double _Scalar) const {
-			return this->mul(static_cast<_Ts>(_Scalar));
-		}
-		subvector<_Ts, _Tb> operator/(double _Scalar) const {
-			return this->div(static_cast<_Ts>(_Scalar));
-		}
-		subvector<_Ts, _Tb> operator%(double _Scalar) const {
-			return this->mod(static_cast<_Ts>(_Scalar));
-		}
-		friend subvector<_Ts, _Tb> operator+(int _Scalar, const const_subvector& _Right) {
-			return _Right.added(static_cast<_Ts>(_Scalar));
-		}
-		friend subvector<_Ts, _Tb> operator-(int _Scalar, const const_subvector& _Right) {
-			return _Right.subed(static_cast<_Ts>(_Scalar));
-		}
-		friend subvector<_Ts, _Tb> operator*(int _Scalar, const const_subvector& _Right) {
-			return _Right.muled(static_cast<_Ts>(_Scalar));
-		}
-		friend subvector<_Ts, _Tb> operator/(int _Scalar, const const_subvector& _Right) {
-			return _Right.dived(static_cast<_Ts>(_Scalar));
-		}
-		friend subvector<_Ts, _Tb> operator%(int _Scalar, const const_subvector& _Right) {
-			return _Right.moded(static_cast<_Ts>(_Scalar));
-		}
-		friend subvector<_Ts, _Tb> operator+(float _Scalar, const const_subvector& _Right) {
-			return _Right.added(static_cast<_Ts>(_Scalar));
-		}
-		friend subvector<_Ts, _Tb> operator-(float _Scalar, const const_subvector& _Right) {
-			return _Right.subed(static_cast<_Ts>(_Scalar));
-		}
-		friend subvector<_Ts, _Tb> operator*(float _Scalar, const const_subvector& _Right) {
-			return _Right.muled(static_cast<_Ts>(_Scalar));
-		}
-		friend subvector<_Ts, _Tb> operator/(float _Scalar, const const_subvector& _Right) {
-			return _Right.dived(static_cast<_Ts>(_Scalar));
-		}
-		friend subvector<_Ts, _Tb> operator%(float _Scalar, const const_subvector& _Right) {
-			return _Right.moded(static_cast<_Ts>(_Scalar));
-		}
-		friend subvector<_Ts, _Tb> operator+(double _Scalar, const const_subvector& _Right) {
-			return _Right.added(static_cast<_Ts>(_Scalar));
-		}
-		friend subvector<_Ts, _Tb> operator-(double _Scalar, const const_subvector& _Right) {
-			return _Right.subed(static_cast<_Ts>(_Scalar));
-		}
-		friend subvector<_Ts, _Tb> operator*(double _Scalar, const const_subvector& _Right) {
-			return _Right.muled(static_cast<_Ts>(_Scalar));
-		}
-		friend subvector<_Ts, _Tb> operator/(double _Scalar, const const_subvector& _Right) {
-			return _Right.dived(static_cast<_Ts>(_Scalar));
-		}
-		friend subvector<_Ts, _Tb> operator%(double _Scalar, const const_subvector& _Right) {
-			return _Right.moded(static_cast<_Ts>(_Scalar));
-		}
-		
-		friend std::ostream& operator<<(std::ostream& _Ostr, const const_subvector& _Left) {
-			return (_Ostr << _Left.to_string());
+			return std::move(_Str);
 		}
 
 	protected:
-		const_subvector(scalar_type* _First, scalar_type* _Last, size_t _Stride, bool _Memory)
-			: _Fptr(_First), _Lptr(_Last), _Nx(_Stride), _Mem(_Memory) { }
-
-	private:
-		const _Ts* _Fptr;
-		const _Ts* _Lptr;
-		size_t     _Nx;// stride
-		bool       _Mem;
+		_Ts*   _My_first  = nullptr;
+		_Ts*   _My_last   = nullptr;
+		size_t _My_stride = 1;
+		bool   _Is_owner  = false;
 	};
-	
+
 	template<typename _Ts, typename _Tb>
-	struct subvector : public const_subvector<_Ts, _Tb> {// default const _Ts
-		using _Mybase = const_subvector<_Ts, _Tb>;
-		friend _Mybase;
-
-		using iterator_category = std::random_access_iterator_tag;
-		using difference_Tspe   = ptrdiff_t;
-
-		using scalar_type  = _Ts;
+	class subvector : public _Subvector_data<_Ts, _Tb> {
+		using _Mybase = _Subvector_data<_Ts, _Tb>;
+	public:
 		using block_type   = _Tb;
-		using size_type    = typename _Mybase::size_type;
-		using block_traits = clmagic::block_traits<_Tb>;
+		using scalar_type  = _Ts;
+		using block_traits = clmagic::block_traits<block_type>;
 
-		subvector(scalar_type* _First, scalar_type* _Last)
-			: _Mybase(_First, _Last) {}
-		subvector(scalar_type* _First, scalar_type* _Last, size_t _Stride)
-			: _Mybase(_First, _Last, _Stride) {}
-		subvector(scalar_type* _First, scalar_type* _Last, size_t _Stride, bool _Memory)
-			: _Mybase(_First, _Last, _Stride, _Memory) {}
-		subvector(const const_subvector<_Ts, _Tb>& _Right) {// construct by _Right copied
-			// 1. allocate memory
-			size_t _Size   = _Right.size();
-			auto*  _Memory = _Mybase::allocator_traits::allocate(_Size);
-			_Mybase::reset(_Memory, _Memory+_Size, 1, true);
-			// 2. copy
-			*this = _Right;
+		subvector() = default;
+		
+		subvector(const subvector& _Right) {
+			_Mybase::_My_first  = _Right._My_first;
+			_Mybase::_My_last   = _Right._My_last;
+			_Mybase::_My_stride = _Right._My_stride;
+			_Mybase::_Is_owner  = false;
 		}
-		subvector(subvector<_Ts, _Tb>&& _Right) noexcept// owner move to this
-			: _Mybase(std::move(_Right)) {}
 
-		subvector& operator=(const const_subvector<_Ts, _Tb>& _Right) {// copy
+		subvector(subvector&& _Right) {
+			_Mybase::_My_first  = _Right._My_first;
+			_Mybase::_My_last   = _Right._My_last;
+			_Mybase::_My_stride = _Right._My_stride;
+			_Mybase::_Is_owner  = _Right._Is_owner;
+			_Right._My_first = nullptr;
+			_Right._My_last  = nullptr;
+			_Right._Is_owner = false;
+		}
+		
+		subvector(scalar_type* _First, scalar_type* _Last) {
+			_Mybase::_My_first  = _First;
+			_Mybase::_My_last   = _Last;
+			_Mybase::_My_stride = 1;
+			_Mybase::_Is_owner  = false;
+		}
+		
+		subvector(scalar_type* _First, scalar_type* _Last, size_t _Stride) {
+			_Mybase::_My_first  = _First;
+			_Mybase::_My_last   = _Last;
+			_Mybase::_My_stride = _Stride;
+			_Mybase::_Is_owner  = false;
+		}
+		
+		subvector(size_t _Count) {
+			_Mybase::_My_first  = new scalar_type[_Count];
+			_Mybase::_My_last   = _Mybase::_My_first + _Count;
+			_Mybase::_My_stride = 1;
+			_Mybase::_Is_owner  = true;
+		}
+
+		subvector& operator=(const subvector& _Right) {
+			if (_Mybase::_My_first == nullptr) {
+				_Mybase::_My_first  = new scalar_type[_Right.size()];
+				_Mybase::_My_last   = _Mybase::_My_first + _Right.size();
+				_Mybase::_My_stride = 1;
+				_Mybase::_Is_owner  = true;
+			}
+			
+			assert( this->size() == _Right.size() );
 			auto       _First = _Right.begin();
 			const auto _Last  = _Right.end();
 			auto       _Dest  = this->begin();
-			const auto _Inc1  = _Right.stride();
-			const auto _Inc2  = _Mybase::stride();
-			for ( ; _First != _Last; _First += _Inc1, _Dest += _Inc2) {
+			for ( ; _First != _Last; _First += _Right.stride(), _Dest += this->stride()) {
 				*_Dest = *_First;
 			}
 			return *this;
 		}
-		subvector& operator=(subvector<_Ts, _Tb>&& _Right) noexcept {// copy
-			return ((*this) = static_cast<subvector<_Ts, _Tb>&>(_Right));
+
+		template<typename _UnaryOp>
+		void for_each(_UnaryOp _Transform_op) {
+			auto_vector_operation<scalar_type, block_type>::transform(
+				this->begin()/*_First*/, 
+				this->end()  /*_Last*/,
+				this->begin()/*_Dest*/, _Transform_op, this->stride(), this->stride());
+		}
+
+		template<typename _BinOp>
+		void for_each(const subvector& _Args2, _BinOp _Transform_op) {
+			assert(this->size() == _Args2.size());
+			auto_vector_operation<scalar_type, block_type>::transform(
+				this->begin()/*_First1*/,
+				this->end()  /*_Last1*/,
+			   _Args2.begin()/*_First2*/,
+				this->begin()/*_Dest*/, _Transform_op, this->stride(), _Args2.stride(), this->stride());
+		}
+
+		template<typename _UnaryOp>
+		subvector for_each_copy(_UnaryOp _Transform_op) const {
+			subvector _Result = subvector(this->size());
+			auto_vector_operation<scalar_type, block_type>::transform(
+				this->begin() /*_First*/, 
+				this->end()   /*_Last*/,
+			   _Result.begin()/*_Dest*/, _Transform_op, this->stride(), _Result.stride());
+			return std::move(_Result);
+		}
+
+		template<typename _BinOp>
+		subvector for_each_copy(const subvector& _Args2, _BinOp _Transform_op) const {
+			assert(this->size() == _Args2.size());
+			subvector _Result = subvector(this->size());
+			auto_vector_operation<scalar_type, block_type>::transform(
+				this->begin()/*_First1*/,
+				this->end()  /*_Last1*/,
+			   _Args2.begin()/*_First2*/,
+			   _Result.begin()/*_Dest*/, _Transform_op, this->stride(), _Args2.stride(), _Result.stride());
+			return std::move(_Result);
+		}
+
+		subvector neg() const {
+			return std::move( this->for_each_copy(std::negate<>()) );
+		}
+
+		subvector add(const subvector& _Right) const {
+			return std::move( this->for_each_copy(_Right, std::plus<>()) );
+		}
+
+		subvector sub(const subvector& _Right) const {
+			return std::move( this->for_each_copy(_Right, std::minus<>()) );
+		}
+
+		subvector mul(const subvector& _Right) const {
+			return std::move( this->for_each_copy(_Right, std::multiplies<>()) );
+		}
+
+		subvector div(const subvector& _Right) const {
+			return std::move( this->for_each_copy(_Right, std::divides<>()) );
+		}
+
+		subvector mod(const subvector& _Right) const {
+			return std::move( this->for_each_copy(_Right, std::modulus<>()) );
+		}
+
+		subvector add(scalar_type _Scalar) const {
+			const block_type _Right        = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left + _Right; };
+			return std::move( this->for_each_copy(_Transform_op) );
+		}
+
+		subvector sub(scalar_type _Scalar) const {
+			const block_type _Right        = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left - _Right; };
+			return std::move( this->for_each_copy(_Transform_op) );
+		}
+
+		subvector mul(scalar_type _Scalar) const {
+			const block_type _Right        = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left * _Right; };
+			return std::move( this->for_each_copy(_Transform_op) );
+		}
+
+		subvector div(scalar_type _Scalar) const {
+			const block_type _Right        = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left / _Right; };
+			return std::move( this->for_each_copy(_Transform_op) );
+		}
+
+		subvector mod(scalar_type _Scalar) const {
+			const block_type _Right        = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left % _Right; };
+			return std::move( this->for_each_copy(_Transform_op) );
 		}
 		
-		scalar_type* ptr() const {
-			return  const_cast<scalar_type*>(_Mybase::ptr());
-		}
-		scalar_type* ptr(size_t _Pos) const {
-			return  const_cast<scalar_type*>(_Mybase::ptr(_Pos));
-		}
-		scalar_type* begin() const {
-			return const_cast<scalar_type*>(_Mybase::begin());
-		}
-		scalar_type* end() const {
-			return const_cast<scalar_type*>(_Mybase::end());
-		}
-		scalar_type& operator[](size_t _Pos) const {
-			return const_cast<scalar_type&>(_Mybase::operator[](_Pos));
-		}
-		void reset(scalar_type* _First, scalar_type* _Last, size_t _Stride = 1) {
-			_Mybase::reset(_First, _Last, _Stride);
-		}
-		void fill(const scalar_type& _Val) {
-			auto       _Dest = this->begin();
-			const auto _Last = this->end();
-			const auto _Inc  = _Mybase::stride();
-			for (; _Dest != _Last; _Dest += _Inc) {
-				*_Dest = _Val;
-			}
-		}
-		template<typename _Iter> 
-		void assign(_Iter _First, _Iter _Last) {
-			auto       _Dest = this->begin();
-			const auto _Inc  = _Mybase::stride();
-			for ( ; _First != _Last; ++_First, _Dest+=_Inc) {
-				*_Dest = *_First;
-			}
+		subvector& assign_add(const subvector& _Right) {
+			this->for_each(_Right, std::plus<>());
+			return *this;
 		}
 
-		subvector& assign_add(const const_subvector<_Ts, _Tb>& _Right) {
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(), 
-				this->begin(), std::plus<>(), this->stride(), _Right.stride());
+		subvector& assign_sub(const subvector& _Right) {
+			this->for_each(_Right, std::minus<>());
 			return *this;
 		}
-		subvector& assign_sub(const const_subvector<_Ts, _Tb>& _Right) {
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(),
-				this->begin(), std::minus<>(), this->stride(), _Right.stride());
+
+		subvector& assign_mul(const subvector& _Right) {
+			this->for_each(_Right, std::multiplies<>());
 			return *this;
 		}
-		subvector& assign_mul(const const_subvector<_Ts, _Tb>& _Right) {
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(),
-				this->begin(), std::multiplies<>(), this->stride(), _Right.stride());
+
+		subvector& assign_div(const subvector& _Right) {
+			this->for_each(_Right, std::divides<>());
 			return *this;
 		}
-		subvector& assign_div(const const_subvector<_Ts, _Tb>& _Right) {
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(),
-				this->begin(), std::divides<>(), this->stride(), _Right.stride());
+
+		subvector& assign_mod(const subvector& _Right) {
+			this->for_each(_Right, std::modulus<>());
 			return *this;
 		}
-		subvector& assign_mod(const const_subvector<_Ts, _Tb>& _Right) {
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(),
-				this->begin(), std::modulus<>(), this->stride(), _Right.stride());
-			return *this;
-		}
+
 		subvector& assign_add(scalar_type _Scalar) {
-			const auto _Arg1         = block_traits::set1(_Scalar);
-			auto       _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 + _Arg1; };
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), this->begin(), _Transform_op, this->stride());
-			return *this;
-		}
-		subvector& assign_sub(scalar_type _Scalar) {
-			const auto _Arg1         = block_traits::set1(_Scalar);
-			auto       _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 - _Arg1; };
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), this->begin(), _Transform_op, this->stride());
-			return *this;
-		}
-		subvector& assign_mul(scalar_type _Scalar) {
-			const auto _Arg1         = block_traits::set1(_Scalar);
-			auto       _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 * _Arg1; };
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), this->begin(), _Transform_op, this->stride());
-			return *this;
-		}
-		subvector& assign_div(scalar_type _Scalar) {
-			const auto _Arg1         = block_traits::set1(_Scalar);
-			auto       _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 / _Arg1; };
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), this->begin(), _Transform_op, this->stride());
-			return *this;
-		}
-		subvector& assign_mod(scalar_type _Scalar) {
-			const auto _Arg1         = block_traits::set1(_Scalar);
-			auto       _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 % _Arg1; };
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), this->begin(), _Transform_op, this->stride());
+			const block_type _Right        = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left + _Right; };
+			this->for_each(_Transform_op);
 			return *this;
 		}
 
-		subvector operator()(size_t _First, size_t _Last) const {
-			return subvector(this->ptr(_First), this->ptr(_Last), this->stride());
+		subvector& assign_sub(scalar_type _Scalar) {
+			const block_type _Right        = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left - _Right; };
+			this->for_each(_Transform_op);
+			return *this;
 		}
-		subvector& operator+=(const const_subvector<_Ts, _Tb>& _Right) {
+
+		subvector& assign_mul(scalar_type _Scalar) {
+			const block_type _Right        = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left * _Right; };
+			this->for_each(_Transform_op);
+			return *this;
+		}
+
+		subvector& assign_div(scalar_type _Scalar) {
+			const block_type _Right        = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left / _Right; };
+			this->for_each(_Transform_op);
+			return *this;
+		}
+
+		subvector& assign_mod(scalar_type _Scalar) {
+			const block_type _Right        = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left % _Right; };
+			this->for_each(_Transform_op);
+			return *this;
+		}
+		
+		subvector added(scalar_type _Scalar) const {
+			const block_type _Left         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Left](auto&& _Right) { return _Left + _Right; };
+			return std::move( this->for_each_copy(_Transform_op) );
+		}
+
+		subvector subed(scalar_type _Scalar) const {
+			const block_type _Left         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Left](auto&& _Right) { return _Left - _Right; };
+			return std::move( this->for_each_copy(_Transform_op) );
+		}
+
+		subvector muled(scalar_type _Scalar) const {
+			const block_type _Left         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Left](auto&& _Right) { return _Left * _Right; };
+			return std::move( this->for_each_copy(_Transform_op) );
+		}
+
+		subvector dived(scalar_type _Scalar) const {
+			const block_type _Left         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Left](auto&& _Right) { return _Left / _Right; };
+			return std::move( this->for_each_copy(_Transform_op) );
+		}
+
+		subvector moded(scalar_type _Scalar) const {
+			const block_type _Left         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Left](auto&& _Right) { return _Left % _Right; };
+			return std::move( this->for_each_copy(_Transform_op) );
+		}
+
+		scalar_type dot(const subvector& _Right) const {
+			return auto_vector_operation<scalar_type, block_type>::transform_accumulate(
+				this->begin() /*_First1*/,
+				this->end()   /*_Last1*/,
+				_Right.begin()/*_First2*/, static_cast<scalar_type>(0), std::plus<>()/*_Reduce_op*/, std::multiplies<>()/*_Transform_op*/,
+				this->stride(), _Right.stride() );
+		}
+
+		scalar_type norm(scalar_type L) const {
+			const auto _Arg1         = block_traits::set1(L);
+			const auto _Transform_op = [&_Arg1](auto&& _Arg0) { return pow(_Arg0, _Arg1); };
+
+			const scalar_type _Result = auto_vector_operation<_Ts, _Tb>::transform_accumulate(
+				this->begin()/*_First*/, 
+				this->end()  /*_Last*/, static_cast<scalar_type>(0), std::plus<>(), _Transform_op, this->stride());
+			return pow(_Result, 1/L);
+		}
+
+		scalar_type length() const {
+			scalar_type _Length_sqr = this->dot(*this);
+			return sqrt(_Length_sqr);
+		}
+
+		void normalize() {
+			scalar_type _Length_sqr = this->dot(*this);
+			scalar_type _Error      = _Length_sqr - 1;
+			if (abs(_Error) > std::numeric_limits<scalar_type>::epsilon()) {
+				(*this) /= sqrt(_Length_sqr);
+			}
+		}
+
+		subvector operator-() const {
+			return std::move(this->neg());
+		}
+
+		subvector operator+(const subvector& _Right) const {
+			return std::move(this->add(_Right));
+		}
+
+		subvector operator-(const subvector& _Right) const {
+			return std::move(this->sub(_Right));
+		}
+
+		subvector operator*(const subvector& _Right) const {
+			return std::move(this->mul(_Right));
+		}
+
+		subvector operator/(const subvector& _Right) const {
+			return std::move(this->div(_Right));
+		}
+
+		subvector operator%(const subvector& _Right) const {
+			return std::move(this->mod(_Right));
+		}
+
+		subvector operator+(scalar_type _Right) const {
+			return std::move(this->add(_Right));
+		}
+
+		subvector operator-(scalar_type _Right) const {
+			return std::move(this->sub(_Right));
+		}
+
+		subvector operator*(scalar_type _Right) const {
+			return std::move(this->mul(_Right));
+		}
+
+		subvector operator/(scalar_type _Right) const {
+			return std::move(this->div(_Right));
+		}
+
+		subvector operator%(scalar_type _Right) const {
+			return std::move(this->mod(_Right));
+		}
+
+		subvector& operator+=(const subvector& _Right) {
 			return this->assign_add(_Right);
 		}
-		subvector& operator-=(const const_subvector<_Ts, _Tb>& _Right) {
+
+		subvector& operator-=(const subvector& _Right) {
 			return this->assign_sub(_Right);
 		}
-		subvector& operator*=(const const_subvector<_Ts, _Tb>& _Right) {
+
+		subvector& operator*=(const subvector& _Right) {
 			return this->assign_mul(_Right);
 		}
-		subvector& operator/=(const const_subvector<_Ts, _Tb>& _Right) {
+
+		subvector& operator/=(const subvector& _Right) {
 			return this->assign_div(_Right);
 		}
-		subvector& operator%=(const const_subvector<_Ts, _Tb>& _Right) {
+
+		subvector& operator%=(const subvector& _Right) {
 			return this->assign_mod(_Right);
 		}
-		subvector& operator+=(int _Scalar) {
-			return this->assign_add(static_cast<scalar_type>(_Scalar));
-		}
-		subvector& operator-=(int _Scalar) {
-			return this->assign_sub(static_cast<scalar_type>(_Scalar));
-		}
-		subvector& operator*=(int _Scalar) {
-			return this->assign_mul(static_cast<scalar_type>(_Scalar));
-		}
-		subvector& operator/=(int _Scalar) {
-			return this->assign_div(static_cast<scalar_type>(_Scalar));
-		}
-		subvector& operator%=(int _Scalar) {
-			return this->assign_mod(static_cast<scalar_type>(_Scalar));
-		}
-		subvector& operator+=(float _Scalar) {
-			return this->assign_add(static_cast<scalar_type>(_Scalar));
-		}
-		subvector& operator-=(float _Scalar) {
-			return this->assign_sub(static_cast<scalar_type>(_Scalar));
-		}
-		subvector& operator*=(float _Scalar) {
-			return this->assign_mul(static_cast<scalar_type>(_Scalar));
-		}
-		subvector& operator/=(float _Scalar) {
-			return this->assign_div(static_cast<scalar_type>(_Scalar));
-		}
-		subvector& operator%=(float _Scalar) {
-			return this->assign_mod(static_cast<scalar_type>(_Scalar));
-		}
-		subvector& operator+=(double _Scalar) {
-			return this->assign_add(static_cast<scalar_type>(_Scalar));
-		}
-		subvector& operator-=(double _Scalar) {
-			return this->assign_sub(static_cast<scalar_type>(_Scalar));
-		}
-		subvector& operator*=(double _Scalar) {
-			return this->assign_mul(static_cast<scalar_type>(_Scalar));
-		}
-		subvector& operator/=(double _Scalar) {
-			return this->assign_div(static_cast<scalar_type>(_Scalar));
-		}
-		subvector& operator%=(double _Scalar) {
-			return this->assign_mod(static_cast<scalar_type>(_Scalar));
+
+		subvector& operator+=(scalar_type _Right) {
+			return this->assign_add(_Right);
 		}
 
-		struct refernece {
-			scalar_type* _Myfirst;
-			scalar_type* _Mylast;
-			size_t       _Mystride;// stride
-			bool         _Mem;
-		};
+		subvector& operator-=(scalar_type _Right) {
+			return this->assign_sub(_Right);
+		}
+
+		subvector& operator*=(scalar_type _Right) {
+			return this->assign_mul(_Right);
+		}
+
+		subvector& operator/=(scalar_type _Right) {
+			return this->assign_div(_Right);
+		}
+
+		subvector& operator%=(scalar_type _Right) {
+			return this->assign_mod(_Right);
+		}
+
+		friend subvector operator+(scalar_type _Left, const subvector& _Right) {
+			return std::move( _Right.added(_Left) );
+		}
+
+		friend subvector operator-(scalar_type _Left, const subvector& _Right) {
+			return std::move(_Right.subed(_Left));
+		}
+
+		friend subvector operator*(scalar_type _Left, const subvector& _Right) {
+			return std::move(_Right.muled(_Left));
+		}
+
+		friend subvector operator/(scalar_type _Left, const subvector& _Right) {
+			return std::move(_Right.dived(_Left));
+		}
+
+		friend subvector operator%(scalar_type _Left, const subvector& _Right) {
+			return std::move(_Right.moded(_Left));
+		}
 	
-		refernece& subvector_ref() {
-			return reinterpret_cast<refernece&>(*this);
+		friend std::istream& operator>>(std::istream& _Istr, subvector _Left) {
+			auto       _First = _Left.begin();
+			const auto _Last  = _Left.end();
+			for ( ; _First != _Last; _First += _Left.stride()) {
+				_Istr >> *_First;
+			}
+			return _Istr;
+		}
+
+		friend std::ostream& operator<<(std::ostream& _Ostr, const subvector& _Left) {
+			return (_Ostr << _Left.to_string());
 		}
 	};
 
-	template<typename _Ts, typename _Tb>
-	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::neg() const {
-		assert(!this->empty());
-		size_t _Size   = this->size();
-		auto*  _Memory = allocator_traits::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::negate<>(), 
-				this->stride(), 1));
-	}
-	template<typename _Ts, typename _Tb>
-	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::add(const const_subvector& _Right) const {
-		assert(!this->empty());
-		assert(this->size() == _Right.size());
-		size_t _Size   = this->size();
-		auto*  _Memory = allocator_traits::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(), _Result.begin(), std::plus<>(), 
-				this->stride(), _Right.stride(), 1));
-	}
-	template<typename _Ts, typename _Tb>
-	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::sub(const const_subvector& _Right) const {
-		assert(!this->empty());
-		assert(this->size() == _Right.size());
-		size_t _Size   = this->size();
-		auto*  _Memory = allocator_traits::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(), _Result.begin(), std::minus<>(), 
-				this->stride(), _Right.stride(), 1));
-	}
-	template<typename _Ts, typename _Tb>
-	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::mul(const const_subvector& _Right) const {
-		assert(!this->empty());
-		assert(this->size() == _Right.size());
-		size_t _Size   = this->size();
-		auto*  _Memory = allocator_traits::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(), _Result.begin(), std::multiplies<>(), 
-				this->stride(), _Right.stride(), 1));
-	}
-	template<typename _Ts, typename _Tb>
-	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::div(const const_subvector& _Right) const {
-		assert(!this->empty());
-		assert(this->size() == _Right.size());
-		size_t _Size   = this->size();
-		auto*  _Memory = allocator_traits::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(), _Result.begin(), std::divides<>(), 
-				this->stride(), _Right.stride(), 1));
-	}
-	template<typename _Ts, typename _Tb>
-	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::mod(const const_subvector& _Right) const {
-		assert(!this->empty());
-		assert(this->size() == _Right.size());
-		size_t _Size   = this->size();
-		auto*  _Memory = allocator_traits::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Right.begin(), _Result.begin(), std::modulus<>(), 
-				this->stride(), _Right.stride(), 1));
-	}
-	template<typename _Ts, typename _Tb>
-	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::add(scalar_type _Scalar) const {
-		assert(!this->empty());
-		const auto _Arg1         = block_traits::set1(_Scalar);
-		const auto _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 + _Arg1; };
-		size_t     _Size         = this->size();
-		auto*      _Memory       = allocator_traits::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
-				this->stride(), 1));
-	}
-	template<typename _Ts, typename _Tb>
-	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::sub(scalar_type _Scalar) const {
-		assert(!this->empty());
-		const auto _Arg1         = block_traits::set1(_Scalar);
-		const auto _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 - _Arg1; };
-		size_t     _Size         = this->size();
-		auto*      _Memory       = allocator_traits::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
-				this->stride(), 1));
-	}
-	template<typename _Ts, typename _Tb>
-	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::mul(scalar_type _Scalar) const {
-		assert(!this->empty());
-		const auto _Arg1         = block_traits::set1(_Scalar);
-		const auto _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 * _Arg1; };
-		size_t     _Size         = this->size();
-		auto*      _Memory       = allocator_traits::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
-				this->stride(), 1));
-	}
-	template<typename _Ts, typename _Tb>
-	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::div(scalar_type _Scalar) const {
-		assert(!this->empty());
-		const auto _Arg1         = block_traits::set1(_Scalar);
-		const auto _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 / _Arg1; };
-		size_t     _Size         = this->size();
-		auto*      _Memory       = allocator_traits::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
-				this->stride(), 1));
-	}
-	template<typename _Ts, typename _Tb>
-	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::mod(scalar_type _Scalar) const {
-		assert(!this->empty());
-		const auto _Arg1         = block_traits::set1(_Scalar);
-		const auto _Transform_op = [&_Arg1](auto&& _Arg0) { return _Arg0 % _Arg1; };
-		size_t     _Size         = this->size();
-		auto*      _Memory       = allocator_traits::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
-				this->stride(), 1));
-	}
-	template<typename _Ts, typename _Tb>
-	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::added(scalar_type _Scalar) const {
-		assert(!this->empty());
-		const auto _Arg0         = block_traits::set1(_Scalar);
-		const auto _Transform_op = [&_Arg0](auto&& _Arg1) { return _Arg0 + _Arg1; };
-		size_t     _Size         = this->size();
-		auto*      _Memory       = allocator_traits::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
-				this->stride(), 1));
-	}
-	template<typename _Ts, typename _Tb>
-	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::subed(scalar_type _Scalar) const {
-		assert(!this->empty());
-		const auto _Arg0         = block_traits::set1(_Scalar);
-		const auto _Transform_op = [&_Arg0](auto&& _Arg1) { return _Arg0 - _Arg1; };
-		size_t     _Size         = this->size();
-		auto*      _Memory       = allocator_traits::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
-				this->stride(), 1));
-	}
-	template<typename _Ts, typename _Tb>
-	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::muled(scalar_type _Scalar) const {
-		assert(!this->empty());
-		const auto _Arg0         = block_traits::set1(_Scalar);
-		const auto _Transform_op = [&_Arg0](auto&& _Arg1) { return _Arg0 * _Arg1; };
-		size_t     _Size         = this->size();
-		auto*      _Memory       = allocator_traits::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
-				this->stride(), 1));
-	}
-	template<typename _Ts, typename _Tb>
-	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::dived(scalar_type _Scalar) const {
-		assert(!this->empty());
-		const auto _Arg0         = block_traits::set1(_Scalar);
-		const auto _Transform_op = [&_Arg0](auto&& _Arg1) { return _Arg0 / _Arg1; };
-		size_t     _Size         = this->size();
-		auto*      _Memory       = allocator_traits::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
-				this->stride(), 1));
-	}
-	template<typename _Ts, typename _Tb>
-	subvector<_Ts, _Tb> const_subvector<_Ts, _Tb>::moded(scalar_type _Scalar) const {
-		assert(!this->empty());
-		const auto _Arg0         = block_traits::set1(_Scalar);
-		const auto _Transform_op = [&_Arg0](auto&& _Arg1) { return _Arg0 % _Arg1; };
-		size_t     _Size         = this->size();
-		auto*      _Memory       = allocator_traits::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(this->begin(), this->end(), _Result.begin(), std::plus<>(),
-				this->stride(), 1));
-	}
-
-	// vector OP vector
 	template<typename _Ts, typename _Tb> inline
-	subvector<_Ts, _Tb> fmod(const const_subvector<_Ts, _Tb>& _Left, const const_subvector<_Ts, _Tb>& _Right) {
-		assert(!_Left.empty());
-		assert(_Left.size() == _Right.size());
+	subvector<_Ts, _Tb> fmod(const subvector<_Ts, _Tb>& _Left, const subvector<_Ts, _Tb>& _Right) {// must find function fmod(_Tb, _Tb)
+		assert( !_Left.empty() );
+		assert( _Left.size() == _Right.size() );
 		const auto _Transform_op = [](auto&& _Arg0, auto&& _Arg1) { return fmod(_Arg0, _Arg1); };
-		size_t     _Size         = _Left.size();
-		auto*      _Memory       = stack_allocator<_Ts, _Tb>::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(_Left.begin(), _Left.end(), _Right.begin(), _Result.begin(), _Transform_op,
-				_Left.stride(), _Right.stride(), 1));
-	}
-	template<typename _Ts, typename _Tb> inline
-	subvector<_Ts, _Tb> fmod(const const_subvector<_Ts, _Tb>& _Left, _Ts _Scalar) {
-		assert(!_Left.empty());
-		const auto _Arg1         = block_traits<_Tb>::set1(_Scalar);
-		const auto _Transform_op = [&_Arg1](auto&& _Arg0) { return fmod(_Arg0, _Arg1); };
-		size_t     _Size         = _Left.size();
-		auto*      _Memory       = stack_allocator<_Ts, _Tb>::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(_Left.begin(), _Left.end(), _Result.begin(), _Transform_op,
-				_Left.stride(), 1));
+		return std::move( _Left.for_each_copy(_Right, _Transform_op) );
 	}
 
 	template<typename _Ts, typename _Tb> inline
-	subvector<_Ts, _Tb> pow(const const_subvector<_Ts, _Tb>& _Left, const const_subvector<_Ts, _Tb>& _Right) {
-		assert(!_Left.empty());
-		assert(_Left.size() == _Right.size());
-		const auto _Transform_op = [](auto&& _Arg0, auto&& _Arg1) { return pow(_Arg0, _Arg1); };
-		size_t     _Size         = _Left.size();
-		auto*      _Memory       = stack_allocator<_Ts, _Tb>::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(_Left.begin(), _Left.end(), _Right.begin(), _Result.begin(), _Transform_op,
-				_Left.stride(), _Right.stride(), 1));
+	subvector<_Ts, _Tb> fmod(const subvector<_Ts, _Tb>& _Left, _Ts _Right) {// must find function fmod(_Tb, _Tb)
+		assert( !_Left.empty() );
+		const auto _Arg1         = block_traits<_Tb>::set1(_Right);
+		const auto _Transform_op = [&_Arg1](auto&& _Arg0) { return fmod(_Arg0, _Arg1); };
+		return std::move( _Left.for_each_copy(_Transform_op) );
 	}
+
 	template<typename _Ts, typename _Tb> inline
-	subvector<_Ts, _Tb> pow(const const_subvector<_Ts, _Tb>& _Left, _Ts _Scalar) {
-		assert(!_Left.empty());
-		const auto _Arg1         = block_traits<_Tb>::set1(_Scalar);
+	subvector<_Ts, _Tb> pow(const subvector<_Ts, _Tb>& _Left, const subvector<_Ts, _Tb>& _Right) {// must find function pow(_Tb, _Tb)
+		assert( !_Left.empty() );
+		assert( _Left.size() == _Right.size() );
+		const auto _Transform_op = [](auto&& _Arg0, auto&& _Arg1) { return pow(_Arg0, _Arg1); };
+		return std::move( _Left.for_each_copy(_Right, _Transform_op) );
+	}
+
+	template<typename _Ts, typename _Tb> inline
+	subvector<_Ts, _Tb> pow(const subvector<_Ts, _Tb>& _Left, _Ts _Right) {// must find function pow(_Tb, _Tb)
+		assert( !_Left.empty() );
+		const auto _Arg1         = block_traits<_Tb>::set1(_Right);
 		const auto _Transform_op = [&_Arg1](auto&& _Arg0) { return pow(_Arg0, _Arg1); };
-		size_t     _Size         = _Left.size();
-		auto*      _Memory       = stack_allocator<_Ts, _Tb>::allocate(_Size);
-		_Return_generate_object2(_Em(subvector<_Ts, _Tb>), _Result, _Em((_Memory, _Memory + _Size, 1, true)),
-			auto_vector_operation<_Ts, _Tb>::transform(_Left.begin(), _Left.end(), _Result.begin(), _Transform_op,
-				_Left.stride(), 1));
+		return std::move( _Left.for_each_copy(_Transform_op) );
 	}
 	
 	template<typename _Ts, typename _Tb> inline
-	_Ts dot(const const_subvector<_Ts, _Tb>& _Left, const const_subvector<_Ts, _Tb>& _Right) {
-		return auto_vector_operation<_Ts, _Tb>::transform_accumulate( _Left.begin(), _Left.end(), _Right.begin(), static_cast<_Ts>(0),
-			std::plus<>(), std::multiplies<>(), _Left.stride(), _Right.stride() );
-	}
-	template<typename _Ts, typename _Tb> inline
-	_Ts norm(const const_subvector<_Ts, _Tb>& _X, const _Ts& _Level) {
-		const auto _Level_block  = block_traits<_Tb>::set1(_Level);
-		const auto _Transform_op = [&_Level_block](auto&& _Arg0) { return pow(_Arg0, _Level_block); };
-		const auto _Result       =  auto_vector_operation<_Ts, _Tb>::transform_accumulate(_X.begin(), _X.end(), static_cast<_Ts>(0), 
-			std::plus<>(), _Transform_op,
-			_X.stride());
-		return sqrt(_Result, static_cast<_Ts>(1) / _Level);
-	}
-	template<typename _Ts, typename _Tb> inline
-	_Ts normL2_square(const const_subvector<_Ts, _Tb>& _X) {
-		return dot(_X, _X);
-	}
-	template<typename _Ts, typename _Tb> inline
-	subvector<_Ts, _Tb> normalize(const const_subvector<_Ts, _Tb>& _Source) {
-		const auto _NormL2sq = normL2_square(_Source);
-		return ( !approach_equal(_NormL2sq, static_cast<_Ts>(1), std::numeric_limits<_Ts>::epsilon()) ) ? 
-			std::move(_Source / sqrt(_NormL2sq)): 
-			_Source;
+	_Ts dot(const subvector<_Ts, _Tb>& _Left, const subvector<_Ts, _Tb>& _Right) {
+		return _Left.dot(_Right);
 	}
 
-	/*- - - - - - - - - - - - - - - - - - - vector - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ts, typename _Tb> inline
+	_Ts norm(const subvector<_Ts, _Tb>& _Left, _Ts L) {
+		return _Left.norm(L);
+	}
+
+	template<typename _Ts, typename _Tb> inline
+	_Ts length(const subvector<_Ts, _Tb>& _Left) {
+		return _Left.length();
+	}
+
+	template<typename _Ts, typename _Tb> inline
+	subvector<_Ts, _Tb> normalize(const subvector<_Ts, _Tb>& _Left) {
+		subvector<_Ts, _Tb> _Result;
+		_Result = _Left;
+		_Result.normalize();
+		return std::move(_Result);
+	}
+
+	template<typename _Ts, typename _Tb> inline
+	subvector<_Ts, _Tb> sin(const subvector<_Ts, _Tb>& _Left) {// must find function sin(_Tb)
+		const auto _Transform_op = [](auto&& x) { return sin(x); };
+		return std::move( _Left.for_each_copy(_Transform_op) );
+	}
+
+	template<typename _Ts, typename _Tb> inline
+	subvector<_Ts, _Tb> cos(const subvector<_Ts, _Tb>& _Left) {// must find function cos(_Tb)
+		const auto _Transform_op = [](auto&& x) { return cos(x); };
+		return std::move( _Left.for_each_copy(_Transform_op) );
+	}
+
+	template<typename _Ts, typename _Tb> inline
+	subvector<_Ts, _Tb> tan(const subvector<_Ts, _Tb>& _Left) {// must find function tan(_Tb)
+		const auto _Transform_op = [](auto&& x) { return tan(x); };
+		return std::move( _Left.for_each_copy(_Transform_op) );
+	}
+
+	template<typename _Ts, typename _Tb> inline
+	subvector<_Ts, _Tb> asin(const subvector<_Ts, _Tb>& _Left) {// must find function asin(_Tb)
+		const auto _Transform_op = [](auto&& x) { return asin(x); };
+		return std::move( _Left.for_each_copy(_Transform_op) );
+	}
+
+	template<typename _Ts, typename _Tb> inline
+	subvector<_Ts, _Tb> acos(const subvector<_Ts, _Tb>& _Left) {// must find function acos(_Tb)
+		const auto _Transform_op = [](auto&& x) { return acos(x); };
+		return std::move( _Left.for_each_copy(_Transform_op) );
+	}
+
+	template<typename _Ts, typename _Tb> inline
+	subvector<_Ts, _Tb> atan(const subvector<_Ts, _Tb>& _Left) {// must find function atan(_Tb)
+		const auto _Transform_op = [](auto&& x) { return atan(x); };
+		return std::move( _Left.for_each_copy(_Transform_op) );
+	}
+
+	/*- - - - - - - - - - - - - - - - - - - * vector * - - - - - - - - - - - - - - - - - - - - -*/
 	template<typename _Ts, size_t _Size, typename _Tb>
-	class __declspec(align(std::alignment_of_v<_Tb>)) _Data_of_vector {
+	class __declspec(align(std::alignment_of_v<_Tb>)) _Vector_data {
 		constexpr static size_t _Real_size = ceil(_Size * sizeof(_Ts), std::alignment_of_v<_Tb>) / sizeof(_Ts);
+	public:
 		_Ts _Mydata[_Real_size];
 
-	public:
+		using block_type  = _Tb;
+		using scalar_type = _Ts;
+
 		static constexpr size_t size() {
 			return _Size; 
+		}
+		static constexpr size_t real_size() {
+			return _Real_size;
 		}
 		static constexpr size_t tail_size() {
 			return _Real_size - _Size; 
@@ -1341,347 +1256,265 @@ namespace clmagic{
 			return (_Real_size / block_traits<_Tb>::size());
 		}
 
-		template<typename _Ty = _Ts>
+		template<typename _Ty = scalar_type>
 		_Ty* ptr() {
 			return reinterpret_cast<_Ty*>(_Mydata);
 		}
-		template<typename _Ty = _Ts>
+		template<typename _Ty = scalar_type>
 		_Ty* ptr(size_t _Pos) {
 			return reinterpret_cast<_Ty*>(_Mydata + _Pos);
 		}
-		template<typename _Ty = _Ts>
-		_Ty& ref() {
-			return ( * ptr<_Ty>() );
-		}
-		template<typename _Ty = _Ts>
-		_Ty& ref(size_t _Pos) {
-			return ( * ptr<_Ty>(_Pos) );
-		}
-		template<typename _Ty = _Ts>
+		template<typename _Ty = scalar_type>
 		_Ty& at(size_t _Pos) {
-			return (ref<_Ty>(_Pos));
+			assert(_Pos < _Size);
+			return _Mydata[_Pos];
 		}
 
-		template<typename _Ty = _Ts>
+		template<typename _Ty = scalar_type>
 		const _Ty* ptr() const {
 			return reinterpret_cast<const _Ty*>(_Mydata);
 		}
-		template<typename _Ty = _Ts>
+		template<typename _Ty = scalar_type>
 		const _Ty* ptr(size_t _Pos) const {
 			return reinterpret_cast<const _Ty*>(_Mydata + _Pos);
 		}
-		template<typename _Ty = _Ts>
-		const _Ty& ref() const {
-			return (*ptr<_Ty>());
-		}
-		template<typename _Ty = _Ts>
-		const _Ty& ref(size_t _Pos) const {
-			return (*ptr<_Ty>(_Pos));
-		}
-		template<typename _Ty = _Ts>
+		template<typename _Ty = scalar_type>
 		const _Ty& at(size_t _Pos) const {
-			return (ref<_Ty>(_Pos));
+			assert(_Pos < _Size);
+			return _Mydata[_Pos];
 		}
 
-		template<typename _Ty = _Ts>
+		template<typename _Ty = scalar_type>
 		_Ty* begin() {
 			return ptr<_Ty>();
 		}
-		template<typename _Ty = _Ts>
+		template<typename _Ty = scalar_type>
 		_Ty* end() {
-			return ptr<_Ty>( size() );
+			return reinterpret_cast<_Ty*>(_Mydata + _Size);
 		}
-		template<typename _Ty = _Ts>
+		template<typename _Ty = scalar_type>
 		const _Ty* begin() const {
 			return ptr<_Ty>();
 		}
-		template<typename _Ty = _Ts>
+		template<typename _Ty = scalar_type>
 		const _Ty* end() const {
-			return ptr<_Ty>(size());
+			return reinterpret_cast<const _Ty*>(_Mydata + _Size);
 		}
 
-		_Ts& operator[](size_t _Pos) {
-			return _Mydata[_Pos]; }
-		const _Ts& operator[](size_t _Pos) const {
-			return _Mydata[_Pos]; }
+		scalar_type& operator[](size_t _Pos) {
+			assert(_Pos < _Size);
+			return _Mydata[_Pos]; 
+		}
+		const scalar_type& operator[](size_t _Pos) const {
+			assert(_Pos < _Size);
+			return _Mydata[_Pos]; 
+		}
 
 		void _Correct_tail_elements() {
 			if (_Real_size > _Size) {
-				::std::fill(this->ptr(_Size), this->ptr(_Real_size), static_cast<_Ts>(0));
+				std::fill(this->ptr(_Size), this->ptr(_Real_size), static_cast<scalar_type>(0));
 			}
 		}
+		
 		template<typename _Iter>
 		void assign(_Iter _First, _Iter _Last) {
-			assert( ::std::distance(_First, _Last) <= ::std::_Iter_diff_t<_Iter>(this->size()) );
-			auto _Dest = ::std::copy(_First, _Last, this->begin());
-			::std::fill(_Dest, this->ptr(_Real_size), static_cast<_Ts>(0));
+			assert( _STD distance(_First, _Last) <= _STD _Iter_diff_t<_Iter>(this->size()) );
+			auto _Dest = std::copy(_First, _Last, this->begin<scalar_type>());
+			std::fill(_Dest, this->end<scalar_type>(), static_cast<scalar_type>(0));
 		}
-		void assign(const _Ts& _Val) {
-			::std::fill(this->begin(), this->end(), _Val); 
-			_Correct_tail_elements();
+		
+		void assign(const scalar_type& _Val) {
+			std::fill(this->begin<scalar_type>(), this->end<scalar_type>(), _Val);
+		}
+	
+		template<typename _UnaryOp>
+		void for_each_scalar(_UnaryOp _Transform_op) {// for each scalar by (_Transform_op*)(scalar_type)
+			std::transform(this->begin<scalar_type>(), 
+				           this->end<scalar_type>(), 
+				           this->begin<scalar_type>(), _Transform_op);
+		}
+
+		template<typename _BinOp>
+		void for_each_scalar(const _Vector_data& _Args2, _BinOp _Transform_op) {
+			std::transform(this->begin<scalar_type>(),
+				           this->end<scalar_type>(), 
+				          _Args2.begin<scalar_type>(), 
+				           this->end<scalar_type>(), _Transform_op);
+		}
+		
+		template<typename _UnaryOp>
+		void for_each_block(_UnaryOp _Transform_op) {// for each block by (_Transform_op*)(block_type)
+			std::transform(this->begin<block_type>(), 
+				           this->begin<block_type>() + this->block_size(), 
+				           this->begin<block_type>(), _Transform_op);
+		}
+
+		template<typename _BinOp>
+		void for_each_block(const _Vector_data& _Args2, _BinOp _Transform_op) {
+			std::transform(this->begin<block_type>(), 
+				           this->begin<block_type>() + this->block_size(), 
+				          _Args2.begin<block_type>(), 
+				           this->begin<block_type>(), _Transform_op);
+		}
+	
+		std::string to_string() const {
+			auto       _First = this->begin<scalar_type>();
+			const auto _Last  = this->end<scalar_type>();
+			std::string _Str  = std::to_string(*_First++);
+			for ( ; _First != _Last; ++_First) {
+				_Str += ' ';
+				_Str += std::to_string(*_First);
+			}
+			return _Str;
 		}
 	};
 
-	template<typename _Ts, size_t _Size, typename _Tb = _Ts>
-	class vector : public _Data_of_vector<_Ts, _Size, _Tb> {
-		using _Mybase = _Data_of_vector<_Ts, _Size, _Tb>;
-
+	template<typename _Ts, size_t _Size, typename _Tb = _SIMD4_t<_Ts>>
+	class vector : public _Vector_data<_Ts, _Size, _Tb> {
+		using _Mybase = _Vector_data<_Ts, _Size, _Tb>;
 	public:
+		static_assert(_Size != 0, "clmagic::Error");
 		//static_assert(std::is_arithmetic_v<_Ts>, "strict math vector");
 
 		using block_type  = _Tb;
 		using scalar_type = _Ts;
-		using operation   = clmagic::fastest_vector_operation<_Ts, _Tb>;// impotant!!!
 
 		using block_traits    = clmagic::block_traits<_Tb>;
 		//using scalar_traits = clmagic::block_traits<_Ts>;
 
-		using subvector       = clmagic::subvector<_Ts, _Tb>;
-		using const_subvector = clmagic::const_subvector<_Ts, _Tb>;
+		vector() = default;
+		
+		explicit vector(scalar_type _Val) { 
+			_Mybase::assign(_Val); 
+			_Mybase::_Correct_tail_elements();
+		}
 
-		constexpr vector() = default;
-		explicit vector(int _Val) { _Mybase::assign(static_cast<_Ts>(_Val)); }
-		explicit vector(float _Val) { _Mybase::assign(static_cast<_Ts>(_Val)); }
-		explicit vector(double _Val) { _Mybase::assign(static_cast<_Ts>(_Val)); }
+		template<typename ..._Tys>
+		vector(scalar_type x0, scalar_type x1, _Tys... xN) : _Mybase{ x0, x1, xN... } {
+			static_assert((2 + types_size_v<_Tys...>) <= _Size, "clmagic::Error");
+			_Mybase::_Correct_tail_elements();
+		}
 
 		template<typename _Iter> 
 		vector(_Iter _First, _Iter _Last) { 
 			_Mybase::assign(_First, _Last); 
+			_Mybase::_Correct_tail_elements();
 		}
-		vector(std::initializer_list<_Ts> _Ilist) { 
+		
+		vector(std::initializer_list<scalar_type> _Ilist) {
 			_Mybase::assign(_Ilist.begin(), _Ilist.end()); 
+			_Mybase::_Correct_tail_elements();
 		}
 
 		vector& operator=(const vector&) = default;
-		vector& operator=(std::initializer_list<_Ts> _Ilist) {
+		
+		vector& operator=(std::initializer_list<scalar_type> _Ilist) {
 			this->assign(_Ilist.begin(), _Ilist.end());
 			return *this;
 		}
 
-		subvector operator()() {
-			return subvector(_Mybase::begin(), _Mybase::end());
+		subvector<scalar_type, block_type> operator()() {
+			return subvector<scalar_type, block_type>(this->begin(), this->end());
 		}
-		subvector operator()(size_t _First, size_t _Last) {
-			return subvector(_Mybase::ptr(_First), _Mybase::ptr(_Last));
+		
+		subvector<scalar_type, block_type> operator()(size_t _First, size_t _Last) {
+			return subvector<scalar_type, block_type>(this->ptr(_First), this->ptr(_Last));
 		}
-		const_subvector operator()() const {
-			return const_subvector(_Mybase::begin(), _Mybase::end());
+		
+		const subvector<scalar_type, block_type> operator()() const {
+			return subvector<scalar_type, block_type>(
+				const_cast<scalar_type*>(this->begin()), 
+				const_cast<scalar_type*>(this->end()) );
 		}
-		const_subvector operator()(size_t _First, size_t _Last) const {
-			return const_subvector(_Mybase::ptr(_First), _Mybase::ptr(_Last));
+		
+		const subvector<scalar_type, block_type> operator()(size_t _First, size_t _Last) const {
+			return subvector<scalar_type, block_type>(
+				const_cast<scalar_type*>(this->begin()), 
+				const_cast<scalar_type*>(this->end()) );
 		}
 
-		vector neg() const {
-			_Return_generate_object( vector, _Result,
-				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(),
-					std::negate<_Tb>()) );
+		template<typename _UnaryOp>
+		vector for_each_scalar_copy(_UnaryOp _Transform_op) const {
+			vector _Result;
+			std::transform(this->begin<scalar_type>(), 
+				           this->end<scalar_type>(), 
+				           _Result.begin<scalar_type>(), _Transform_op);
+			_Result._Correct_tail_elements();
+			return _Result;
 		}
-		vector add(vector _Right) const {
-			_Return_generate_object( vector, _Result,
-				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
-					std::plus<_Tb>()) );
+
+		template<typename _BinOp>
+		vector for_each_scalar_copy(const vector& _Args2, _BinOp _Transform_op) const {
+			vector _Result;
+			std::transform(this->begin<scalar_type>(), 
+				           this->end<scalar_type>(), 
+				           _Args2.begin<scalar_type>(), 
+				           _Result.begin<scalar_type>(), _Transform_op);
+			_Result._Correct_tail_elements();
+			return _Result;
 		}
-		vector sub(vector _Right) const {
-			_Return_generate_object( vector, _Result,
-				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
-					std::minus<_Tb>()) );
+	
+		template<typename _UnaryOp>
+		vector for_each_block_copy(_UnaryOp _Transform_op) const {
+			vector _Result;
+			std::transform(this->begin<block_type>(), 
+				           this->begin<block_type>()+this->block_size(), 
+				           _Result.begin<block_type>(), _Transform_op);
+			return _Result;
 		}
-		vector mul(vector _Right) const {
-			_Return_generate_object( vector, _Result,
-				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
-					std::multiplies<_Tb>()) );
+
+		template<typename _BinOp>
+		vector for_each_block_copy(const vector& _Args2, _BinOp _Transform_op) const {
+			vector _Result;
+			std::transform(this->begin<block_type>(), 
+				           this->begin<block_type>()+this->block_size(), 
+				           _Args2.begin<block_type>(), 
+				           _Result.begin<block_type>(), _Transform_op);
+			return _Result;
 		}
-		vector div(vector _Right) const {
-			_Return_generate_object( vector, _Result,
-				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
-					std::divides<_Tb>()) );
-		}
-		vector mod(vector _Right) const {
-			_Return_generate_object( vector, _Result,
-				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
-					std::modulus<_Tb>()) );
-		}
-		vector& assign_add(vector _Right) {
-			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(),
-				this->begin<_Tb>(), std::plus<_Tb>());
-			return *this;
-		}
-		vector& assign_sub(vector _Right) {
-			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(),
-				this->begin<_Tb>(), std::minus<_Tb>());
-			return *this;
-		}
-		vector& assign_mul(vector _Right) {
-			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(),
-				this->begin<_Tb>(), std::multiplies<_Tb>());
-			return *this;
-		}
-		vector& assign_div(vector _Right) {
-			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(),
-				this->begin<_Tb>(), std::divides<_Tb>());
-			return *this;
-		}
-		vector& assign_mod(vector _Right) {
-			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Right.begin<_Tb>(),
-				this->begin<_Tb>(), std::modulus<_Tb>());
-			return *this;
+				
+		scalar_type sum() const {// sum_of( (*this)[N] )
+			return fastest_vector_operation<scalar_type, block_type>::accumulate(
+				this->begin<block_type>(),
+				this->begin<block_type>() + this->block_size(), static_cast<scalar_type>(0), std::plus<>());
 		}
 		
-		vector add(_Ts _Scalar) const {
-			const _Tb  _Arg1 = block_traits::set1(_Scalar);
-			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 + _Arg1; };
-			_Return_generate_object(vector, _Result,
-				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
-		}
-		vector sub(_Ts _Scalar) const {
-			const _Tb  _Arg1 = block_traits::set1(_Scalar);
-			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 - _Arg1; };
-			_Return_generate_object(vector, _Result,
-				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
-		}
-		vector mul(_Ts _Scalar) const {
-			const _Tb  _Arg1 = block_traits::set1(_Scalar);
-			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 * _Arg1; };
-			_Return_generate_object(vector, _Result,
-				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
-		}
-		vector div(_Ts _Scalar) const {
-			const _Tb  _Arg1 = block_traits::set1(_Scalar);
-			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 / _Arg1; };
-			_Return_generate_object(vector, _Result,
-				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
-		}
-		vector mod(_Ts _Scalar) const {
-			const _Tb  _Arg1 = block_traits::set1(_Scalar);
-			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 % _Arg1; };
-			_Return_generate_object(vector, _Result,
-				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
-		}
-		vector added(_Ts _Scalar) const {
-			const _Tb  _Arg0 = block_traits::set1(_Scalar);
-			const auto _Func = [&_Arg0](auto&& _Arg1) { return _Arg0 + _Arg1; };
-			_Return_generate_object(vector, _Result,
-				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
-		}
-		vector subed(_Ts _Scalar) const {
-			const _Tb  _Arg0 = block_traits::set1(_Scalar);
-			const auto _Func = [&_Arg0](auto&& _Arg1) { return _Arg0 - _Arg1; };
-			_Return_generate_object(vector, _Result,
-				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
-		}
-		vector muled(_Ts _Scalar) const {
-			const _Tb  _Arg0 = block_traits::set1(_Scalar);
-			const auto _Func = [&_Arg0](auto&& _Arg1) { return _Arg0 * _Arg1; };
-			_Return_generate_object(vector, _Result,
-				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
-		}
-		vector dived(_Ts _Scalar) const {
-			const _Tb  _Arg0 = block_traits::set1(_Scalar);
-			const auto _Func = [&_Arg0](auto&& _Arg1) { return _Arg0 / _Arg1; };
-			_Return_generate_object(vector, _Result,
-				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
-		}
-		vector moded(_Ts _Scalar) const {
-			const _Tb  _Arg0 = block_traits::set1(_Scalar);
-			const auto _Func = [&_Arg0](auto&& _Arg1) { return _Arg0 % _Arg1; };
-			_Return_generate_object(vector, _Result,
-				operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), _Result.begin<_Tb>(), _Func));
-		}
-		vector& assign_add(_Ts _Scalar) {
-			const _Tb  _Arg1 = block_traits::set1(_Scalar);
-			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 + _Arg1; };
-			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), this->begin<_Tb>(), _Func);
-			return *this;
-		}
-		vector& assign_sub(_Ts _Scalar) {
-			const _Tb  _Arg1 = block_traits::set1(_Scalar);
-			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 - _Arg1; };
-			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), this->begin<_Tb>(), _Func);
-			return *this;
-		}
-		vector& assign_mul(_Ts _Scalar) {
-			const _Tb  _Arg1 = block_traits::set1(_Scalar);
-			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 * _Arg1; };
-			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), this->begin<_Tb>(), _Func);
-			return *this;
-		}
-		vector& assign_div(_Ts _Scalar) {
-			const _Tb  _Arg1 = block_traits::set1(_Scalar);
-			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 / _Arg1; };
-			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), this->begin<_Tb>(), _Func);
-			return *this;
-		}
-		vector& assign_mod(_Ts _Scalar) {
-			const _Tb  _Arg1 = block_traits::set1(_Scalar);
-			const auto _Func = [&_Arg1](auto&& _Arg0) { return _Arg0 % _Arg1; };
-			operation::transform(this->begin<_Tb>(), this->begin<_Tb>()+this->block_size(), this->begin<_Tb>(), _Func);
-			return *this;
+		scalar_type product() const {// product_of( (*this)[N] )
+			return fastest_vector_operation<scalar_type, block_type>::accumulate(
+				this->begin<block_type>(), 
+				this->begin<block_type>() + this->block_size(), static_cast<scalar_type>(0), std::multiplies<>());
 		}
 		
-		_Ts sum() const {// X[0] + X[1] + X[2] + ... + X[N]
-			return operation::accumulate(this->begin<_Tb>(), this->begin<_Tb>() + this->block_size(), static_cast<_Ts>(0), std::plus<>());
-		}
-		_Ts product() const {// X[0] * X[1] * X[2] * ... * X[N]
-			return operation::accumulate(this->begin<_Tb>(), this->begin<_Tb>() + this->block_size(), static_cast<_Ts>(0), std::multiplies<>());
-		}
-		_Ts norm(_Ts L) const {
-			const _Tb  _Level_block  = block_traits::set1(L);
-			const auto _Transform_op = [&_Level_block](auto&& _Arg0) { return pow(_Arg0, _Level_block); };
-			const auto _Result       = operation::transform_accumulate(this->begin<_Tb>(), this->begin<_Tb>() + this->block_size(), static_cast<_Ts>(0), 
-				std::plus<>(), _Transform_op);
-			return sqrt(_Result, static_cast<_Ts>(1) / L);
-		}
-		_Ts dot(const vector& _Right) const {// X[0]*Y[0] + X[1]*Y[1] + X[2]*Y[2] + ... * X[N]*Y[N]
-			return operation::transform_accumulate(this->begin<_Tb>(), this->begin<_Tb>() + this->block_size(), _Right.begin<_Tb>(), static_cast<_Ts>(0),
-				std::plus<>(), std::multiplies<>());
+		scalar_type dot(const vector& _Right) const {// sum_of( (*this)[N]*_Right[N] )
+			return fastest_vector_operation<scalar_type, block_type>::transform_accumulate(
+				this->begin<block_type>(), 
+				this->begin<block_type>() + this->block_size(), 
+			   _Right.begin<block_type>(), static_cast<scalar_type>(0), std::plus<>(), std::multiplies<>());
 		}
 		
-		vector& normalize() {
-			const _Ts _Length_squared = (*this).dot(*this);
-			if ( !approach_equal(_Length_squared, static_cast<_Ts>(1), std::numeric_limits<_Ts>::epsilon()) ) {
-				*this /= sqrt(_Length_squared);
+		scalar_type norm(scalar_type L) const {// pow( sum_of( pow((*this)[N], L), 1/L )
+			const block_type _Arg1         = block_traits::set1(L);
+			const auto       _Transform_op = [&_Arg1](auto&& _Arg0) { return pow(_Arg0, _Arg1); };
+
+			const auto _Result = fastest_vector_operation<scalar_type, block_type>::transform_accumulate(
+				this->begin<block_type>(), 
+				this->begin<block_type>() + this->block_size(), static_cast<scalar_type>(0), std::plus<>(), _Transform_op);
+			return pow(_Result, 1/L);
+		}
+		
+		scalar_type length() const {// sqrt( dot(*this,*this) )
+			scalar_type _Length_sqr = this->dot(*this);
+			return sqrt(_Length_sqr);
+		}
+
+		void normalize() {
+			scalar_type _Length_sqr = this->dot(*this);
+			scalar_type _Error      = _Length_sqr - 1;
+			if ( abs(_Error) > std::numeric_limits<scalar_type>::epsilon() ) {
+				(*this) /= sqrt(_Length_sqr);
 			}
-			return (*this);
 		}
 
-		std::string to_string() const {
-			return clmagic::to_string(this->begin(), this->end());
-		}
-
-		vector  operator-() const {
-			return this->neg();
-		}
-		vector  operator+ (const vector& _Right) const {
-			return this->add(_Right);
-		}
-		vector  operator- (const vector& _Right) const {
-			return this->sub(_Right);
-		}
-		vector  operator* (const vector& _Right) const {
-			return this->mul(_Right);
-		}
-		vector  operator/ (const vector& _Right) const {
-			return this->div(_Right);
-		}
-		vector  operator% (const vector& _Right) const {
-			return this->mod(_Right);
-		}
-		vector& operator+=(const vector& _Right) {
-			return this->assign_add(_Right);
-		}
-		vector& operator-=(const vector& _Right) {
-			return this->assign_sub(_Right);
-		}
-		vector& operator*=(const vector& _Right) {
-			return this->assign_mul(_Right);
-		}
-		vector& operator/=(const vector& _Right) {
-			return this->assign_div(_Right);
-		}
-		vector& operator%=(const vector& _Right) {
-			return this->assign_mod(_Right);
-		}
-		
 		vector<bool, _Size> operator==(const vector& _Right) const {
 			using bvec = vector<bool, _Size>;
 			_Return_generate_object( bvec, _Result, 
@@ -1748,161 +1581,273 @@ namespace clmagic{
 			_Return_generate_object(bvec, _Result,
 				std::transform(this->begin(), this->end(), _Result.begin(), _Func));
 		}
-
-		vector  operator+ (int _Scalar) const {
-			return this->add(static_cast<_Ts>(_Scalar));
+		
+		vector  operator-() const {
+			return this->for_each_block_copy( std::negate<block_type>() );
 		}
-		vector  operator- (int _Scalar) const {
-			return this->sub(static_cast<_Ts>(_Scalar));
+		vector  operator+ (const vector& _Right) const {
+			return this->for_each_block_copy(_Right, std::plus<block_type>());
 		}
-		vector  operator* (int _Scalar) const {
-			return this->mul(static_cast<_Ts>(_Scalar));
+		vector  operator- (const vector& _Right) const {
+			return this->for_each_block_copy(_Right, std::minus<block_type>());
 		}
-		vector  operator/ (int _Scalar) const {
-			return this->div(static_cast<_Ts>(_Scalar));
+		vector  operator* (const vector& _Right) const {
+			return this->for_each_block_copy(_Right, std::multiplies<block_type>());
 		}
-		vector  operator% (int _Scalar) const {
-			return this->mod(static_cast<_Ts>(_Scalar));
+		vector  operator/ (const vector& _Right) const {
+			return this->for_each_block_copy(_Right, std::divides<block_type>());
 		}
-		vector  operator+ (float _Scalar) const {
-			return this->add(static_cast<_Ts>(_Scalar));
+		vector  operator% (const vector& _Right) const {
+			return this->for_each_block_copy(_Right, std::modulus<block_type>());
 		}
-		vector  operator- (float _Scalar) const {
-			return this->sub(static_cast<_Ts>(_Scalar));
+		vector& operator+=(const vector& _Right) {
+			this->for_each_block(_Right, std::plus<block_type>());
+			return *this;
 		}
-		vector  operator* (float _Scalar) const {
-			return this->mul(static_cast<_Ts>(_Scalar));
+		vector& operator-=(const vector& _Right) {
+			this->for_each_block(_Right, std::minus<block_type>());
+			return *this;
 		}
-		vector  operator/ (float _Scalar) const {
-			return this->div(static_cast<_Ts>(_Scalar));
+		vector& operator*=(const vector& _Right) {
+			this->for_each_block(_Right, std::multiplies<block_type>());
+			return *this;
 		}
-		vector  operator% (float _Scalar) const {
-			return this->mod(static_cast<_Ts>(_Scalar));
+		vector& operator/=(const vector& _Right) {
+			this->for_each_block(_Right, std::divides<block_type>());
+			return *this;
 		}
-		vector  operator+ (double _Scalar) const {
-			return this->add(static_cast<_Ts>(_Scalar));
+		vector& operator%=(const vector& _Right) {
+			this->for_each_block(_Right, std::modulus<block_type>());
+			return *this;
 		}
-		vector  operator- (double _Scalar) const {
-			return this->sub(static_cast<_Ts>(_Scalar));
+		vector  operator+ (scalar_type _Scalar) const {
+			const block_type _Right         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left + _Right; };
+			return this->for_each_block_copy(_Transform_op);
 		}
-		vector  operator* (double _Scalar) const {
-			return this->mul(static_cast<_Ts>(_Scalar));
+		vector  operator- (scalar_type _Scalar) const {
+			const block_type _Right         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left - _Right; };
+			return this->for_each_block_copy(_Transform_op);
 		}
-		vector  operator/ (double _Scalar) const {
-			return this->div(static_cast<_Ts>(_Scalar));
+		vector  operator* (scalar_type _Scalar) const {
+			const block_type _Right         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left * _Right; };
+			return this->for_each_block_copy(_Transform_op);
 		}
-		vector  operator% (double _Scalar) const {
-			return this->mod(static_cast<_Ts>(_Scalar));
+		vector  operator/ (scalar_type _Scalar) const {
+			const block_type _Right         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left / _Right; };
+			return this->for_each_block_copy(_Transform_op);
 		}
-		friend vector operator+(int _Scalar, const vector& _Right) {
-			return _Right.added(static_cast<_Ts>(_Scalar));
+		vector  operator% (scalar_type _Scalar) const {
+			const block_type _Right         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left % _Right; };
+			return this->for_each_block_copy(_Transform_op);
 		}
-		friend vector operator-(int _Scalar, const vector& _Right) {
-			return _Right.subed(static_cast<_Ts>(_Scalar));
+		vector& operator+=(scalar_type _Scalar) {
+			const block_type _Right         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left + _Right; };
+			this->for_each_block(_Transform_op);
+			return *this;
 		}
-		friend vector operator*(int _Scalar, const vector& _Right) {
-			return _Right.muled(static_cast<_Ts>(_Scalar));
+		vector& operator-=(scalar_type _Scalar) {
+			const block_type _Right         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left - _Right; };
+			this->for_each_block(_Transform_op);
+			return *this;
 		}
-		friend vector operator/(int _Scalar, const vector& _Right) {
-			return _Right.dived(static_cast<_Ts>(_Scalar));
+		vector& operator*=(scalar_type _Scalar) {
+			const block_type _Right         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left * _Right; };
+			this->for_each_block(_Transform_op);
+			return *this;
 		}
-		friend vector operator%(int _Scalar, const vector& _Right) {
-			return _Right.moded(static_cast<_Ts>(_Scalar));
+		vector& operator/=(scalar_type _Scalar) {
+			const block_type _Right         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left / _Right; };
+			this->for_each_block(_Transform_op);
+			return *this;
 		}
-		friend vector operator+(float _Scalar, const vector& _Right) {
-			return _Right.added(static_cast<_Ts>(_Scalar));
+		vector& operator%=(scalar_type _Scalar) {
+			const block_type _Right         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left % _Right; };
+			this->for_each_block(_Transform_op);
+			return *this;
 		}
-		friend vector operator-(float _Scalar, const vector& _Right) {
-			return _Right.subed(static_cast<_Ts>(_Scalar));
+		friend vector operator+(scalar_type _Scalar, const vector& _Right) {
+			const block_type _Left         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Left](auto&& _Right) { return _Left + _Right; };
+			return _Right.for_each_block_copy(_Transform_op);
 		}
-		friend vector operator*(float _Scalar, const vector& _Right) {
-			return _Right.muled(static_cast<_Ts>(_Scalar));
+		friend vector operator-(scalar_type _Scalar, const vector& _Right) {
+			const block_type _Left         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Left](auto&& _Right) { return _Left - _Right; };
+			return _Right.for_each_block_copy(_Transform_op);
 		}
-		friend vector operator/(float _Scalar, const vector& _Right) {
-			return _Right.dived(static_cast<_Ts>(_Scalar));
+		friend vector operator*(scalar_type _Scalar, const vector& _Right) {
+			const block_type _Left         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Left](auto&& _Right) { return _Left * _Right; };
+			return _Right.for_each_block_copy(_Transform_op);
 		}
-		friend vector operator%(float _Scalar, const vector& _Right) {
-			return _Right.moded(static_cast<_Ts>(_Scalar));
+		friend vector operator/(scalar_type _Scalar, const vector& _Right) {
+			const block_type _Left         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Left](auto&& _Right) { return _Left / _Right; };
+			return _Right.for_each_block_copy(_Transform_op);
 		}
-		friend vector operator+(double _Scalar, const vector& _Right) {
-			return _Right.added(static_cast<_Ts>(_Scalar));
-		}
-		friend vector operator-(double _Scalar, const vector& _Right) {
-			return _Right.subed(static_cast<_Ts>(_Scalar));
-		}
-		friend vector operator*(double _Scalar, const vector& _Right) {
-			return _Right.muled(static_cast<_Ts>(_Scalar));
-		}
-		friend vector operator/(double _Scalar, const vector& _Right) {
-			return _Right.dived(static_cast<_Ts>(_Scalar));
-		}
-		friend vector operator%(double _Scalar, const vector& _Right) {
-			return _Right.moded(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator+=(int _Scalar) {
-			return this->assign_add(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator-=(int _Scalar) {
-			return this->assign_sub(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator*=(int _Scalar) {
-			return this->assign_mul(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator/=(int _Scalar) {
-			return this->assign_div(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator%=(int _Scalar) {
-			return this->assign_mod(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator+=(float _Scalar) {
-			return this->assign_add(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator-=(float _Scalar) {
-			return this->assign_sub(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator*=(float _Scalar) {
-			return this->assign_mul(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator/=(float _Scalar) {
-			return this->assign_div(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator%=(float _Scalar) {
-			return this->assign_mod(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator+=(double _Scalar) {
-			return this->assign_add(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator-=(double _Scalar) {
-			return this->assign_sub(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator*=(double _Scalar) {
-			return this->assign_mul(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator/=(double _Scalar) {
-			return this->assign_div(static_cast<_Ts>(_Scalar));
-		}
-		vector& operator%=(double _Scalar) {
-			return this->assign_mod(static_cast<_Ts>(_Scalar));
+		friend vector operator%(scalar_type _Scalar, const vector& _Right) {
+			const block_type _Left         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Left](auto&& _Right) { return _Left % _Right; };
+			return _Right.for_each_block_copy(_Transform_op);
 		}
 
+		friend std::istream& operator>>(std::istream& _Istr, vector& _Left) {
+			auto       _First = _Left.begin<_Ts>();
+			const auto _Last  = _Left.end<_Ts>();
+			for (; _First != _Last; ++_First) {
+				_Istr >> (*_First);
+			}
+			return _Istr;
+		}
 		friend std::ostream& operator<<(std::ostream& _Ostr, const vector& _Left) {
 			return (_Ostr << _Left.to_string());
 		}
 	};
 
+#define VECTORN ::clmagic::vector<_Ts, _Size, _Tb>
+#define VECTOR2 ::clmagic::vector<_Ts, 2, _Tb>
+#define VECTOR3 ::clmagic::vector<_Ts, 3, _Tb>
+#define VECTOR4 ::clmagic::vector<_Ts, 4, _Tb>
 
-	/*- - - - - - - - - - - - - - - - - - - unit_vector - - - - - - - - - - - - - - - - - - - - -*/
-	/*
-	@_unit_vector<T>: as vector3<T>
-	@_Traits: length = 1.0
-	*/
-	template<typename _Ts, size_t _Size, typename _Tb = _Ts>
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN fmod(const VECTORN& _Left, const VECTORN& _Right) {
+		auto _Transform_op = [](const _Tb& _Arg0, const _Tb& _Arg1) { return fmod(_Arg0, _Arg1); };
+		return _Left.for_each_block_copy(_Right, _Transform_op);
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN fmod(const VECTORN& _Left, SCALAR _Scalar) {
+		const _Tb  _Arg1 = block_traits<_Tb>::set1(_Scalar);
+		const auto _Func = [&_Arg1](const _Tb& _Arg0) { return fmod(_Arg0, _Arg1); };
+		return _Left.for_each_block_copy(_Func);
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN pow(const VECTORN& _Left, const VECTORN& _Right) {
+		auto _Transform_op = [](const _Tb& _Arg0, const _Tb& _Arg1) { return pow(_Arg0, _Arg1); };
+		return _Left.for_each_block_copy(_Right, _Transform_op);
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN pow(const VECTORN& _Left, SCALAR _Scalar) {
+		const _Tb  _Arg1 = block_traits<_Tb>::set1(_Scalar);
+		const auto _Func = [&_Arg1](const _Tb& _Arg0) { return pow(_Arg0, _Arg1); };
+		return _Left.for_each_block_copy(_Func);
+	}	
+
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	SCALAR dot(const VECTORN& _Left, const VECTORN& _Right) {
+		return _Left.dot(_Right);
+	}
+	
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	SCALAR norm(const VECTORN& _Left, SCALAR L) {
+		return _Left.norm(L);
+	}
+	
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	SCALAR length(const VECTORN& _Left) {
+		return _Left.length();
+	}
+
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN normalize(const VECTORN& _Left) {
+		const SCALAR _Length_sqr = dot(_Left, _Left);
+		const SCALAR _Error      = _Length_sqr - 1;
+		return (abs(_Error) > std::numeric_limits<_Ts>::epsilon()) ? _Left/sqrt(_Length_sqr) : _Left;
+	}
+
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN cross3(const VECTORN& _Left, const VECTORN& _Right) {
+		return VECTORN{
+			_Left[1] * _Right[2] - _Left[2] * _Right[1],
+			_Left[2] * _Right[0] - _Left[0] * _Right[2],
+			_Left[0] * _Right[1] - _Left[1] * _Right[0]
+		};
+	}
+
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN abs(const VECTORN& _Left) {// abs(v)
+		return _Left.for_each_block_copy( [](const _Tb& x){ return abs(x); } );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN floor(const VECTORN& _Left) {// floor(v)
+		return _Left.for_each_block_copy( [](const _Tb& x){ return floor(x); } );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN ceil(const VECTORN& _Left) {// ceil(v)
+		return _Left.for_each_block_copy( [](const _Tb& x){ return ceil(x); } );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN trunc(const VECTORN& _Left) {// trunc(v)
+		return _Left.for_each_block_copy( [](const _Tb& x){ return trunc(x); } );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN round(const VECTORN& _Left) {// round(v)
+		return _Left.for_each_block_copy( [](const _Tb& x){ return round(x); } );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN sqrt(const VECTORN& _Left) {// sqrt(v)
+		return _Left.for_each_block_copy( [](const _Tb& x){ return sqrt(x); } );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN cbrt(const VECTORN& _Left) {// cbrt(v)
+		return _Left.for_each_block_copy( [](const _Tb& x){ return cbrt(x); } );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN invsqrt(const VECTORN& _Left) {// invsqrt(v)
+		return _Left.for_each_block_copy( [](const _Tb& x){ return invsqrt(x); } );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN invcbrt(const VECTORN& _Left) {// invcbrt(v)
+		return _Left.for_each_block_copy( [](const _Tb& x){ return invcbrt(x); } );
+	}
+
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN sin(const VECTORN& _Left) {// sin(v)
+		return _Left.for_each_block_copy( [](const _Tb& x){ return sin(x); } );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN cos(const VECTORN& _Left) {
+		return _Left.for_each_block_copy( [](const _Tb& x){ return cos(x); } );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN tan(const VECTORN& _Left) {// tan(v)
+		return _Left.for_each_block_copy( [](const _Tb& x){ return tan(x); } );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN asin(const VECTORN& _Left) {// asin(v)
+		return _Left.for_each_block_copy( [](const _Tb& x){ return asin(x); } );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN acos(const VECTORN& _Left) {// acos(v)
+		return _Left.for_each_block_copy( [](const _Tb& x){ return acos(x); } );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN atan(const VECTORN& _Left) {// atan(v)
+		return _Left.for_each_block_copy( [](const _Tb& x){ return atan(x); } );
+	}
+	template<typename _Ts, size_t _Size, typename _Tb> inline
+	VECTORN atan2(const VECTORN& _Left, const VECTORN& _Right) {// atan(yv, xv)
+		return _Left.for_each_block_copy( [](const _Tb& y, const _Tb& x){ return atan2(y, x); } );
+	}
+
+	/*- - - - - - - - - - - - - - - - - - - * unit_vector * - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ts, size_t _Size, typename _Tb = _SIMD4_t<_Ts>>
 	struct unit_vector : public vector<_Ts, _Size, _Tb> {
 		using _Mybase     = vector<_Ts, _Size, _Tb>;
+		using block_type  = _Tb;
 		using scalar_type = _Ts;
 
 		unit_vector() = default;
-		unit_vector(std::initializer_list<_Ts> _Ilist, bool _Unitized = false)
+		unit_vector(std::initializer_list<scalar_type> _Ilist, bool _Unitized = false)
 			: _Mybase(_Ilist) {
 			if (!_Unitized) this->normalize();
 		}
@@ -1913,489 +1858,378 @@ namespace clmagic{
 			return unit_vector(-static_cast<const _Mybase&>(*this), true);
 		}
 
-		_Ts length() const {
-			return static_cast<_Ts>(1);
+		scalar_type length() const {
+			return static_cast<scalar_type>(1);
 		}
 	};
 	
-	/*- - - - - - - - - - - - - - - - - - - vector_any - - - - - - - - - - - - - - - - - - - - -*/
-	/*
-	@_vector_any: dynamic-length vector
-	*/
-	template<typename _Ts, typename _Tb = _Ts, typename _Alloc = std::allocator<_Tb>>
-	class vector_any : public subvector<_Ts, _Tb> {
-		using _Mybase = subvector<_Ts, _Tb>;
+#define UNIT_VECTORN ::clmagic::unit_vector<_Ts, _Size, _Tb>
+#define UNIT_VECTOR3 ::clmagic::unit_vector3<_Ts, _Tb>
+
+	template<typename _Ts, size_t _Size, typename _Tb>
+	UNIT_VECTORN abs(const UNIT_VECTORN& _Left) {
+		return UNIT_VECTORN(-_Left, true);
+	}
+
+	template<typename _Ts, size_t _Size, typename _Tb>
+	SCALAR length(const UNIT_VECTORN& _Left) {
+		return static_cast<_Ts>(1);
+	}
+
+	/*- - - - - - - - - - - - - - - - - - - * vector_any * - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>>
+	class _Vector_any_data {
+		std::vector<_Tb> _My_blocks;
+		size_t           _My_size;
 	public:
-		using scalar_type            = _Ts;
-		using scalar_pointer         = _Ts*;
-		using scalar_const_pointer   = _Ts const*;
-		using scalar_reference       = _Ts&;
-		using scalar_const_reference = _Ts const&;
+		using block_type   = _Tb;
+		using scalar_type  = _Ts;
+		using block_traits = clmagic::block_traits<block_type>;
 
-		using block_type           = _Tb;
-		using block_pointer        = _Tb*;
-		using block_const_pointer  = _Tb const*;
-		using block_reference       = _Tb&;
-		using block_const_reference = _Tb const&;
-
-		using subvector       = clmagic::subvector<_Ts, _Tb>;
-		using const_subvector = clmagic::const_subvector<_Ts, _Tb>;
-
-		using block_traits    = clmagic::block_traits<_Tb>;
-		using allocate_traits = std::allocator_traits<_Alloc>;
-
-		vector_any() : _Mybase(nullptr, nullptr), _Myalloc(), _Mydata(nullptr), _Mycapacity(0) { }
-
-		vector_any(const vector_any& _Right) : vector_any() {// copy-constructor
-			this->assign(_Right.begin(), _Right.end());
+		size_t size() const {
+			return _My_size;
+		}
+		size_t real_size() const {
+			return _My_blocks.size() * block_traits::size();
+		}
+		size_t tail_size() const {
+			return (real_size() - size());
+		}
+		size_t block_size() const {
+			return _My_blocks.size();
 		}
 
-		vector_any(vector_any&& _Right)
-			: _Mybase(std::move(_Right)), _Myalloc(_Right._Myalloc), 
-			_Mydata(_Right._Mydata), _Mycapacity(_Right._Mycapacity) {// move-constructor
-			_Right._Mydata         = nullptr;
-			_Right._Mycapacity     = 0;
-			static_cast<subvector&&>(_Right).reset(nullptr, nullptr);
+		template<typename _Ty = scalar_type>
+		_Ty* ptr() {
+			return reinterpret_cast<_Ty*>(_My_blocks.data());
+		}
+		
+		template<typename _Ty = scalar_type>
+		const _Ty* ptr() const {
+			return reinterpret_cast<const _Ty*>(_My_blocks.data());
+		}
+		
+		template<typename _Ty = scalar_type>
+		_Ty* ptr(size_t _Pos) {
+			return reinterpret_cast<_Ty*>(this->ptr<scalar_type>() + _Pos);
+		}
+		
+		template<typename _Ty = scalar_type>
+		const _Ty* ptr(size_t _Pos) const {
+			return reinterpret_cast<const _Ty*>(this->ptr<scalar_type>() + _Pos);
+		}
+		
+		template<typename _Ty = scalar_type>
+		_Ty& at(size_t _Pos) {
+			assert(_Pos < this->size());
+			return *(this->ptr<_Ty>(_Pos));
+		}
+		
+		template<typename _Ty = scalar_type>
+		const _Ty& at(size_t _Pos) const {
+			assert(_Pos < this->size());
+			return *(this->ptr<_Ty>(_Pos));
+		}
+
+		template<typename _Ty = scalar_type>
+		_Ty* begin() {
+			return this->ptr<_Ty>();
+		}
+		
+		template<typename _Ty = scalar_type>
+		const _Ty* begin() const {
+			return this->ptr<_Ty>();
+		}
+		
+		template<typename _Ty = scalar_type>
+		_Ty* end() {
+			return reinterpret_cast<_Ty*>(this->ptr<scalar_type>() + this->size());
+		}
+		
+		template<typename _Ty = scalar_type>
+		const _Ty* end() const {
+			return reinterpret_cast<const _Ty*>(this->ptr<scalar_type>() + this->size());
+		}
+
+		scalar_type& operator[](size_t _Pos) {
+			return this->at(_Pos); 
+		}
+		const scalar_type& operator[](size_t _Pos) const {
+			return this->at(_Pos); 
+		}
+
+		void _Correct_tail_elements() {
+			const size_t _My_real_size = this->real_size();
+			if (_My_real_size > _My_size) {
+				std::fill(this->ptr(_My_size), this->ptr(_My_real_size), static_cast<scalar_type>(0));
+			}
+		}
+		
+		void swap(_Vector_any_data& _Right) noexcept {
+			std::swap(std::move(_My_blocks), std::move(_Right._My_blocks));
+			std::swap(_My_size, _Right._My_size);
+		}
+
+		void release() noexcept {
+			if (_My_size != 0) {
+				std::swap(std::vector<block_type>(), std::move(_My_blocks));// noexcept
+				_My_size = 0;
+			}
+		}
+
+		void resize(size_t _Newsize) {
+			size_t _Real_newsize = ceil(_Newsize, block_traits::size());
+			_My_blocks.resize(_Real_newsize / block_traits::size());
+			_My_size = _Newsize;
 		}
 
 		template<typename _Iter>
 		void assign(_Iter _First, _Iter _Last) {
-			const auto _Distance    = std::distance(_First, _Last);
-			const auto _Newcapacity = _Distance / block_traits::size() + static_cast<size_t>(_Distance % block_traits::size() != 0);
-			this->_Reallocate(_Newcapacity);
+			size_t _Diff = distance(_First, _Last);
 
-			scalar_pointer _Myfirst = this->begin();
-			scalar_pointer _Mylast  = this->end();
-			const auto     _Mysize  = _Mylast - _Myfirst;
-			if (_Mysize < _Distance) {// copy [_First, _Last) to [_Myfirst, ...), construct [..., _Last) to [..., _Mylast)
-				for (; _Myfirst != _Mylast; ++_Myfirst, ++_First) {
-					*_Myfirst = *_First;
-				}
-				for (; _First != _Last; ++_First, ++_Mylast/*correct _Mylast*/) {
-					allocate_traits::construct(_Myalloc, _Mylast, *_First);
-				}
-			} else {
-				for (; _Myfirst != _Mylast; ++_Myfirst, ++_First) {
-					*_Myfirst = *_First;
-				}
-				_Destroy_range(_Myfirst, _Mylast);
-				_Mylast = _Myfirst;// correct _Mylast
+			_Vector_any_data _New_data;
+			_New_data.resize(_Diff);
+			auto _Dest = std::copy(_First, _Last, _New_data.begin<scalar_type>());
+			std::fill(_Dest, _New_data.end<scalar_type>(), static_cast<scalar_type>(0));
+
+			_New_data.swap(*this);
+		}
+		
+		void assign(const scalar_type& _Val) {
+			std::fill(this->begin<scalar_type>(), this->end<scalar_type>(), _Val);
+		}
+	
+		template<typename _UnaryOp>
+		void for_each_scalar(_UnaryOp _Transform_op) {// for each scalar by (_Transform_op*)(scalar_type)
+			std::transform(this->begin<scalar_type>(), 
+				           this->end<scalar_type>(), 
+				           this->begin<scalar_type>(), _Transform_op);
+		}
+
+		template<typename _BinOp>
+		void for_each_scalar(const _Vector_any_data& _Args2, _BinOp _Transform_op) {
+			std::transform(this->begin<scalar_type>(),
+				           this->end<scalar_type>(), 
+				          _Args2.begin<scalar_type>(), 
+				           this->end<scalar_type>(), _Transform_op);
+		}
+		
+		template<typename _UnaryOp>
+		void for_each_block(_UnaryOp _Transform_op) {// for each block by (_Transform_op*)(block_type)
+			std::transform(this->begin<block_type>(), 
+				           this->begin<block_type>() + this->block_size(), 
+				           this->begin<block_type>(), _Transform_op);
+		}
+
+		template<typename _BinOp>
+		void for_each_block(const _Vector_any_data& _Args2, _BinOp _Transform_op) {
+			std::transform(this->begin<block_type>(), 
+				           this->begin<block_type>() + this->block_size(), 
+				          _Args2.begin<block_type>(), 
+				           this->begin<block_type>(), _Transform_op);
+		}
+	
+		std::string to_string() const {
+			auto       _First = this->begin<scalar_type>();
+			const auto _Last  = this->end<scalar_type>();
+			std::string _Str  = std::to_string(*_First++);
+			for ( ; _First != _Last; ++_First) {
+				_Str += ' ';
+				_Str += std::to_string(*_First);
 			}
-			_Mybase::reset(this->begin(), _Mylast);
+			return _Str;
+		}
+	};
+
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>>
+	class vector_any : public _Vector_any_data<_Ts, _Tb> {
+		using _Mybase = _Vector_any_data<_Ts, _Tb>;
+	public:
+		using block_type   = _Tb;
+		using scalar_type  = _Ts;
+		using block_traits = clmagic::block_traits<block_type>;
+
+		vector_any() = default;
+		
+		vector_any(const vector_any& _Right) = default;
+
+		vector_any(vector_any&& _Right) noexcept {// move-constructor
+			_Right.swap(*this);
+			_Right.release();
 		}
 
-		template<typename _Fn>
-		void assign(const vector_any& _Left, _Fn _Func) {// memory aligned
-			assert(_Left.aligned());
-			this->_Resize(_Left.size());
-			assert(this->aligned());
-			std::transform(_Left.block_begin(), _Left.block_end(), this->block_begin(), _Func);
+		vector_any(size_t _Count, scalar_type _Val) {
+			_Mybase::resize(_Count);
+			// noexcept
+			_Mybase::assign(_Val);
+			_Mybase::_Correct_tail_elements();
 		}
-
-		template<typename _Fn>
-		void assign(const vector_any& _Left, const vector_any& _Right, _Fn _Func) {
-			assert(_Left.size() == _Right.size());
-			assert(_Left.aligned() && _Right.aligned());
-			this->_Resize(_Left.size());
-			assert(this->aligned());
-			std::transform(_Left.block_begin(), _Left.block_end(), _Right.block_begin(), this->block_begin(), _Func);
-		}
-
-		template<typename _Fn>
-		void assign(const vector_any& _Left, const _Tb& _Right_bk, _Fn _Func) {
-			this->assign(_Left,
-				[_Func, &_Right_bk](block_reference _Left_bk) { return _Func(_Left_bk, _Right_bk); });
-		}
-
-		template<typename _Fn>
-		void assign(const _Tb& _Left_bk, const vector_any& _Right, _Fn _Func) {
-			this->assign(_Right,
-				[_Func, &_Left_bk](block_reference _Right_bk) { return _Func(_Left_bk, _Right_bk); });
-		}
-
-		// <Internal-function>
-		template<typename _Fn>
-		void _Assign(const vector_any& _Left, const _Ts& _Scalar, _Fn _Func) {
-			this->assign(_Left, block_traits::set1(_Scalar));
-		}
-
-		template<typename _Fn>
-		void _Assign(const _Ts& _Scalar, const vector_any& _Right, _Fn _Func) {
-			this->assign(block_traits::set1(_Scalar), _Right);
-		}
-		// </Internal-function>
 
 		template<typename _Iter>
-		vector_any(_Iter _First, _Iter _Last) : vector_any() {
-			this->assign(_First, _Last);
+		vector_any(_Iter _First, _Iter _Last) {
+			_Mybase::assign(_First, _Last);
+			_Mybase::_Correct_tail_elements();
 		}
 
-		vector_any(std::initializer_list<_Ts> _Ilist) : vector_any() {
-			this->assign(_Ilist.begin(), _Ilist.end());
-		}
-
-		template<typename _Fn>
-		vector_any(const vector_any& _Left, _Fn _Func) : vector_any() {
-			assert(_Left.aligned());
-			auto       _First = _Left.block_begin();
-			const auto _Last  = _Left.block_end();
-			this->_Reallocate(_Last - _First);
-			assert(this->aligned());
-
-			auto _Dest = this->block_begin();
-			for (; _First != _Last; ++_First, ++_Dest) {
-				allocate_traits::construct(_Myalloc, _Dest, _Func(*_First));
-			}
-
-			_Mybase::reset(this->begin(), this->begin() + _Left.size());// 
-		}
-
-		template<typename _Fn>
-		vector_any(vector_any&& _Left, _Fn _Func) : vector_any(_Left) {
-			std::transform(this->block_begin(), this->block_end(), this->block_begin(), _Func);
-		}
-
-		template<typename _Fn>
-		vector_any(const vector_any& _Left, const vector_any& _Right, _Fn _Func) : vector_any() {// construct(this, _Func(_Left, _Right))
-			assert(_Left.size() == _Right.size());
-			assert(_Left.aligned() && _Right.aligned());
-			auto       _First1 = _Left.block_begin();
-			const auto _Last1  = _Left.block_end();
-			this->_Reallocate(_Last1 - _First1);
-			assert(this->aligned());
-
-			auto _First2 = _Right.block_begin();
-			auto _Dest   = this->block_begin();
-			for (; _First1 != _Last1; ++_First1, ++_First2, ++_Dest) {
-				allocate_traits::construct(_Myalloc, _Dest, _Func(*_First1, *_First2));
-			}
-
-			_Mybase::reset(this->begin(), this->begin() + _Left.size());// 
+		vector_any(std::initializer_list<scalar_type> _Ilist) {
+			_Mybase::assign(_Ilist.begin(), _Ilist.end());
+			_Mybase::_Correct_tail_elements();
 		}
 		
-		// <Internal-function>
-		template<typename _Fn>
-		vector_any(const vector_any& _Left, const _Ts& _Scalar, _Fn _Func) : vector_any() {// construct( this, _Func(_Left, block_tratis::set1(_Scalar)) )
-			assert(_Left.aligned());
-			auto       _First = _Left.block_begin();
-			const auto _Last  = _Left.block_end();
-			this->_Reallocate(_Last - _First);
-			assert(this->aligned());
-
-			const auto _Right_bk = block_traits::set1(_Scalar);
-			auto       _Dest     = this->block_begin();
-			for (; _First != _Last; ++_First, ++_Dest) {
-				allocate_traits::construct(_Myalloc, _Dest, _Func(*_First, _Right_bk));
-			}
-
-			_Mybase::reset(this->begin(), this->begin() + _Left.size());// 
-		}
-
-		template<typename _Fn>
-		vector_any(const _Ts& _Scalar, const vector_any& _Right, _Fn _Func) : vector_any() {// construct( this, _Func(block_tratis::set1(_Scalar), _Right) )
-			assert(_Right.aligned());
-			auto       _First = _Right.block_begin();
-			const auto _Last  = _Right.block_end();
-			this->_Reallocate(_Last - _First);
-			assert(this->aligned());
-
-			const auto _Left_bk = block_traits::set1(_Scalar);
-			auto       _Dest    = this->block_begin();
-			for (; _First != _Last; ++_First, ++_Dest) {
-				allocate_traits::construct(_Myalloc, _Dest, _Func(_Left_bk, *_First));
-			}
-
-			_Mybase::reset(this->begin(), this->begin() + _Right.size());// 
-		}
-		// </Internal-function>
+		vector_any& operator=(const vector_any& _Right) = default;
 		
-		vector_any& operator=(const vector_any& _Right) {
-			this->assign(_Right.begin(), _Right.end());
-			return *this;
-		}
 		vector_any& operator=(vector_any&& _Right) {
-			_Mybase::subvector_ref() = _Right.subvector_ref();
-			_Mydata     = _Right._Mydata;
-			_Mycapacity = _Right._Mycapacity;
-			_Right._Mydata         = nullptr;
-			_Right._Mycapacity     = 0;
-			_Right.subvector_ref() = { 0, 0, 1, {0, 0, 0} };
-			return *this;
+			_Right.swap(*this);
+			_Right.release();
 		}
 
-		subvector operator()(size_t _First, size_t _Last) {
-			return subvector(this->ptr(_First), this->ptr(_Last));
+		subvector<scalar_type, block_type> operator()(size_t _First, size_t _Last) {
+			return subvector<scalar_type, block_type>(this->ptr(_First), this->ptr(_Last));
 		}
-		const_subvector operator()(size_t _First, size_t _Last) const {
-			return const_subvector(this->ptr(_First), this->ptr(_Last));
+		
+		const subvector<scalar_type, block_type> operator()(size_t _First, size_t _Last) const {
+			return subvector<scalar_type, block_type>(
+				const_cast<scalar_type*>(this->ptr(_First)), const_cast<scalar_type*>(this->ptr(_Last)) );
 		}
 
+		template<typename _UnaryOp>
+		vector_any for_each_scalar_copy(_UnaryOp _Transform_op) const {
+			vector_any _Result; 
+			_Result.resize(this->size());
+			std::transform(this->begin<scalar_type>(), 
+				           this->end<scalar_type>(), 
+				          _Result.begin<scalar_type>(), _Transform_op);
+			return std::move(_Result);
+		}
+
+		template<typename _BinOp>
+		vector_any for_each_scalar_copy(const vector_any& _Args2, _BinOp _Transform_op) const {
+			vector_any _Result;
+			_Result.resize(this->size());
+			std::transform(this->begin<scalar_type>(), 
+				           this->end<scalar_type>(), 
+				          _Args2.begin<scalar_type>(), 
+				          _Result.begin<scalar_type>(), _Transform_op);
+			return std::move(_Result);
+		}
+	
+		template<typename _UnaryOp>
+		vector_any for_each_block_copy(_UnaryOp _Transform_op) const {
+			vector_any _Result;
+			_Result.resize(this->size());
+			std::transform(this->begin<block_type>(), 
+				           this->begin<block_type>()+this->block_size(), 
+				           _Result.begin<block_type>(), _Transform_op);
+			return std::move(_Result);
+		}
+
+		template<typename _BinOp>
+		vector_any for_each_block_copy(const vector_any& _Args2, _BinOp _Transform_op) const {
+			vector_any _Result;
+			_Result.resize(this->size());
+			std::transform(this->begin<block_type>(), 
+				           this->begin<block_type>()+this->block_size(), 
+				          _Args2.begin<block_type>(), 
+				          _Result.begin<block_type>(), _Transform_op);
+			return std::move(_Result);
+		}
+		
 		vector_any operator-() const {
-			return std::move(vector_any(*this, std::negate<block_type>()));
+			return std::move( this->for_each_block_copy(std::negate<block_type>()) );
 		}
 		vector_any operator+(const vector_any& _Right) const {
-			return std::move(vector_any(*this, _Right, std::plus<block_type>()));
+			return std::move( this->for_each_block_copy(_Right, std::plus<block_type>()) );
 		}
 		vector_any operator-(const vector_any& _Right) const {
-			return std::move(vector_any(*this, _Right, std::minus<block_type>()));
+			return std::move( this->for_each_block_copy(_Right, std::minus<block_type>()) );
 		}
 		vector_any operator*(const vector_any& _Right) const {
-			return std::move(vector_any(*this, _Right, std::multiplies<block_type>()));
+			return std::move( this->for_each_block_copy(_Right, std::multiplies<block_type>()) );
 		}
 		vector_any operator/(const vector_any& _Right) const {
-			return std::move(vector_any(*this, _Right, std::divides<block_type>()));
+			return std::move( this->for_each_block_copy(_Right, std::divides<block_type>()) );
 		}
 		vector_any operator%(const vector_any& _Right) const {
-			return std::move(vector_any(*this, _Right, std::modulus<block_type>()));
+			return std::move( this->for_each_block_copy(_Right, std::modulus<block_type>()) );
 		}
-		vector_any operator+(const _Ts& _Scalar) const {
-			return std::move(vector_any(*this, _Scalar, std::plus<block_type>()));
+		vector_any operator+(const scalar_type& _Scalar) const {
+			const block_type _Right        = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left + _Right; };
+			return std::move( this->for_each_block_copy(_Transform_op) );
 		}
-		vector_any operator-(const _Ts& _Scalar) const {
-			return std::move(vector_any(*this, _Scalar, std::minus<block_type>()));
+		vector_any operator-(const scalar_type& _Scalar) const {
+			const block_type _Right        = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left - _Right; };
+			return std::move( this->for_each_block_copy(_Transform_op) );
 		}
-		vector_any operator*(const _Ts& _Scalar) const {
-			return std::move(vector_any(*this, _Scalar, std::multiplies<block_type>()));
+		vector_any operator*(const scalar_type& _Scalar) const {
+			const block_type _Right        = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left * _Right; };
+			return std::move( this->for_each_block_copy(_Transform_op) );
 		}
-		vector_any operator/(const _Ts& _Scalar) const {
-			return std::move(vector_any(*this, _Scalar, std::divides<block_type>()));
+		vector_any operator/(const scalar_type& _Scalar) const {
+			const block_type _Right        = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left / _Right; };
+			return std::move( this->for_each_block_copy(_Transform_op) );
 		}
-		vector_any operator%(const _Ts& _Scalar) const {
-			return std::move(vector_any(*this, _Scalar, std::modulus<block_type>()));
+		vector_any operator%(const scalar_type& _Scalar) const {
+			const block_type _Right        = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left % _Right; };
+			return std::move( this->for_each_block_copy(_Transform_op) );
 		}
 		vector_any& operator+=(const vector_any& _Right) {
-			this->assign(*this, _Right, std::plus<block_type>());
-			return (*this);
+			this->for_each_block(_Right, std::plus<block_type>());
+			return *this;
 		}
 		vector_any& operator-=(const vector_any& _Right) {
-			this->assign(*this, _Right, std::minus<block_type>());
-			return (*this);
+			this->for_each_block(_Right, std::minus<block_type>());
+			return *this;
 		}
 		vector_any& operator*=(const vector_any& _Right) {
-			this->assign(*this, _Right, std::multiplies<block_type>());
-			return (*this);
+			this->for_each_block(_Right, std::multiplies<block_type>());
+			return *this;
 		}
 		vector_any& operator/=(const vector_any& _Right) {
-			this->assign(*this, _Right, std::divides<block_type>());
-			return (*this);
+			this->for_each_block(_Right, std::divides<block_type>());
+			return *this;
 		}
 		vector_any& operator%=(const vector_any& _Right) {
-			this->assign(*this, _Right, std::modulus<block_type>());
-			return (*this);
+			this->for_each_block(_Right, std::modulus<block_type>());
+			return *this;
 		}
-		vector_any& operator+=(const _Ts& _Scalar) {
-			this->_Assign(*this, _Scalar, std::plus<block_type>());
-			return (*this);
+		vector_any& operator+=(const scalar_type& _Scalar) {
+			const block_type _Right         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left + _Right; };
+			this->for_each_block(_Transform_op);
+			return *this;
 		}
-		vector_any& operator-=(const _Ts& _Scalar) {
-			this->_Assign(*this, _Scalar, std::minus<block_type>());
-			return (*this);
+		vector_any& operator-=(const scalar_type& _Scalar) {
+			const block_type _Right         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left - _Right; };
+			this->for_each_block(_Transform_op);
+			return *this;
 		}
-		vector_any& operator*=(const _Ts& _Scalar) {
-			this->_Assign(*this, _Scalar, std::multiplies<block_type>());
-			return (*this);
+		vector_any& operator*=(const scalar_type& _Scalar) {
+			const block_type _Right         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left * _Right; };
+			this->for_each_block(_Transform_op);
+			return *this;
 		}
-		vector_any& operator/=(const _Ts& _Scalar) {
-			this->_Assign(*this, _Scalar, std::divides<block_type>());
-			return (*this);
+		vector_any& operator/=(const scalar_type& _Scalar) {
+			const block_type _Right         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left / _Right; };
+			this->for_each_block(_Transform_op);
+			return *this;
 		}
-		vector_any& operator%=(const _Ts& _Scalar) {
-			this->_Assign(*this, _Scalar, std::modulus<block_type>());
-			return (*this);
+		vector_any& operator%=(const scalar_type& _Scalar) {
+			const block_type _Right         = block_traits::set1(_Scalar);
+			const auto       _Transform_op = [&_Right](auto&& _Left) { return _Left % _Right; };
+			this->for_each_block(_Transform_op);
+			return *this;
 		}
 		
-		scalar_const_pointer ptr(size_t _Pos = 0) const {
-			return _Mybase::ptr(_Pos); }
-		scalar_const_pointer begin() const {
-			return _Mybase::begin(); 
-		}
-		scalar_const_pointer end() const {
-			return _Mybase::end(); 
-		}
-		scalar_const_reference operator[](size_t _Pos) const {
-			return _Mybase::operator[](_Pos); }
-		scalar_pointer ptr(size_t _Pos = 0) {
-			return _Mybase::ptr(_Pos);
-		}
-		scalar_pointer begin() {
-			return _Mybase::begin(); 
-		}
-		scalar_pointer end() {
-			return _Mybase::end(); 
-		}
-		scalar_reference operator[](size_t _Pos) {
-			return _Mybase::operator[](_Pos); 
-		}
-		size_t size() const {
-			return _Mybase::size();
-		}
-		size_t capacity() const {
-			return _Mycapacity; 
-		}
-		bool empty() const {// size is Zero
-			return _Mybase::empty();
-		}
-		bool aligned() const {
-			return _Mybase::aligned();
-		}
-
-		block_pointer block_begin() {
-			return _Mydata;
-		}
-		block_pointer block_end() {
-			return _Mydata + this->size() / block_traits::size() + static_cast<size_t>(this->size() % block_traits::size() != 0);
-		}
-		block_const_pointer block_begin() const {
-			return _Mydata;
-		}
-		block_const_pointer block_end() const {
-			return _Mydata + this->size() / block_traits::size() + static_cast<size_t>(this->size() % block_traits::size() != 0);
-		}
-
-		void clear() {// clear _Mybase, don't modify capacity
-			auto       _First = this->begin();
-			const auto _Last  = this->end();
-			_Destroy_range(_First, _Last);
-			_Mybase::reset(_First, _First);
-		}
-
-		template<typename... _Valty>
-		void emplace_back(_Valty&&... _Val) {
-			if ( _Has_capacity(this->size() + 1) ) {
-				auto&           _Myvec  = _Mybase::subvector_ref();
-				scalar_pointer& _Mylast = _Myvec._Mylast;
-				allocate_traits::construct(_Myalloc, _Mylast, std::forward<_Valty...>(_Val...));
-				++_Mylast;// correct _Mylast
-			} else {
-				_Reallocate(_Calculate_growth(this->capacity() + 1));
-				emplace_back(std::forward<_Valty...>(_Val...));
-			}
-		}
-
-		void push_back(const _Ts& _Val) {
-			this->emplace_back(_Val);
-		}
-
-		void push_back(_Ts&& _Val) {
-			this->emplace_back(std::move(_Val)); }
-
-		void pop_back() {
-			if ( !this->empty() ) {
-				auto& _Myvec = _Mybase::subvector_ref();
-				--_Myvec._Mylast;
-				allocate_traits::destroy(_Myalloc, _Myvec._Mylast);
-			}
-		}
-
-		~vector_any() {// destroy[_First, _last) and delete[] _Mydata
-			if (_Mydata != nullptr) {
-				_Destroy_range(this->begin(), this->end());
-				allocate_traits::deallocate(_Myalloc, _Mydata, _Mycapacity);
-				_Mydata     = nullptr;
-				_Mycapacity = 0;
-				_Mybase::reset(nullptr, nullptr);
-			} else {// _Mydata == nullptr
-				if (!this->empty()) {
-					std::cout << "[vector_any<_Ts, _Tb> memory exception] ->[~vector_any()]" << std::endl;
-					//throw std::exception("[vector_any<_Ts, _Tb> memory exception] ->[~vector_any()]");
-				}
-			}
-		}
-
-		std::string to_string() const {
-			return ::clmagic::to_string(this->begin(), this->end()); }
-	
 		friend std::ostream& operator<<(std::ostream& _Ostr, const vector_any& _Left) {
 			return (_Ostr << _Left.to_string()); }
-
-	private:
-
-		scalar_pointer _Destroy_range(scalar_pointer _First, scalar_const_pointer _Last) {
-			for (; _First != _Last; ++_First) {
-				allocate_traits::destroy(_Myalloc, _First);
-			}
-			return _First;
-		}
-
-		scalar_pointer _Construct_range(scalar_pointer _First, scalar_const_pointer _Last, const _Ts& _Val) {
-			for (; _First != _Last; ++_First) {
-				allocate_traits::construct(_Myalloc, _First, _Val);
-			}
-			return _First;
-		}
-
-		size_t max_size() const {
-			return std::numeric_limits<size_t>::max();
-		}
-
-		bool _Has_capacity(size_t _Size) {// _Size scalar-sizes  <= _My scalar_sizes
-			return (_Size <= _Mycapacity * block_traits::size());
-		}
-
-		/* learning from C++Stantard-library-vector<_Ts,...> */
-		size_t _Calculate_growth(const size_t _Newsize) const {
-			// given _Oldcapacity and _Newsize, calculate geometric growth
-			const auto _Oldcapacity = capacity();
-
-			if (_Oldcapacity > max_size() - _Oldcapacity / 2) {
-				return _Newsize; // geometric growth would overflow
-			}
-
-			const size_t _Geometric = std::max(size_t(2), _Oldcapacity + _Oldcapacity / 2);
-
-			if (_Geometric < _Newsize) {
-				return _Newsize; // geometric growth would be insufficient
-			}
-
-			return _Geometric; // geometric growth is sufficient
-		}
-
-		/* learning from C++Stantard-library-vector<_Ts,...> */
-		void _Reallocate(size_t _Newcapacity/*block*/) {
-			if (_Newcapacity != _Mycapacity) {
-				scalar_pointer _Myfirst = this->begin();
-				scalar_pointer _Mylast  = this->end();
-				const size_t   _Mysize  = _Mylast - _Myfirst;
-
-				block_pointer  _Newdata  = allocate_traits::allocate(_Myalloc, _Newcapacity); // reallocate;
-				scalar_pointer _Newfirst = reinterpret_cast<scalar_pointer>(_Newdata);
-				scalar_pointer _Newlast  = _Newfirst;
-
-				if (_Mysize != 0) {// move [_Myfirst, ...) to [_Newfirst, _Newlast) and delete _Olddata
-					auto _Last = _Myfirst + std::min(_Mysize, _Newcapacity * block_traits::size());
-					_Newlast = std::move(_Myfirst, _Last, _Newfirst);
-					_Destroy_range(_Last, _Mylast);
-					allocate_traits::deallocate(_Myalloc, _Mydata, _Mycapacity);
-				}
-				_Mydata     = _Newdata;
-				_Mycapacity = _Newcapacity;
-				_Mybase::reset(_Newfirst, _Newlast);
-			}
-		}
-
-		/* learning from C++Stantard-library-vector<_Ts,...> */
-		void _Resize(size_t _Newsize/*scalar*/, const _Ts& _Val) {
-			if (_Newsize != this->size()) {
-				if ( !_Has_capacity(_Newsize) ) {
-					_Reallocate(_Calculate_growth(_Newsize / block_traits::size() + 1));
-				}
-
-				scalar_pointer _Myfirst = this->begin();
-				scalar_pointer _Mylast  = this->end();
-				if (_Newsize < this->size()) {// destroy [_Newlast, _Mylast)
-					auto _Newlast = _Myfirst + _Newsize;
-					_Mylast = _Destroy_range(_Newlast, _Mylast);
-				} else {// construct [_Mylast, _Newlast)
-					auto _Newlast = _Myfirst + _Newsize;
-					_Mylast = _Construct_range(_Mylast, _Newlast, _Val);
-				}
-				_Mybase::reset(_Myfirst, _Mylast);
-			}
-		}
-
-		_Alloc  _Myalloc;
-		_Tb* _Mydata;
-		size_t  _Mycapacity;
 	};
 
 	/*- - - - - - - - - - - - - - - - - - - _Vector_cast - - - - - - - - - - - - - - - - - - - - -*/
@@ -2418,9 +2252,13 @@ namespace clmagic{
 			return dest_type( v.begin(), v.begin() + min(v.size(), dest_type::size()) );
 		}
 	};
+	
+	template<typename _OutVec, typename _InVec>
+	_OutVec vector_cast(const _InVec& v) {
+		return _Vector_cast<_OutVec, _InVec>()(v);
+	}
 
-
-
+	/*- - - - - - - - - - - - - - - - - - - vector_traits - - - - - - - - - - - - - - - - - - - - -*/
 	template<typename _Ts>
 		constexpr bool is_vector_v = false;
 	template<typename _Ts, size_t _Size, typename _Tb>
@@ -2433,198 +2271,25 @@ namespace clmagic{
 	template<typename _Ts, typename _Tb>
 		constexpr bool is_support_scalar_operator< vector_any<_Ts, _Tb> > = true;
 
-
-	template<typename _Ts, typename _Tb = _Ts> using vector2 = vector<_Ts, 2, _Tb>;
-	template<typename _Ts, typename _Tb = _Ts> using vector3 = vector<_Ts, 3, _Tb>;
-	template<typename _Ts, typename _Tb = _Ts> using vector4 = vector<_Ts, 4, _Tb>;
-	template<typename _Ts, typename _Tb = _Ts> using unit_vector3 = unit_vector<_Ts, 3, _Tb>;
+	/*- - - - - - - - - - - - - - - - - - - vector_alias - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>> 
+		using vector2 = vector<_Ts, 2, _Tb>;
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>> 
+		using vector3 = vector<_Ts, 3, _Tb>;
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>> 
+		using vector4 = vector<_Ts, 4, _Tb>;
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>> 
+		using unit_vector3 = unit_vector<_Ts, 3, _Tb>;
 	using point2_size_t = vector2<size_t>;
 
-	#define VECTORN ::clmagic::vector<_Ts, _Size, _Tb>
-	#define VECTOR2 ::clmagic::vector<_Ts, 2, _Tb>
-	#define VECTOR3 ::clmagic::vector<_Ts, 3, _Tb>
-	#define VECTOR4 ::clmagic::vector<_Ts, 4, _Tb>
-	#define UNIT_VECTORN ::clmagic::unit_vector<_Ts, _Size, _Tb>
-	#define UNIT_VECTOR3 ::clmagic::unit_vector3<_Ts, _Tb>
-
-
-	template<typename _OutVec, typename _InVec>
-	_OutVec vector_cast(const _InVec& v) {
-		return _Vector_cast<_OutVec, _InVec>()(v);
-	}
-
-
+	/*- - - - - - - - - - - - - - - - - - - vector_function - - - - - - - - - - - - - - - - - - - - -*/
 	template<typename _Ts, size_t _Size, typename _Tb> inline
 	std::string to_string(const VECTORN& v) {
 		return v.to_string();
 	}
-	template<typename _Ts, typename _Tb, typename _Alloc> inline
-	std::string to_string(const vector_any<_Ts, _Tb, _Alloc>& v) {
+	template<typename _Ts, typename _Tb> inline
+	std::string to_string(const vector_any<_Ts, _Tb>& v) {
 		return v.to_string();
-	}
-
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	_Ts sum(const VECTORN& v) {
-		return v.sum();
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	_Ts product(const VECTORN& v) {
-		return v.product();
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	_Ts dot(const VECTORN& v1, const VECTORN& v2) {
-		return v1.dot(v2);
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	_Ts length(const VECTORN& v) {
-		return dot(v, v);
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	_Ts norm(const VECTORN& v, const _Ts& L) {
-		return v.norm(L);
-	}
-
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN normalize(const VECTORN& v) {
-		const _Ts _Length_squared = dot(v, v);
-		return !approach_equal(_Length_squared, static_cast<_Ts>(1), std::numeric_limits<_Ts>::epsilon()) ?
-			v / sqrt(_Length_squared) :
-			v;
-	}
-
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN fmod(const VECTORN& _Left, const VECTORN& _Right) {
-		_Return_generate_object( VECTORN, _Result, 
-			fast_vector_operation<_Ts, _Tb>::func_2nd(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
-				[](const _Tb& _Arg0, const _Tb& _Arg1) { return fmod(_Arg0, _Arg1); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN fmod(const VECTORN& _Left, const _Ts& _Scalar) {
-		const _Tb  _Arg1 = block_traits<_Tb>::set1(_Scalar);
-		const auto _Func = [&_Arg1](const _Tb& _Arg0) { return fmod(_Arg0, _Arg1); };
-		_Return_generate_object( VECTORN, _Result, 
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), _Func) );
-	}
-
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN pow(const VECTORN& _Left, const VECTORN& _Right) {
-		_Return_generate_object( VECTORN, _Result, 
-			fast_vector_operation<_Ts, _Tb>::func_2nd(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
-				[](const _Tb& _Arg0, const _Tb& _Arg1) { return pow(_Arg0, _Arg1); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN pow(const VECTORN& _Left, const _Ts& _Scalar) {
-		const _Tb  _Arg1 = block_traits<_Tb>::set1(_Scalar);
-		const auto _Func = [&_Arg1](const _Tb& _Arg0) { return pow(_Arg0, _Arg1); };
-		_Return_generate_object( VECTORN, _Result, 
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), _Func) );
-	}
-
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN cross3(const VECTORN& _Left, const VECTORN& _Right) {
-		return VECTORN{
-			_Left[1] * _Right[2] - _Left[2] * _Right[1],
-			_Left[2] * _Right[0] - _Left[0] * _Right[2],
-			_Left[0] * _Right[1] - _Left[1] * _Right[0]
-		};
-	}
-
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN abs(const VECTORN& _Left) {// abs(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return abs(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN floor(const VECTORN& _Left) {// floor(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return floor(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN ceil(const VECTORN& _Left) {// ceil(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return ceil(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN trunc(const VECTORN& _Left) {// trunc(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return trunc(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN round(const VECTORN& _Left) {// round(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return round(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN sqrt(const VECTORN& _Left) {// sqrt(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return sqrt(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN cbrt(const VECTORN& _Left) {// cbrt(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return cbrt(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN invsqrt(const VECTORN& _Left) {// invsqrt(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return invsqrt(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN invcbrt(const VECTORN& _Left) {// invcbrt(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return invcbrt(_Arg0); }) );
-	}
-
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN sin(const VECTORN& _Left) {// sin(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return sin(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN cos(const VECTORN& _Left) {
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return cos(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN tan(const VECTORN& _Left) {// tan(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return tan(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN asin(const VECTORN& _Left) {// asin(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return asin(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN acos(const VECTORN& _Left) {// acos(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return acos(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN atan(const VECTORN& _Left) {// atan(v)
-		_Return_generate_object( VECTORN, _Result,
-			fast_vector_operation<_Ts, _Tb>::func_1st(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Result.begin<_Tb>(), 
-				[](const _Tb& _Arg0) { return atan(_Arg0); }) );
-	}
-	template<typename _Ts, size_t _Size, typename _Tb> inline
-	VECTORN atan2(const VECTORN& _Left, const VECTORN& _Right) {// atan(yv, xv)
-		_Return_generate_object( VECTORN, _Result, 
-			fast_vector_operation<_Ts, _Tb>::func_2nd(_Left.begin<_Tb>(), _Left.begin<_Tb>()+_Left.block_size(), _Right.begin<_Tb>(), _Result.begin<_Tb>(),
-				[](const _Tb& _Arg0, const _Tb& _Arg1) { return atan2(_Arg0, _Arg1); }) );
 	}
 
 	// compare function
@@ -2656,13 +2321,10 @@ namespace clmagic{
 		return true;
 	}
 
-
-
-
 	// dot(_I,_Nref) < 0 ? N : -N
 	template<typename _Ts, size_t _Size, typename _Tb> inline
 	UNIT_VECTORN faceforward(UNIT_VECTORN _Normal, VECTORN _I, VECTORN _Nref) {
-		return (dot(_I, _Nref) < static_cast<_Ts>(0) ? _Normal : -_Normal);
+		return (dot(_I, _Nref) < 0 ? _Normal : -_Normal);
 	}
 
 	template<typename _Ts, size_t _Size, typename _Tb> inline
@@ -2673,7 +2335,7 @@ namespace clmagic{
 			|_Vector/
 			|    /	     |
 			| /
-			|-> result<--|▜___________
+			|-> result<--|___________
 			| N |       N is n|malized
 			| ->   _Proj   <- |
 

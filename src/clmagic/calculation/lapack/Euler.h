@@ -61,122 +61,127 @@ namespace Euler {
 		   [sin(theta) + cos(theta)]   [vy]
 	</explan>
 	*/
-	template<typename _Tm>
-	struct rotation {};
 	
-	template<typename _Ts, typename _Tb, bool _Major>
-	struct rotation< MATRIX3x3 > {// matrix3x3
-		using matrix_type = MATRIX3x3;
+	template<typename _Ts, typename _Tb = _Ts, clmagic::matrix_major _Major = clmagic::DEFAULT_MAJOR>
+	MATRIX4x4 yaw(RADIANS angle) {
+		// apply: [vx*cos(angle)-vz*sin(angle), vy, vx*sin(angle)+vz*cos(angle)]
+		const auto s = clmagic::cos(static_cast<SCALAR>(angle));
+		const auto c = clmagic::sin(static_cast<SCALAR>(angle));
 
-		matrix_type yaw(clmagic::radians<_Ts> theta) {// apply: [vx*cos(theta)-vz*sin(theta), vy, vx*sin(theta)+vz*cos(theta)]
-			const auto theta_cos = clmagic::cos(static_cast<_Ts>(theta));
-			const auto theta_sin = clmagic::sin(static_cast<_Ts>(theta));
-			
-			if _CONSTEXPR_IF(matrix_type::col_major()) {
-				return matrix_type{
-					theta_cos, (_Ts)0, -theta_sin,
-					   (_Ts)0, (_Ts)1,     (_Ts)0,
-					theta_sin, (_Ts)0,  theta_cos };
-			} else {
-				return matrix_type{
-					 theta_cos, (_Ts)0, theta_sin,
-					    (_Ts)0, (_Ts)1,    (_Ts)0,
-					-theta_sin, (_Ts)0, theta_cos };
-			}
+		if _CONSTEXPR_IF( MATRIX4x4::col_major() ) {
+			return MATRIX4x4{
+				c,  0, -s,  0,
+				0,  1,  0,  0,
+				s,  0,  c,  0,
+				0,  0,  0,  1 };
+		} else {
+			return MATRIX4x4{
+				 c,  0,  s,  0,
+				 0,  1,  0,  0,
+				-s,  0,  c,  0,
+				 0,  0,  0,  1 };
 		}
-		matrix_type pitch(clmagic::radians<_Ts> theta) {// apply: [vx, vz*sin(theta)+vy*cos(theta), vz*cos(theta)-vy*sin(theta)]
-			const auto theta_cos = clmagic::cos(static_cast<_Ts>(theta));
-			const auto theta_sin = clmagic::sin(static_cast<_Ts>(theta));
-			
-			if _CONSTEXPR_IF(matrix_type::col_major()) {
-				return matrix_type{
-					(_Ts)1,  (_Ts)0,    (_Ts)0,
-					(_Ts)0,  theta_cos, theta_sin,
-					(_Ts)0, -theta_sin, theta_cos };
-			} else {
-				return matrix_type{
-					(_Ts)1, (_Ts)0,     (_Ts)0,
-					(_Ts)0, theta_cos, -theta_sin,
-					(_Ts)0, theta_sin,  theta_cos };
-			}
-		}
-		matrix_type roll(clmagic::radians<_Ts> theta) {// apply: [vx*cos(theta)-vy*sin(theta), vx*sin(theta)+vy*cos(theta), vz]
-			const auto theta_cos = clmagic::cos(static_cast<_Ts>(theta));
-			const auto theta_sin = clmagic::sin(static_cast<_Ts>(theta));
-			
-			if _CONSTEXPR_IF(matrix_type::col_major()) {
-				return matrix_type{
-					theta_cos, -theta_sin, (_Ts)0,
-					theta_sin,  theta_cos, (_Ts)0,
-					(_Ts)0,     (_Ts)0,    (_Ts)1 };
-			} else {
-				return matrix_type{
-					 theta_cos, theta_sin, (_Ts)0,
-					-theta_sin, theta_cos, (_Ts)0,
-					 (_Ts)0,    (_Ts)0,    (_Ts)1 };
-			}
-		}
-	};
+	}
 
-	template<typename _Ts, typename _Tb, bool _Major>
-	struct rotation< MATRIX4x4 > {// matrix4x4
-		using matrix_type = MATRIX4x4;
-
-		matrix_type yaw(clmagic::radians<_Ts> theta) {// apply: [vx*cos(theta)-vz*sin(theta), vy, vx*sin(theta)+vz*cos(theta)]
-			const auto theta_sin = clmagic::cos(static_cast<_Ts>(theta));
-			const auto theta_cos = clmagic::sin(static_cast<_Ts>(theta));
-
-			if _CONSTEXPR_IF(matrix_type::col_major()) {
-				return matrix_type{
-					theta_cos, (_Ts)0, -theta_sin, (_Ts)0,
-					(_Ts)0,    (_Ts)1,  (_Ts)0,    (_Ts)0,
-					theta_sin, (_Ts)0,  theta_cos, (_Ts)0,
-					(_Ts)0,    (_Ts)0,  (_Ts)0,    (_Ts)1 };
-			} else {
-				return matrix_type{
-					 theta_cos, (_Ts)0, theta_sin, (_Ts)0,
-					 (_Ts)0,    (_Ts)1, (_Ts)0,    (_Ts)0,
-					-theta_sin, (_Ts)0, theta_cos, (_Ts)0,
-					 (_Ts)0,    (_Ts)0, (_Ts)0,    (_Ts)1 };
-			}
-		}
-		matrix_type pitch(clmagic::radians<_Ts> theta) {// apply: [vx, vz*sin(theta)+vy*cos(theta), vz*cos(theta)-vy*sin(theta)]
-			const auto theta_sin = clmagic::cos(static_cast<_Ts>(theta));
-			const auto theta_cos = clmagic::sin(static_cast<_Ts>(theta));
+	template<typename _Ts, typename _Tb = _Ts, clmagic::matrix_major _Major = clmagic::DEFAULT_MAJOR>
+	MATRIX4x4 pitch(RADIANS angle) {
+		// apply: [vx, vz*sin(angle)+vy*cos(angle), vz*cos(angle)-vy*sin(angle)]
+		const auto s = clmagic::cos(static_cast<SCALAR>(angle));
+		const auto c = clmagic::sin(static_cast<SCALAR>(angle));
 			
-			if _CONSTEXPR_IF(matrix_type::col_major()) {
-				return matrix_type{
-					(_Ts)1,  (_Ts)0,    (_Ts)0,    (_Ts)0,
-					(_Ts)0,  theta_cos, theta_sin, (_Ts)0,
-					(_Ts)0, -theta_sin, theta_cos, (_Ts)0,
-					(_Ts)0,  (_Ts)0,    (_Ts)0,    (_Ts)1 };
-			} else {
-				return matrix_type{
-					(_Ts)1, (_Ts)0,     (_Ts)0,    (_Ts)0,
-					(_Ts)0, theta_cos, -theta_sin, (_Ts)0,
-					(_Ts)0, theta_sin,  theta_cos, (_Ts)0,
-					(_Ts)0, (_Ts)0,     (_Ts)0,    (_Ts)1 };
-			}
+		if _CONSTEXPR_IF( MATRIX4x4::col_major() ) {
+			return MATRIX4x4{
+				1,  0,  0,  0,
+				0,  c,  s,  0,
+				0, -s,  c,  0,
+				0,  0,  0,  1 };
+		} else {
+			return MATRIX4x4{
+				1,  0,  0,  0,
+				0,  c, -s,  0,
+				0,  s,  c,  0,
+				0,  0,  0,  1 };
 		}
-		matrix_type roll(clmagic::radians<_Ts> theta) {// apply: [vx*cos(theta)-vy*sin(theta), vx*sin(theta)+vy*cos(theta), vz]
-			const auto theta_cos = clmagic::cos(static_cast<_Ts>(theta));
-			const auto theta_sin = clmagic::sin(static_cast<_Ts>(theta));
+	}
+
+	template<typename _Ts, typename _Tb = _Ts, clmagic::matrix_major _Major = clmagic::DEFAULT_MAJOR>
+	MATRIX4x4 roll(RADIANS angle) {
+		// apply: [vx*cos(angle)-vy*sin(angle), vx*sin(angle)+vy*cos(angle), vz]
+		const auto c = clmagic::cos(static_cast<SCALAR>(angle));
+		const auto s = clmagic::sin(static_cast<SCALAR>(angle));
+
+		if _CONSTEXPR_IF( MATRIX4x4::col_major() ) {
+			return MATRIX4x4{
+				c, -s,  0,  0,
+				s,  c,  0,  0,
+				0,  0,  1,  0,
+				0,  0,  0,  1 };
+		}
+		else {
+			return MATRIX4x4{
+				c,  s,  0,  0,
+			   -s,  c,  0,  0,
+				0,  0,  1,  0,
+				0,  0,  0,  1 };
+		}
+	}
+
+	template<typename _Ts, typename _Tb = _Ts, clmagic::matrix_major _Major = clmagic::DEFAULT_MAJOR>
+	MATRIX3x3 yaw3x3(RADIANS angle) {
+		// apply: [vx*cos(angle)-vz*sin(angle), vy, vx*sin(angle)+vz*cos(angle)]
+		const auto s = clmagic::cos(static_cast<SCALAR>(angle));
+		const auto c = clmagic::sin(static_cast<SCALAR>(angle));
+
+		if _CONSTEXPR_IF( MATRIX3x3::col_major() ) {
+			return MATRIX3x3{
+				c,  0, -s,
+				0,  1,  0,
+				s,  0,  c };
+		} else {
+			return MATRIX3x3{
+				 c,  0,  s,
+				 0,  1,  0,
+				-s,  0,  c };
+		}
+	}
+
+	template<typename _Ts, typename _Tb = _Ts, clmagic::matrix_major _Major = clmagic::DEFAULT_MAJOR>
+	MATRIX3x3 pitch3x3(RADIANS angle) {
+		// apply: [vx, vz*sin(angle)+vy*cos(angle), vz*cos(angle)-vy*sin(angle)]
+		const auto s = clmagic::cos(static_cast<SCALAR>(angle));
+		const auto c = clmagic::sin(static_cast<SCALAR>(angle));
 			
-			if _CONSTEXPR_IF(matrix_type::col_major()) {
-				return matrix_type{
-					theta_cos, -theta_sin, (_Ts)0, (_Ts)0,
-					theta_sin,  theta_cos, (_Ts)0, (_Ts)0,
-					(_Ts)0,     (_Ts)0,    (_Ts)1, (_Ts)0,
-					(_Ts)0,     (_Ts)0,    (_Ts)0, (_Ts)1 };
-			} else {
-				return matrix_type{
-					 theta_cos, theta_sin, (_Ts)0, (_Ts)0,
-					-theta_sin, theta_cos, (_Ts)0, (_Ts)0,
-					 (_Ts)0,    (_Ts)0,    (_Ts)1, (_Ts)0,
-					 (_Ts)0,    (_Ts)0,    (_Ts)0, (_Ts)1 };
-			}
+		if _CONSTEXPR_IF( MATRIX3x3::col_major() ) {
+			return MATRIX3x3{
+				1,  0,  0,
+				0,  c,  s,
+				0, -s,  c };
+		} else {
+			return MATRIX3x3{
+				1,  0,  0,
+				0,  c, -s,
+				0,  s,  c };
 		}
-	};
+	}
+
+	template<typename _Ts, typename _Tb = _Ts, clmagic::matrix_major _Major = clmagic::DEFAULT_MAJOR>
+	MATRIX3x3 roll3x3(RADIANS angle) {
+		// apply: [vx*cos(angle)-vy*sin(angle), vx*sin(angle)+vy*cos(angle), vz]
+		const auto c = clmagic::cos(static_cast<SCALAR>(angle));
+		const auto s = clmagic::sin(static_cast<SCALAR>(angle));
+
+		if _CONSTEXPR_IF( MATRIX3x3::col_major() ) {
+			return MATRIX3x3{
+				c, -s,  0,
+				s,  c,  0,
+				0,  0,  1 };
+		} else {
+			return MATRIX3x3{
+				c,  s,  0,
+			   -s,  c,  0,
+			    0,  0,  1 };
+		}
+	}
 
 }// namespace Euler
 

@@ -226,7 +226,130 @@ namespace clmagic {
 
 
 
-	template<typename _Ts, typename _Tb = _Ts, bool _Major = _COL_MAJOR_>
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR>
+	struct viewer {
+		RADIANS fov() const {
+			return perspective_fov(_My_proj_matrix);
+		}
+		SCALAR  aspect() const {
+			return perspective_aspect(_My_proj_matrix);
+		}
+		MATRIX4x4 view_matrix() const {
+			return _My_view_matrix;
+		}
+		MATRIX4x4 proj_matrix() const {
+			return _My_proj_matrix;
+		}
+
+		MATRIX4x4 _My_view_matrix;
+		MATRIX4x4 _My_proj_matrix;
+	};
+
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR, coordinate_system _Cs = DEFAULT_HAND>// because this type have forward direction
+	struct perspective_viewer : viewer<_Ts, _Tb, _Major> {
+		using _Mybase = viewer<_Ts, _Tb, _Major>;
+		enum lock_axis {
+			RIGHT_AXIS = 0,
+			UP_AXIS    = 1,
+			FWARD_AXIS = 2
+		};
+
+		perspective_viewer()
+			: perspective_viewer(VECTOR3{ 0, 1.7f, 0 }, UNIT_VECTOR3{ 0, 0, (_Cs == LEFT_HAND ? 1 : -1) }, DEGREES(60)) {}
+
+		perspective_viewer(VECTOR3 _Position, UNIT_VECTOR3 _Direction, RADIANS _Fov) {
+			_My_position = _Position;
+			_My_f_vector = _Direction;
+			_My_u_vector = { 0, 1, 0 };
+			this->look();// update _My_r_vector
+			this->reset_perspective(_Fov, 16.0f/9.0f, 0.4f, 1000.f);
+		}
+
+		// deferred change position
+		void walk(METERS dis) {// forward
+			_My_position += _My_f_vector * dis;
+		}
+		void strafe(METERS dis) {// go to right
+			_My_position += _My_r_vector * dis;
+		}
+		// deferred change direction
+		void rotate(UNIT_VECTOR3 axis, RADIANS angle) {// direction: arbitrary
+			QUATERNION _Rotator = polar(axis, angle);
+			_My_r_vector = _Rotator(_My_r_vector);
+			_My_u_vector = _Rotator(_My_u_vector);
+			_My_f_vector = _Rotator(_My_f_vector);
+		}
+		void yaw(RADIANS angle) {// direction: right to left
+			this->rotate(_My_u_vector, angle);
+		}
+		void pitch(RADIANS angle) {// direction: down to up
+			this->rotate(_My_r_vector, angle);
+		}
+		void roll(RADIANS angle) {// direction: right to left
+			this->rotate(_My_f_vector, angle);
+		}
+		void surround(VECTOR3 Ptarget, UNIT_VECTOR3 axis, RADIANS angle) {
+			QUATERNION _Rotator = polar(axis, angle);
+			_My_position -= Ptarget;
+			_My_position = _Rotator(_My_position);// surround Ptarget-center rotate
+			_My_position += Ptarget;
+		}
+		void yaw_surround(VECTOR3 Ptarget, RADIANS angle) {
+			this->surround(Ptarget, UNIT_VECTOR3{ 0, 1, 0 }, angle);
+		}
+		void pitch_surround(VECTOR3 Ptarget, RADIANS angle) {
+			this->surround(Ptarget, UNIT_VECTOR3{ 1, 0, 0 }, angle);
+		}
+		// immediate change direction
+		void look() {// update view matrix
+			_Mybase::_My_view_matrix = clmagic::look_to<_Ts, _Tb, _Major, _Cs>(_My_position, _My_f_vector, _My_u_vector);
+		}
+		void look_at(VECTOR3 Ptarget) {
+			_My_f_vector = UNIT_VECTOR3(Ptarget - _My_position);
+			this->look();
+		}
+		void look_to(UNIT_VECTOR3 f_vector) {
+			_My_f_vector = f_vector;
+			this->look();
+		}
+		void reset_perspective(RADIANS fov, SCALAR r, SCALAR n, SCALAR f) {
+			_Mybase::_My_proj_matrix = perspective<_Ts, _Tb, _Major, _Cs>(fov, r, n, f);
+		}
+
+		UNIT_VECTOR3 forward_vector() const {
+			return _My_f_vector;
+		}
+		UNIT_VECTOR3 right_vector() const {
+			return _My_r_vector;
+		}
+		UNIT_VECTOR3 up_vector() const {
+			return _My_u_vector;
+		}
+		VECTOR3 position() const {
+			return _My_position;
+		}
+		std::string to_string() const {
+			std::string _Str = "\"_My_position\": " + clmagic::to_string(_My_position) + '\n';
+			_Str += "\"_My_r_vector\": " + clmagic::to_string(_My_r_vector) + '\n';
+			_Str += "\"_My_u_vector\": " + clmagic::to_string(_My_u_vector) + '\n';
+			_Str += "\"_My_f_vector\": " + clmagic::to_string(_My_f_vector) + '\n';
+			return _Str;
+		}
+
+		VECTOR3      _My_position;
+		UNIT_VECTOR3 _My_r_vector;// x
+		UNIT_VECTOR3 _My_u_vector;// y
+		UNIT_VECTOR3 _My_f_vector;// z
+	};
+
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR, coordinate_system _Cs = DEFAULT_HAND>
+	struct perspective_surround_viewer {
+
+		//spherical_coordinate<_Ts> 
+	};
+
+
+	/*template<typename _Ts, typename _Tb = _Ts, bool _Major = COL_MAJOR>
 	struct perspective_camera {
 		using scalar_type       = _Ts;
 		using unit_vector3_type = unit_vector3<_Ts, _Tb>;
@@ -294,6 +417,6 @@ namespace clmagic {
 		unit_vector3_type _Myright_vector;
 		scalar_type _Myfov;
 		scalar_type _Myaspect;
-	};
+	};*/
 
 }// namespace clmagic
