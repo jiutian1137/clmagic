@@ -10,7 +10,7 @@
 
 namespace clmagic {
 
-template<typename _Ts> inline
+	template<typename _Ts> inline
 	void transpose(matrix_slice<const _Ts> _Left, matrix_slice<_Ts> _Right) {
 		assert(_Left.rows() == _Right.cols());
 		assert(_Left.cols() == _Right.rows());
@@ -1342,14 +1342,290 @@ template<typename _Ts> inline
 
 	template<matrix_major _Major>
 		constexpr matrix_major inv_major = matrix_major::ROW_MAJOR;
-
 	template<>
 		constexpr matrix_major inv_major<ROW_MAJOR> = matrix_major::COL_MAJOR;
 
 	/*- - - - - - - - - - - - - - - - - - - matrix_tag - - - - - - - - - - - - - - - - - - - - -*/
 	// Used to <_Mtag>
-	struct normal_matrix_tag {};
-	struct diagonal_matrix_tag {};
+	enum matrix_tag {
+		DEFAULT_MATRIX_TAG  = 0,
+		DIAGONAL_MATRIX_TAG = 1
+	};
+
+	template<typename _Ty>
+	void _Matrix_copy(const _Ty* _Src_data, size_t _Src_width, size_t _Src_height, size_t _Src_width_offset,
+						    _Ty* _Dst_data, size_t _Dst_width, size_t _Dst_height, size_t _Dst_width_offset,
+							size_t _Width, size_t _Height) {
+		assert(_Height <= _Src_height);
+		assert(_Height <= _Dst_height);
+		assert(_Src_width_offset + _Width <= _Src_width);
+		assert(_Dst_width_offset + _Width <= _Dst_width);
+		for (size_t j = 0; j != _Height; ++j) {
+			auto       _First = _Src_data + j * _Src_width + _Src_width_offset;
+			const auto _Last  = _First + _Width;
+			auto       _Dest  = _Dst_data + j * _Dst_width + _Dst_width_offset;
+			std::copy(_First, _Last, _Dest);
+		}
+	}
+
+	template<typename _Ty>
+	void _Matrix_copy(const _Ty* _Src_data, size_t _Src_width, size_t _Src_height, size_t _Src_width_offset, size_t _Src_height_offset, 
+		                    _Ty* _Dst_data, size_t _Dst_width, size_t _Dst_height, size_t _Dst_width_offset, size_t _Dst_height_offset,
+							size_t _Width, size_t _Height) {
+		assert(_Src_height_offset + _Height <= _Src_height);
+		assert(_Dst_height_offset + _Height <= _Dst_height);
+		_Matrix_copy(_Src_data + _Src_height_offset*_Src_width, _Src_width, _Src_height, _Src_height_offset,
+			         _Dst_data + _Dst_height_offset*_Dst_width, _Dst_width, _Dst_height, _Dst_width_offset, _Width, _Height);
+	}
+
+	template<typename _Ty>
+	void _Matrix_copy(const _Ty* _Src_data, size_t _Src_width, size_t _Src_height, size_t _Src_width_offset, size_t _Src_height_offset, 
+		                    _Ty* _Dst_data, size_t _Dst_width, size_t _Dst_height, size_t _Dst_width_offset, size_t _Dst_height_offset) {
+		auto _Common_width  = std::min(_Src_width-_Src_width_offset, _Dst_width-_Dst_width_offset);
+		auto _Common_height = std::min(_Src_height-_Src_height_offset, _Dst_height-_Dst_height_offset);
+		_Matrix_copy(_Src_data, _Src_width, _Src_height, _Src_width_offset, _Src_height_offset,
+			_Dst_data, _Dst_width, _Dst_height, _Dst_width_offset, _Dst_height_offset,
+			_Common_width, _Common_height);
+	}
+
+
+	template<typename _Ts, typename _Tb>
+	class _Submatrix_data {
+		_Ts*         _My_first   = nullptr;
+		_Ts*         _My_last    = nullptr;
+		std::unique_ptr<_Ts> _My_data = nullptr;
+
+		size_t       _My_dims       = 0;
+		size_t       _My_sizes[4]   = {0, 0, 0, 0};// [0]:width, [1]:height, [2]:depth, [3]:time
+		size_t       _My_strides[4] = {1, 0, 0, 0};// [0]:elements_stride, [1]:rows_stride, [2]:slices_stride, [3]:spaces_stride
+		
+		matrix_major _My_major   = DEFAULT_MAJOR;
+		matrix_tag   _My_tag     = DEFAULT_MATRIX_TAG;
+	public:
+		using block_type  = _Tb;
+		using scalar_type = _Ts;
+
+		size_t dims() const {
+			return _My_dims;
+		}
+		size_t size() const {
+			if (_My_sizes == nullptr) {
+				return 0;
+			} else {
+				return std::accumulate(_My_sizes, _My_sizes+_My_dims, size_t(1), std::multiplies<size_t>());
+			}
+		}
+		size_t width() const {// vector of perline, the vector's size is cols 
+			assert(_My_dims >= 1);
+			return _My_sizes[0];
+		}
+		size_t height() const {
+			assert(_My_dims >= 2);
+			return _My_sizes[1];
+		}
+		size_t depth() const {
+			assert(_My_dims >= 3);
+			return _My_sizes[3];
+		}
+		size_t time() const {
+			assert(_My_dims >= 4);
+			return _My_sizes[3];
+		}
+
+		size_t elements_stride() const {
+			assert(_My_dims >= 1);
+			return _My_strides[0];
+		}
+		size_t rows_stride() const {
+			assert(_My_dims >= 2);
+			return _My_strides[1];
+		}
+		size_t slices_stride() const {
+			assert(_My_dims >= 3);
+			return _My_strides[2];
+		}
+		size_t spaces_stride() const {
+			assert(_My_dims >= 4);
+			return _My_strides[3];
+		}
+
+		bool col_major() const {
+			return (_My_major == COL_MAJOR);
+		}
+		bool row_major() const {
+			return !col_major();
+		}
+		bool is_diag() const {
+			return (_My_tag == DIAGONAL_MATRIX_TAG);
+		}
+
+		bool is_dynamic_memory() const {
+			return (_My_data != nullptr);
+		}
+		bool is_continue() const {
+			bool _Is_continue = _My_strides[0] == 1;
+			for (size_t i = 1; i != _My_dims; ++i) {
+				_Is_continue |= (_My_strides[i] == 0);
+			}
+			return _Is_continue;
+		}
+
+		size_t index(size_t _Row, size_t _Col) const {
+			return (_Row*(width()*elements_stride() + rows_stride()) + _Col * elements_stride());
+		}
+
+		scalar_type& at(size_t _Row, size_t _Col) {
+			return _My_first[index(_Row, _Col)];
+		}
+		
+		const scalar_type& at(size_t _Row, size_t _Col) const {
+			return _My_first[index(_Row, _Col)];
+		}
+		
+		scalar_type* ptr() {
+			assert( this->is_continue() );
+			return _My_first;
+		}
+
+		const scalar_type* ptr() const {
+			assert( this->is_continue() );
+			return _My_first;
+		}
+	
+		void resize(size_t _Width, size_t _Height) {
+			std::unique_ptr<scalar_type> _New_data = std::unique_ptr<scalar_type>(new scalar_type[_Width * _Height]);// exception safety
+			if (_My_dims >= 2) {
+				size_t _Common_height = std::min(_Height, this->height());
+				size_t _Common_width  = std::min(_Width, this->width());
+				for (size_t j = 0; j != _Common_height; ++j) {
+					auto       _First = _My_first + index(j, 0);
+					const auto _Last  = _First + _Common_width * elements_stride();
+					auto       _Dest  = _New_data.get() + j * _Width;
+					for ( ; _First != _Last; _First += elements_stride(), ++_Dest) {
+						*_Dest = *_First;
+					}
+				}
+			} else if(_My_dims == 1) {
+				size_t _Common_width = std::min(_Width, this->width());
+				auto       _First = _My_first;
+				const auto _Last  = _First + _Common_width * elements_stride();
+				auto       _Dest  = _New_data.get();
+				for ( ; _First != _Last; _First += elements_stride(), ++_Dest) {
+					*_Dest = *_First;
+				}
+			} else {// _My_dims == 0
+				// do nothing
+			}
+			_My_data       = std::move(_New_data);
+			_My_first      = _My_data.get();
+			_My_last       = _My_first + _Width*_Height;
+			_My_sizes[0]   = _Width;
+			_My_sizes[1]   = _Height;
+			_My_strides[0] = 1;
+			_My_strides[1] = 0;
+			_My_dims       = 2;
+		}
+
+		void swap(_Submatrix_data& _Right) {
+			std::swap(_My_first, _Right._My_first);
+			std::swap(_My_last, _Right._My_last);
+			std::swap(_My_data, _Right._My_data);
+
+			std::swap(_My_dims, _Right._My_dims);
+			for (size_t i = 0; i != 4; ++i) {
+				std::swap(_My_sizes[i], _Right._My_sizes[i]);
+				std::swap(_My_strides[i], _Right._My_strides[i]);
+			}
+
+			std::swap(_My_major, _Right._My_major);
+			std::swap(_My_tag, _Right._My_tag);
+		}
+
+		void release() {
+			_My_first = nullptr;
+			_My_last  = nullptr;
+			_My_data  = nullptr;
+			_My_dims  = 0;
+		}
+
+		subvector<scalar_type, block_type> row(size_t _Row) {
+			auto _First = _My_first + index(_Row, 0);
+			auto _Last  = _First + width()*elements_stride();
+			return subvector<scalar_type, block_type>(_First, _Last, elements_stride());
+		}
+
+		const subvector<scalar_type, block_type> row(size_t _Row) const {
+			return const_cast<_Submatrix_data&>(*this).row(_Row);
+		}
+	
+		subvector<scalar_type, block_type> col(size_t _Col) {
+			auto _First = _My_first + index(0, _Col);
+			auto _Last  = _My_first + index(height(), _Col);
+			return subvector<scalar_type, block_type>(_First, _Last, width()*elements_stride()+rows_stride());
+		}
+
+		const subvector<scalar_type, block_type> col(size_t _Col) const {
+			return const_cast<_Submatrix_data&>(*this).col(_Col);
+		}
+
+		template<typename _UnaryOp>
+		void for_each_scalar(_UnaryOp _Transform_op) {
+			auto _First = _My_first;
+			for (size_t t = 0; t != time(); ++t, _First += spaces_stride()) {
+				for (size_t d = 0; d != depth(); ++d, _First += slices_stride()) {
+					for (size_t h = 0; h != height(); ++h, _First += rows_stride()) {
+						for (size_t w = 0; w != width(); ++w, _First += elements_stride()) {
+							*_First = _Transform_op(*_First);
+						}
+					}
+				}
+			}
+		}
+	
+		std::string to_string() const {
+			std::string _Str;
+			if (_My_dims == 2) {
+				_Str += this->row(0).to_string();
+				for (size_t i = 1; i != this->height(); ++i) {
+					_Str += '\n';
+					_Str += this->row(i).to_string();
+				}
+			}
+			return _Str;
+		}
+	};
+
+	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>>
+	class submatrix : public _Submatrix_data<_Ts, _Tb> {
+
+	public:
+		using block_type  = _Tb;
+		using scalar_type = _Ts;
+
+		submatrix() = default;
+
+		submatrix(submatrix&& _Right) noexcept {
+			_Right.swap(*this);
+			_Right.release();
+		}
+
+		submatrix operator*(const submatrix& _Right) const {
+			assert( this->dims() == 2 );
+			assert( this->width() == _Right.height() );
+			submatrix _Result;
+			_Result.resize(_Right.width(), this->height());
+			for (size_t i = 0; i != _Result.height(); ++i) {
+				for (size_t j = 0; j != _Result.width(); ++j) {
+					scalar_type _Dot = scalar_type(0);
+					for (size_t k = 0; k != this->width(); ++k) {
+						_Dot += this->at(i, k) * _Right.at(k, j);
+					}
+					_Result.at(i, j) = _Dot;
+				}
+			}
+			return std::move(_Result);
+		}
+	};
 
 	/*- - - - - - - - - - - - - - - - - - - matrix - - - - - - - - - - - - - - - - - - - - -*/
 	/*
@@ -1362,7 +1638,7 @@ template<typename _Ts> inline
 		     size_t _Rows, size_t _Cols, 
 		     typename     _Tb    = _SIMD4_t<_Ts>, 
 		     matrix_major _Major = DEFAULT_MAJOR,
-		     typename     _Mtag  = normal_matrix_tag>
+			 matrix_tag   _Mtag  = DEFAULT_MATRIX_TAG>
 	class matrix : public _Common_matrix<_Ts, _Rows, _Cols, _Tb> {
 		using _Mybase = _Common_matrix<_Ts, _Rows, _Cols, _Tb>;
 
@@ -1491,16 +1767,16 @@ template<typename _Ts> inline
 		     size_t       _Rows, 
 		     typename     _Tb, 
 		     matrix_major _Major>
-	class matrix<_Ts, _Rows, _Rows, _Tb, _Major, normal_matrix_tag> : public _Common_matrix<_Ts, _Rows, _Rows, _Tb> {
+	class matrix<_Ts, _Rows, _Rows, _Tb, _Major, DEFAULT_MATRIX_TAG> : public _Common_matrix<_Ts, _Rows, _Rows, _Tb> {
 		using _Mybase = _Common_matrix<_Ts, _Rows, _Rows, _Tb>;
 	
 	public:
 		using common_matrix_type = _Mybase;
 
-		using matrix_type           = matrix<_Ts, _Rows, _Rows, _Tb, _Major, normal_matrix_tag>;
-		using minor_matrix_type     = matrix<_Ts, _Rows-1, _Rows-1, _Tb, _Major, normal_matrix_tag>;
+		using matrix_type           = matrix<_Ts, _Rows, _Rows, _Tb, _Major, DEFAULT_MATRIX_TAG>;
+		using minor_matrix_type     = matrix<_Ts, _Rows-1, _Rows-1, _Tb, _Major, DEFAULT_MATRIX_TAG>;
 		using transpose_matrix_type = matrix_type;
-		using invmajor_matrix_type  = matrix<_Ts, _Rows, _Rows, _Tb, inv_major<_Major>, normal_matrix_tag>;
+		using invmajor_matrix_type  = matrix<_Ts, _Rows, _Rows, _Tb, inv_major<_Major>, DEFAULT_MATRIX_TAG>;
 
 		using transposed_reference       = matrix_type&;
 		using transposed_const_reference = matrix_type const&;
@@ -1641,18 +1917,18 @@ template<typename _Ts> inline
 		     size_t _Rows, size_t _Cols, 
 		     typename     _Tb, 
 		     matrix_major _Major>
-	class matrix<_Ts, _Rows, _Cols, _Tb, _Major, diagonal_matrix_tag>
-		: public matrix<_Ts, _Rows, _Cols, _Tb, _Major, normal_matrix_tag> {
-		using _Mybase = matrix<_Ts, _Rows, _Cols, _Tb, _Major, normal_matrix_tag>;
+	class matrix<_Ts, _Rows, _Cols, _Tb, _Major, DIAGONAL_MATRIX_TAG>
+		: public matrix<_Ts, _Rows, _Cols, _Tb, _Major, DEFAULT_MATRIX_TAG> {
+		using _Mybase = matrix<_Ts, _Rows, _Cols, _Tb, _Major, DEFAULT_MATRIX_TAG>;
 
 	public:
 		using common_matrix_type = _Mybase;
 		using diag_vector        = typename _Mybase::diag_vector;
 
-		using matrix_type           = matrix<_Ts, _Rows, _Cols, _Tb, _Major, diagonal_matrix_tag>;
-		using minor_matrix_type     = matrix<_Ts, _Rows-1, _Cols-1, _Tb, _Major, diagonal_matrix_tag>;
-		using transpose_matrix_type = matrix<_Ts, _Cols, _Rows, _Tb, _Major, diagonal_matrix_tag>;
-		using invmajor_matrix_type  = matrix<_Ts, _Cols, _Rows, _Tb, inv_major<_Major>, diagonal_matrix_tag>;
+		using matrix_type           = matrix<_Ts, _Rows, _Cols, _Tb, _Major, DIAGONAL_MATRIX_TAG>;
+		using minor_matrix_type     = matrix<_Ts, _Rows-1, _Cols-1, _Tb, _Major, DIAGONAL_MATRIX_TAG>;
+		using transpose_matrix_type = matrix<_Ts, _Cols, _Rows, _Tb, _Major, DIAGONAL_MATRIX_TAG>;
+		using invmajor_matrix_type  = matrix<_Ts, _Cols, _Rows, _Tb, inv_major<_Major>, DIAGONAL_MATRIX_TAG>;
 
 		using transposed_reference       = transposed_reference< matrix_type >;
 		using transposed_const_reference = transposed_const_reference< matrix_type >;
@@ -1768,18 +2044,18 @@ template<typename _Ts> inline
 		     size_t       _Rows, 
 		     typename     _Tb, 
 		     matrix_major _Major>
-	class matrix<_Ts, _Rows, _Rows, _Tb, _Major, diagonal_matrix_tag>
-		: public matrix<_Ts, _Rows, _Rows, _Tb, _Major, normal_matrix_tag> {
-		using _Mybase = matrix<_Ts, _Rows, _Rows, _Tb, _Major, normal_matrix_tag>;
+	class matrix<_Ts, _Rows, _Rows, _Tb, _Major, DIAGONAL_MATRIX_TAG>
+		: public matrix<_Ts, _Rows, _Rows, _Tb, _Major, DEFAULT_MATRIX_TAG> {
+		using _Mybase = matrix<_Ts, _Rows, _Rows, _Tb, _Major, DEFAULT_MATRIX_TAG>;
 
 	public:
 		using common_matrix_type = _Mybase;
 		using diag_vector        = typename _Mybase::diag_vector;
 
-		using matrix_type           = matrix<_Ts, _Rows, _Rows, _Tb, _Major, diagonal_matrix_tag>;
-		using minor_matrix_type     = matrix<_Ts, _Rows-1, _Rows-1, _Tb, _Major, diagonal_matrix_tag>;
+		using matrix_type           = matrix<_Ts, _Rows, _Rows, _Tb, _Major, DIAGONAL_MATRIX_TAG>;
+		using minor_matrix_type     = matrix<_Ts, _Rows-1, _Rows-1, _Tb, _Major, DIAGONAL_MATRIX_TAG>;
 		using transpose_matrix_type = matrix_type;
-		using invmajor_matrix_type  = matrix<_Ts, _Rows, _Rows, _Tb, inv_major<_Major>, diagonal_matrix_tag>;
+		using invmajor_matrix_type  = matrix<_Ts, _Rows, _Rows, _Tb, inv_major<_Major>, DIAGONAL_MATRIX_TAG>;
 
 		using transposed_reference       = matrix_type&;
 		using transposed_const_reference = matrix_type const&;
@@ -1901,51 +2177,51 @@ template<typename _Ts> inline
 	template<size_t _Rows, size_t _Cols, 
 		     typename     _Tb    = _SIMD4_t<float>, 
 		     matrix_major _Major = DEFAULT_MAJOR, 
-		     typename     _Mtag  = normal_matrix_tag>
+		     matrix_tag   _Mtag  = DEFAULT_MATRIX_TAG>
 		using fmatrix = matrix<float, _Rows, _Cols, _Tb, _Major, _Mtag>;
 
 	template<size_t _Rows, size_t _Cols, 
 	   	     typename     _Tb    = _SIMD4_t<double>,
 		     matrix_major _Major = DEFAULT_MAJOR, 
-		     typename     _Mtag  = normal_matrix_tag>
+			 matrix_tag   _Mtag  = DEFAULT_MATRIX_TAG>
 		using dmatrix = matrix<double, _Rows, _Cols, _Tb, _Major, _Mtag>;
 
 	template<size_t _Rows, size_t _Cols, 
 		     typename     _Tb    = _SIMD4_t<uint32_t>, 
 		     matrix_major _Major = DEFAULT_MAJOR, 
-		     typename     _Mtag  = normal_matrix_tag>
+		     matrix_tag   _Mtag  = DEFAULT_MATRIX_TAG>
 		using imatrix = matrix<int32_t, _Rows, _Cols, _Tb, _Major, _Mtag>;
 
 	template<typename     _Ts, 
 		     size_t       _Rows, 
 		     typename     _Tb    = _SIMD4_t<_Ts>,
 		     matrix_major _Major = COL_MAJOR, 
-		     typename     _Mtag  = normal_matrix_tag>
+		     matrix_tag   _Mtag  = DEFAULT_MATRIX_TAG>
 		using square_matrix = matrix<_Ts, _Rows, _Rows, _Tb, _Major, _Mtag>;
 
 	template<typename     _Ts, 
 			 typename     _Tb    = _SIMD4_t<_Ts>, 
 			 matrix_major _Major = COL_MAJOR, 
-			 typename     _Mtag  = normal_matrix_tag>
+			 matrix_tag   _Mtag  = DEFAULT_MATRIX_TAG>
 		using matrix2x2 = square_matrix<_Ts, 2, _Tb, _Major, _Mtag>;
 
 	template<typename     _Ts, 
 		     typename     _Tb    = _SIMD4_t<_Ts>,
 		     matrix_major _Major = COL_MAJOR, 
-		     typename     _Mtag  = normal_matrix_tag>
+		     matrix_tag   _Mtag  = DEFAULT_MATRIX_TAG>
 		using matrix3x3 = square_matrix<_Ts, 3, _Tb, _Major, _Mtag>;
 
 	template<typename     _Ts, 
 		     typename     _Tb    = _SIMD4_t<_Ts>,
 		     matrix_major _Major = COL_MAJOR, 
-		     typename     _Mtag  = normal_matrix_tag>
+		     matrix_tag   _Mtag  = DEFAULT_MATRIX_TAG>
 		using matrix4x4 = square_matrix<_Ts, 4, _Tb, _Major, _Mtag>;
 
 	template<typename     _Ts, 
 		     size_t _Rows, size_t _Cols, 
 		     typename     _Tb    = _SIMD4_t<_Ts>,
 		     matrix_major _Major = COL_MAJOR>
-		using diagonal_matrix = matrix<_Ts, _Rows, _Cols, _Tb, _Major, diagonal_matrix_tag>;
+		using diagonal_matrix = matrix<_Ts, _Rows, _Cols, _Tb, _Major, DIAGONAL_MATRIX_TAG>;
 
 	#define matrixMxN ::clmagic::matrix<_Ts, _Rows, _Cols, _Tb, _Major, _Mtag>
 	#define matrixNxM ::clmagic::matrix<_Ts, _Cols, _Rows, _Tb, _Major, _Mtag>
@@ -1958,7 +2234,7 @@ template<typename _Ts> inline
 
 	/*- - - - - - - - - - - - - - - - - _Matrix_cast - - - - - - - - - - - - - - - - - - - -*/
 	template<typename _OutMatrix, 
-		typename _InTy, size_t _InRows, size_t _InCols, typename _InBlock, matrix_major _InMajor, typename _InMtag>
+		typename _InTy, size_t _InRows, size_t _InCols, typename _InBlock, matrix_major _InMajor, matrix_tag _InMtag>
 	struct _Matrix_cast {
 		using dest_matrix_type   = _OutMatrix;
 		using source_matrix_type = matrix<_InTy, _InRows, _InCols, _InBlock, _InMajor, _InMtag>;
@@ -1968,8 +2244,8 @@ template<typename _Ts> inline
 		}
 	};
 
-	template<typename _OutTy, size_t _OutRows, size_t _OutCols, typename _OutBlock, matrix_major _OutMajor, typename _OutMtag,
-			 typename _InTy,  size_t _InRows,  size_t _InCols,  typename _InBlock,  matrix_major _InMajor,  typename _InMtag>
+	template<typename _OutTy, size_t _OutRows, size_t _OutCols, typename _OutBlock, matrix_major _OutMajor, matrix_tag _OutMtag,
+			 typename _InTy,  size_t _InRows,  size_t _InCols,  typename _InBlock,  matrix_major _InMajor, matrix_tag _InMtag>
 	struct _Matrix_cast< matrix<_OutTy, _OutRows, _OutCols, _OutBlock, _OutMajor, _OutMtag>,
 							    _InTy,  _InRows,  _InCols,  _InBlock,  _InMajor,  _InMtag > {
 		using dest_matrix_type   = matrix<_OutTy, _OutRows, _OutCols, _OutBlock, _OutMajor, _OutMtag>;
@@ -2002,10 +2278,10 @@ template<typename _Ts> inline
 	};
 
 	template<typename _OutTy, size_t _OutRows, size_t _OutCols, typename _OutBlock, matrix_major _OutMajor/*,diagonal-matrix*/,
-			 typename _InTy,  size_t _InRows,  size_t _InCols,  typename _InBlock,  matrix_major _InMajor, typename _InMtag>
-	struct _Matrix_cast< matrix<_OutTy, _OutRows, _OutCols, _OutBlock, _OutMajor, diagonal_matrix_tag>,
+			 typename _InTy,  size_t _InRows,  size_t _InCols,  typename _InBlock,  matrix_major _InMajor, matrix_tag _InMtag>
+	struct _Matrix_cast< matrix<_OutTy, _OutRows, _OutCols, _OutBlock, _OutMajor, DIAGONAL_MATRIX_TAG>,
 							    _InTy,  _InRows,  _InCols,  _InBlock,  _InMajor,  _InMtag > {
-		using dest_matrix_type   = matrix<_OutTy, _OutRows, _OutCols, _OutBlock, _OutMajor, diagonal_matrix_tag>;
+		using dest_matrix_type   = matrix<_OutTy, _OutRows, _OutCols, _OutBlock, _OutMajor, DIAGONAL_MATRIX_TAG>;
 		using source_matrix_type = matrix<_InTy,  _InRows,  _InCols,  _InBlock,  _InMajor,  _InMtag>;
 
 		dest_matrix_type operator()(const source_matrix_type& _Source) const {
@@ -2019,7 +2295,7 @@ template<typename _Ts> inline
 	};
 
 	template<typename _OutMatrix, 
-		typename _InTy, size_t _InRows, size_t _InCols, typename _InBlock, matrix_major _InMajor, typename _InMtag>
+		typename _InTy, size_t _InRows, size_t _InCols, typename _InBlock, matrix_major _InMajor, matrix_tag _InMtag>
 	_OutMatrix matrix_cast(const matrix<_InTy, _InRows, _InCols, _InBlock, _InMajor, _InMtag>& _Source) {
 			return _Matrix_cast<_OutMatrix, _InTy, _InRows, _InCols, _InBlock, _InMajor, _InMtag>()(_Source);
 	}
@@ -2029,7 +2305,7 @@ template<typename _Ts> inline
 	struct _Matrix_multiplies { };
 
 	template<typename _Ts, size_t _Mx, size_t _Nx, size_t _Px, typename _Tb, matrix_major _Major,
-		typename _Mtag1, typename _Mtag2>
+		matrix_tag _Mtag1, matrix_tag _Mtag2>
 	struct _Matrix_multiplies< matrix<_Ts, _Mx, _Nx, _Tb, _Major, _Mtag1>, 
 								matrix<_Ts, _Nx, _Px, _Tb, _Major, _Mtag2> > {
 		using dest_type  = matrix<_Ts, _Mx, _Px, _Tb, _Major, _Mtag1>;
@@ -2064,8 +2340,7 @@ template<typename _Ts> inline
 	};
 
 	// matrix * diagonal-matrix
-	template<typename _Ts, size_t _Mx, size_t _Nx, size_t _Px, typename _Tb, matrix_major _Major,
-		typename _Mtag1>
+	template<typename _Ts, size_t _Mx, size_t _Nx, size_t _Px, typename _Tb, matrix_major _Major, matrix_tag _Mtag1>
 	struct _Matrix_multiplies< matrix<_Ts, _Mx, _Nx, _Tb, _Major, _Mtag1>,
 								diagonal_matrix<_Ts, _Nx, _Px, _Tb, _Major> > {
 		using dest_type  = matrix<_Ts, _Mx, _Px, _Tb, _Major, _Mtag1>;
@@ -2101,8 +2376,7 @@ template<typename _Ts> inline
 	};
 
 	// diagonal-matrix * matrix
-	template<typename _Ts, size_t _Mx, size_t _Nx, size_t _Px, typename _Tb, matrix_major _Major, 
-		typename _Mtag2>
+	template<typename _Ts, size_t _Mx, size_t _Nx, size_t _Px, typename _Tb, matrix_major _Major, matrix_tag _Mtag2>
 	struct _Matrix_multiplies< diagonal_matrix<_Ts, _Mx, _Nx, _Tb, _Major>, 
 								matrix<_Ts, _Nx, _Px, _Tb, _Major, _Mtag2> > {
 		using dest_type  = matrix<_Ts, _Mx, _Px, _Tb, _Major, _Mtag2>;
@@ -2142,7 +2416,7 @@ template<typename _Ts> inline
 	};
 
 	// matrixMxN * matrixNx1 = matrixMx1
-	template<typename _Ts, size_t _Mx, size_t _Nx, typename _Tb, typename _Mtag>
+	template<typename _Ts, size_t _Mx, size_t _Nx, typename _Tb, matrix_tag _Mtag>
 	struct _Matrix_multiplies < matrix<_Ts, _Mx, _Nx, _Tb, COL_MAJOR, _Mtag>,
 								vector<_Ts, _Nx, _Tb> >{
 		using dest_type  = vector<_Ts, _Mx, _Tb>;
@@ -2160,7 +2434,7 @@ template<typename _Ts> inline
 	};
 
 	// matrix1xM * matrixMxN *  = matrix1xN
-	template<typename _Ts, size_t _Mx, size_t _Nx, typename _Tb, typename _Mtag>
+	template<typename _Ts, size_t _Mx, size_t _Nx, typename _Tb, matrix_tag _Mtag>
 	struct _Matrix_multiplies < vector<_Ts, _Mx, _Tb>, 
 								matrix<_Ts, _Mx, _Nx, _Tb, ROW_MAJOR, _Mtag> > {
 		using dest_type  = vector<_Ts, _Nx, _Tb>;
@@ -2193,21 +2467,21 @@ template<typename _Ts> inline
 	};
 
 	template<typename _Ts, size_t _Mx, size_t _Nx, size_t _Px, typename _Tb, matrix_major _Major, 
-		typename _Mtag1, typename _Mtag2> inline
+		matrix_tag _Mtag1, matrix_tag _Mtag2> inline
 	auto operator*( const matrix<_Ts, _Mx, _Nx, _Tb, _Major, _Mtag1>& _Left,
 					const matrix<_Ts, _Nx, _Px, _Tb, _Major, _Mtag2>& _Right ) {
 		return _Matrix_multiplies<matrix<_Ts, _Mx, _Nx, _Tb, _Major, _Mtag1>,
 								  matrix<_Ts, _Nx, _Px, _Tb, _Major, _Mtag2>>()(_Left, _Right);
 	}
 
-	template<typename _Ts, size_t _Mx, size_t _Nx, typename _Tb, typename _Mtag> inline
+	template<typename _Ts, size_t _Mx, size_t _Nx, typename _Tb, matrix_tag _Mtag> inline
 	auto operator*(const matrix<_Ts, _Mx, _Nx, _Tb, COL_MAJOR, _Mtag>& _Left,
 					const vector<_Ts, _Nx, _Tb>& _Right) {
 		return _Matrix_multiplies<matrix<_Ts, _Mx, _Nx, _Tb, COL_MAJOR, _Mtag>,
 								  vector<_Ts, _Nx, _Tb>>()(_Left, _Right);
 	}
 
-	template<typename _Ts, size_t _Mx, size_t _Nx, typename _Tb, typename _Mtag> inline
+	template<typename _Ts, size_t _Mx, size_t _Nx, typename _Tb, matrix_tag _Mtag> inline
 	auto operator*( const vector<_Ts, _Mx, _Tb>& _Left, 
 					const matrix<_Ts, _Mx, _Nx, _Tb, ROW_MAJOR, _Mtag>& _Right ) {
 		return _Matrix_multiplies<vector<_Ts, _Mx, _Tb>,
@@ -2215,14 +2489,14 @@ template<typename _Ts> inline
 	}
 
 	/*- - - - - - - - - - - - - - - - - matrix_functions - - - - - - - - - - - - - - - - - - -*/
-	template<typename _Ts, size_t _Rows, size_t _Cols, matrix_major _Major, typename _Tb, typename _Mtag> inline
+	template<typename _Ts, size_t _Rows, size_t _Cols, matrix_major _Major, typename _Tb, matrix_tag _Mtag> inline
 	matrixNxM transpose(const matrixMxN& _Source) {
 		using invmajor_type  = matrix<_Ts, _Rows, _Cols, _Tb, inv_major<_Major>,_Mtag>;
 		using transpose_type = matrix<_Ts, _Cols, _Rows, _Tb, _Major, _Mtag>;
 		return matrix_cast<transpose_type>(*reinterpret_cast<const invmajor_type*>(&_Source));
 	}
 
-	template<typename _Ts, size_t _Rows, size_t _Cols, matrix_major _Major, typename _Tb, typename _Mtag> inline
+	template<typename _Ts, size_t _Rows, size_t _Cols, matrix_major _Major, typename _Tb, matrix_tag _Mtag> inline
 	matrixMxN inverse(const matrixMxN& _Source) {
 		auto A    = _Source;
 		auto Ainv = matrixMxN(static_cast<_Ts>(1));
@@ -2230,7 +2504,7 @@ template<typename _Ts> inline
 		return Ainv;
 	}
 
-	template<typename _Ts, size_t _Rows, matrix_major _Major, typename _Tb, typename _Mtag> inline
+	template<typename _Ts, size_t _Rows, matrix_major _Major, typename _Tb, matrix_tag _Mtag> inline
 	matrixSqu pow(const matrixSqu& _Matrix, size_t _Power) {
 		if (_Power == 0) {// A⁰ = 1
 			return matrixSqu(static_cast<_Ts>(1));
@@ -2337,7 +2611,7 @@ template<typename _Ts> inline
 		std::vector<size_t> _Mysource;
 	};
 
-	template<typename _Ts, size_t _Rows, typename _Tb, matrix_major _Major, typename _Mtag> inline
+	template<typename _Ts, size_t _Rows, typename _Tb, matrix_major _Major, matrix_tag _Mtag> inline
 	_Ts determinant(const matrixSqu& _Matrix) {
 		/* ∑(0,!M): (-1)^t * D[0][s₀] * D[1][s₁] * D[2][s₂]... * D[M-1][s(m-₁)] */
 		if _CONSTEXPR_IF(_Rows == 2) {

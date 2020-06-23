@@ -19,10 +19,4 @@
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="norm.hlsl" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Header.hlsl" />
-  </ItemGroup>
 </Project>

@@ -12,13 +12,11 @@
 
 #include "calculation/general/clmagic.h"
 #include "calculation/general/general.h"
+#include "calculation/general/bitset.h"
+#include "calculation/general/rational.h"
+#include "calculation/general/real.h"
+#include "calculation/general/Stirling.h"
 
-#include "calculation/real/bitset.h"
-#include "calculation/real/rational.h"
-#include "calculation/real/real.h"
-#include "calculation/real/radians.h"
-#include "calculation/real/unit_cast.h"
-#include "calculation/real/Stirling.h"
 
 #include "calculation/lapack/vector.h"
 #include "calculation/lapack/matrix.h"
@@ -36,6 +34,8 @@
 #include "calculation/cg/intersection.h"
 
 #include "calculation/physic/atmosphere_scattering.h"
+#include "calculation/physic/quantity.h"
+#include "calculation/physic/dynamics.h"
 
 
 

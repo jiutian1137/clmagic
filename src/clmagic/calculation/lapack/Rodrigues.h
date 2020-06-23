@@ -6,7 +6,7 @@
 #ifndef clmagic_calculation_lapack_Rodrigues_h_
 #define clmagic_calculation_lapack_Rodrigues_h_
 #include "matrix.h"
-#include "../real/radians.h"
+#include "../physic/quantity.h"
 
 namespace Rodrigues {
 	/*<Biographie>http://mathshistory.st-andrews.ac.uk/Biographies/Rodrigues.html</Biographie>*/

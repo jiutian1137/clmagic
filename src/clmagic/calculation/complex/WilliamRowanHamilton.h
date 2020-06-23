@@ -7,7 +7,7 @@
 #define clmagic_calculation_complex_WILLIAM_ROWAN_HAMILTON_h_
 #include "../lapack/vector.h"
 #include "../lapack/matrix.h"
-#include "../real/radians.h"
+#include "../physic/quantity.h"
 
 namespace WilliamRowanHamilton {
 	/*<Biographie>http://mathshistory.st-andrews.ac.uk/Biographies/Hamilton.html</Biographie>*/
@@ -36,12 +36,6 @@ namespace WilliamRowanHamilton {
 		quaternion(const real_type& _Real, const imag_type& _Imag)
 			: _Mydata{ _Imag[0], _Imag[1], _Imag[2], _Real } {}
 
-		real_type& real() {
-			return _Mydata[3];
-		}
-		imag_type& imag() {
-			return ( * reinterpret_cast<imag_type*>(_Mydata) );
-		}
 		const real_type& real() const {
 			return _Mydata[3];
 		}
@@ -149,6 +143,7 @@ namespace WilliamRowanHamilton {
 	private:
 		_Ts _Mydata[4];
 	};
+
 #define QUATERNION ::WilliamRowanHamilton::quaternion<_Ts, _Tb>
 
 	template<typename _Ts, typename _Tb> inline
@@ -196,10 +191,9 @@ namespace WilliamRowanHamilton {
 
 	template<typename _Ts, typename _Tb> inline
 	quaternion<_Ts, _Tb> normalize(const quaternion<_Ts, _Tb>& _Left) {
-		const auto _Dot = dot(_Left, _Left);
-		return clmagic::approach_equal(_Dot, static_cast<_Ts>(1), std::numeric_limits<_Ts>::epsilon()) ?
-			_Left :
-			_Left / sqrt(_Dot);
+		const auto _Length_sqr = dot(_Left, _Left);
+		const auto _Error      = _Length_sqr - static_cast<_Ts>(1);
+		return (abs(_Error) < std::numeric_limits<_Ts>::epsilon()) ? _Left : _Left/sqrt(_Length_sqr);
 	}
 
 	template<typename _Ts, typename _Tb> inline
@@ -211,7 +205,7 @@ namespace WilliamRowanHamilton {
 		using clmagic::cos;
 		using clmagic::sin;
 		auto cos_theta = dot(q1, q2);
-		if (cos_theta > static_cast<_Ts>(0.9995f)) {// q1 q2 parallel
+		if (cos_theta > 0.9995f) {// q1 q2 parallel
 			return normalize(lerp(q1, q2, t));
 		} else {
 			const auto theta  = acos( clamp(cos_theta, static_cast<_Ts>(-1), static_cast<_Ts>(1)) );
@@ -223,6 +217,6 @@ namespace WilliamRowanHamilton {
 
 	// q = cos(theta) + axis*sin(theta) = pow(e, axis*theta). 
 
-}// WilliamRowanHamilton
+}// namespace WilliamRowanHamilton
 
 #endif

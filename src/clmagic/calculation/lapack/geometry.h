@@ -291,7 +291,7 @@ namespace clmagic {
 	template<typename _Ts, typename _Tb = _Ts, matrix_major _Major = DEFAULT_MAJOR>
 	struct planar_projection {
 		// convert V to P in the Plane
-		using matrix_type       = matrix4x4<_Ts, _Tb, _Major, normal_matrix_tag>;
+		using matrix_type       = matrix4x4<_Ts, _Tb, _Major>;
 		using scalar_type       = _Ts;
 		using vector3_type      = vector3<_Ts, _Tb>;
 		using unit_vector3_type = unit_vector3<_Ts, _Tb>;

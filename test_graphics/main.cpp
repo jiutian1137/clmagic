@@ -1,13 +1,16 @@
-#include "../src/clmagic/basic/timer_wheel.h"
-#include "../src/clmagic/math.h"
-#include "../src/clmagic/directX12/directX12.h"
 #include <iostream>
 #include <fstream>
 #include <chrono>
 #include <map>
+#include "../src/clmagic/basic/timer_wheel.h"
+#include "../src/clmagic/math.h"
+#include "../src/clmagic/directX12/directX12.h"
+
 #include "Common/GeometryGenerator.h"
+
 #include "Inc/DDSTextureLoader.h"
 #include "Inc/ResourceUploadBatch.h"
+
 #include "assimp/scene.h"
 #include "assimp/cexport.h"
 #include "assimp/cimport.h"
@@ -37,8 +40,8 @@ struct test_window : public d3d12::window {
 
 	virtual void on_cursor(POINT _Current, POINT _Prev) override {
 		if (_Change_direction) {
-			_My_camera.yaw_surround({0.f, 0.f, 0.f}, (_Current.x - _Prev.x) * 0.01);
-			_My_camera.pitch_surround({ 0.f, 0.f, 0.f }, (_Current.y - _Prev.y) * 0.01);
+			_My_camera.yaw_surround({0.f, 0.f, 0.f}, (_Current.x - _Prev.x) * 0.01f);
+			_My_camera.pitch_surround({ 0.f, 0.f, 0.f }, (_Current.y - _Prev.y) * 0.01f);
 			_My_camera.look_at({ 0.f, 0.f, 0.f });
 			//_My_camera.look();
 			//MessageBoxA(nullptr, _My_camera.to_string().c_str(), nullptr, MB_OK);
@@ -102,6 +105,8 @@ std::map<std::string,
 	std::shared_ptr<clmagic::substance>> gSubstances;
 std::map<std::string, 
 	std::shared_ptr<clmagic::geometry>> gGeometrys;
+std::map<std::string,
+	std::shared_ptr<d3d12::dynamic_mesh<norm_hlsl::varying>>> gDynGeometrys;
 
 // composite resources to object_system
 std::map<std::string, 
@@ -258,38 +263,40 @@ void init_geometry_resources(ID3D12Device& _Device) {
 	gGeometrys["Grid"] = gGeometrys["AllGeometry"]->reduce(gridVertexOffset, gridIndexOffset, grid.Indices32.size());
 	gGeometrys["Sphere"] = gGeometrys["AllGeometry"]->reduce(sphereVertexOffset, sphereIndexOffset, sphere.Indices32.size());
 	gGeometrys["Cylinder"] = gGeometrys["AllGeometry"]->reduce(cylinderVertexOffset, cylinderIndexOffset, cylinder.Indices32.size());
+}
 
+void init_dynamic_geometry_resources(ID3D12Device& _Device) {
+	gWaves = Waves(128, 128, 1.0f, 0.03f, 4.0f, 0.2f);
 
 	// Waves geometry
 	std::vector<std::uint32_t> _Waves_indices(3 * gWaves.TriangleCount()); // 3 indices per face
 	assert(gWaves.VertexCount() < 0x0000ffff);
 
 	// Iterate over each quad.
-	//int m = gWaves.RowCount();
-	//int n = gWaves.ColumnCount();
-	//    k = 0;
-	//for (int i = 0; i < m - 1; ++i)
-	//{
-	//	for (int j = 0; j < n - 1; ++j)
-	//	{
-	//		_Waves_indices[k] = i * n + j;
-	//		_Waves_indices[k + 1] = i * n + j + 1;
-	//		_Waves_indices[k + 2] = (i + 1) * n + j;
+	int m = gWaves.RowCount();
+	int n = gWaves.ColumnCount();
+	int k = 0;
+	for (int i = 0; i < m - 1; ++i)
+	{
+		for (int j = 0; j < n - 1; ++j)
+		{
+			_Waves_indices[k] = i * n + j;
+			_Waves_indices[k + 1] = i * n + j + 1;
+			_Waves_indices[k + 2] = (i + 1) * n + j;
 
-	//		_Waves_indices[k + 3] = (i + 1) * n + j;
-	//		_Waves_indices[k + 4] = i * n + j + 1;
-	//		_Waves_indices[k + 5] = (i + 1) * n + j + 1;
+			_Waves_indices[k + 3] = (i + 1) * n + j;
+			_Waves_indices[k + 4] = i * n + j + 1;
+			_Waves_indices[k + 5] = (i + 1) * n + j + 1;
 
-	//		k += 6; // next quad
-	//	}
-	//}
-	//{
-	//	auto& _Source = _Waves_indices;
-	//	_Index_intermediator = d3d12::make_dynamic_buffer(_Device, _Source);
-	//}
-	//std::shared_ptr<d3d12::static_mesh<norm_hlsl::varying>> _Waves_mesh = std::make_shared<d3d12::static_mesh<norm_hlsl::varying>>();
-	//_Waves_mesh->_My_vertices = nullptr;
-	//_Waves_mesh->_My_indices  = std::make_shared<d3d12::static_buffer<uint32_t>>(_Index_intermediator);
+			k += 6; // next quad
+		}
+	}
+
+	auto _Indices = d3d12::make_dynamic_buffer(_Device, _Waves_indices);
+	gDynGeometrys["Wave"] = std::make_shared<d3d12::dynamic_mesh<norm_hlsl::varying>>();
+	gDynGeometrys["Wave"]->_My_vertices = std::make_shared<d3d12::dynamic_buffer<norm_hlsl::varying>>(_Device, gWaves.VertexCount());
+	gDynGeometrys["Wave"]->_My_indices  = std::make_shared<d3d12::dynamic_buffer<uint32_t>>(std::move(_Indices));
+	gDynGeometrys["Wave"]->index_count  = _Waves_indices.size();
 }
 
 void init_substance_resource(ID3D12Device& _Device) {
@@ -427,11 +434,11 @@ void init_object_systems() {
 	gObjectSystems["box"]._My_components["1"]->_My_substance = gSubstances["Gold"];
 	gPrograms[NORM_HLSL].push_render_object(gObjectSystems["box"]);
 
-	gObjectSystems["grid"]._My_transform = std::make_shared<norm_hlsl::uniform_transform>(matrix4x4<float, float>(1.f));
+	/*gObjectSystems["grid"]._My_transform = std::make_shared<norm_hlsl::uniform_transform>(matrix4x4<float, float>(1.f));
 	gObjectSystems["grid"]._My_components["1"] = std::make_shared<clmagic::object>();
 	gObjectSystems["grid"]._My_components["1"]->_My_geometry  = gGeometrys["Grid"];
 	gObjectSystems["grid"]._My_components["1"]->_My_substance = gSubstances["Gold"];
-	gPrograms[NORM_HLSL].push_render_object(gObjectSystems["grid"]);
+	gPrograms[NORM_HLSL].push_render_object(gObjectSystems["grid"]);*/
 	
 	for (int i = 0; i < 5; ++i) {
 		gObjectSystems["leftCyl" + std::to_string(i)]._My_transform = std::make_shared<norm_hlsl::uniform_transform>(
@@ -462,6 +469,12 @@ void init_object_systems() {
 		gObjectSystems["rightSph" + std::to_string(i)]._My_components["1"]->_My_substance = gSubstances["Gold"];
 		gPrograms[NORM_HLSL].push_render_object(gObjectSystems["rightSph" + std::to_string(i)]);
 	}
+
+	gObjectSystems["sea"]._My_transform = std::make_shared<norm_hlsl::uniform_transform>(matrix4x4<float, float>(1.f));
+	gObjectSystems["sea"]._My_components["0"]                = std::make_shared<clmagic::object>();
+	gObjectSystems["sea"]._My_components["0"]->_My_geometry  = gDynGeometrys["Wave"];
+	gObjectSystems["sea"]._My_components["0"]->_My_substance = gSubstances["Gold"];
+	gPrograms[NORM_HLSL].push_render_object(gObjectSystems["sea"]);
 }
 
 #include <sstream>
@@ -482,6 +495,7 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine,
 		init_shader_frame_resources();
 		init_texture_resources(gWindow.get_ID3D12Device());
 		init_geometry_resources(gWindow.get_ID3D12Device());
+		init_dynamic_geometry_resources(gWindow.get_ID3D12Device());
 		init_substance_resource(gWindow.get_ID3D12Device());
 		init_object_systems();
 		
@@ -489,6 +503,9 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine,
 		command_allocator     _Cmd_allocator = command_allocator(gWindow.get_ID3D12Device(), D3D12_COMMAND_LIST_TYPE_DIRECT);
 		graphics_command_list _Cmd_list      = graphics_command_list(gWindow.get_ID3D12Device(), D3D12_COMMAND_LIST_TYPE_DIRECT, _Cmd_allocator);
 		MSG msg = { 0 };
+
+		std::chrono::milliseconds _Total = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch());
+
 		//std::vector<clmagic::renderable*> _Renderales;
 		while (msg.message != WM_QUIT) {
 			if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
@@ -501,6 +518,41 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine,
 				_Ptr->view_matrix  = matrix_cast<matrix4x4<float, float>>(transpose(gWindow._My_camera.view_matrix()));
 				_Ptr->eye_position = vector_cast<vector3<float, float>>(gWindow._My_camera.position());
 				_Norm_hlsl_fs->unmap(reinterpret_cast<void**>(&_Ptr));
+				
+				{
+					auto  _Now   = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch());
+					float delta = (_Now - _Total).count() / 1000.0f;
+					      _Total = _Now;
+				// Every quarter second, generate a random wave.
+					static float t_base = 0.0f;
+					if((float(_Total.count() / 1000.0) - t_base) >= 0.25f)
+					{
+						t_base += 0.25f;
+
+						int i = randi(4, gWaves.RowCount() - 5);
+						int j = randi(4, gWaves.ColumnCount() - 5);
+
+						float r = randf(0.2f, 0.5f);
+
+						gWaves.Disturb(i, j, r);
+					}
+
+					// Update the wave simulation.
+					gWaves.Update(delta);
+
+					// Update the wave vertex buffer with the new solution.
+					gDynGeometrys["Wave"]->_My_vertices->map();
+					auto currWavesVB = gDynGeometrys["Wave"]->_My_vertices->begin();
+					for(int i = 0; i < gWaves.VertexCount(); ++i) {
+						norm_hlsl::varying v;
+						v.position = reinterpret_cast<const clmagic::vector3<float, float>&>(gWaves.Position(i));
+						v.normal   = reinterpret_cast<const clmagic::vector3<float, float>&>(gWaves.Normal(i));
+
+						*(currWavesVB + i) = (i, v);
+					}
+					gDynGeometrys["Wave"]->_My_vertices->unmap();
+				}
+
 
 				gFence.flush(gWindow._My_executer);
 
@@ -611,12 +663,13 @@ clmagic::box<_Ts, _Tb> get_bound(const std::vector<VECTOR3>& P) {
 int main() {
 	using namespace::clmagic;
 
-	auto v0 = vector<float, 3>(2.f, 3.f, 4.f);
-	std::cout << v0 << std::endl;
-	std::cout << 3 * v0 * 3 << std::endl;
-	std::cout << 3.f * v0 * 3.f << std::endl;
-	std::cout << 3.0 * v0 * 3.0 << std::endl;
-	std::cin.get();
+	{
+		std::cout << make_gravity<vector3<float>, float>(kilograms<float>(10.f))
+			             + force<vector3<float>, float>({10.f, 0.f, 0.f}, 10.f) << std::endl;
+		std::cout << dot(make_gravity<vector3<float>, float>(kilograms<float>(10.f)), { 0.f, -50.f, 0.f }) << std::endl;
+		std::cout << dot(make_gravity<vector3<float>, float>(kilograms<float>(10.f)), { 0.f, -50.f, 0.f }).to_scalar() << std::endl;
+		std::cin.get();
+	}
 
 	/*matrix<float, 5, 5, __m128, _COL_MAJOR_> M(1.f);
 	for (auto _First = M.begin(), _Last = M.end(); _First != _Last; ++_First) {

@@ -9,7 +9,7 @@
 
 namespace clmagic
 {
-	/* @_clmagic: graphics library */
+	/* @_clmagic: library */
 }
 
 /* reference */
@@ -48,10 +48,6 @@ namespace clmagic
 
 #ifndef _out
 #define _out(...) __VA_ARGS__&
-#endif
-
-#ifndef _friend
-#define _friend(...)
 #endif
 
 namespace clmagic {
@@ -95,58 +91,6 @@ namespace clmagic {
 		constexpr size_t _Mask = 16 - 1;
 		return ((N & _Mask) == 0 ? true : false);
 	}
-
-
-
-	template<typename _Ty>
-	struct _Basic_type {
-		constexpr _Basic_type(_Ty _Val) : _Myval(_Val) { }
-
-		constexpr operator _Ty() const { return (_Myval); }
-
-		constexpr _Basic_type operator-() const { return (-_Myval); }
-		constexpr _Basic_type operator~() const { return ~_Myval; }
-		constexpr _Basic_type operator!() const { return !_Myval; }
-		constexpr _Basic_type operator<<(size_t _Right) const { return _Myval << _Right; }
-		constexpr _Basic_type operator>>(size_t _Right) const { return _Myval >> _Right; }
-		constexpr _Basic_type operator+(_Basic_type _Right) const { return _Myval + _Right._Myval; }
-		constexpr _Basic_type operator-(_Basic_type _Right) const { return _Myval - _Right._Myval; }
-		constexpr _Basic_type operator*(_Basic_type _Right) const { return _Myval * _Right._Myval; }
-		constexpr _Basic_type operator/(_Basic_type _Right) const { return _Myval / _Right._Myval; }
-		constexpr _Basic_type operator%(_Basic_type _Right) const { return _Myval % _Right._Myval; }
-		constexpr _Basic_type operator&(_Basic_type _Right) const { return _Myval & _Right._Myval; }
-		constexpr _Basic_type operator|(_Basic_type _Right) const { return _Myval | _Right._Myval; }
-		constexpr _Basic_type operator^(_Basic_type _Right) const { return _Myval ^ _Right._Myval; }
-		
-		constexpr _Basic_type& operator<<=(size_t _Right) { _Myval <<= _Right; return (*this); }
-		constexpr _Basic_type& operator>>=(size_t _Right) { _Myval >>= _Right; return (*this); }
-		constexpr _Basic_type& operator+=(_Basic_type _Right) { _Myval += _Right._Myval; return (*this); }
-		constexpr _Basic_type& operator-=(_Basic_type _Right) { _Myval -= _Right._Myval; return (*this); }
-		constexpr _Basic_type& operator*=(_Basic_type _Right) { _Myval *= _Right._Myval; return (*this); }
-		constexpr _Basic_type& operator/=(_Basic_type _Right) { _Myval /= _Right._Myval; return (*this); }
-		constexpr _Basic_type& operator%=(_Basic_type _Right) { _Myval %= _Right._Myval; return (*this); }
-		constexpr _Basic_type& operator&=(_Basic_type _Right) { _Myval &= _Right._Myval; return (*this); }
-		constexpr _Basic_type& operator|=(_Basic_type _Right) { _Myval |= _Right._Myval; return (*this); }
-		constexpr _Basic_type& operator^=(_Basic_type _Right) { _Myval ^= _Right._Myval; return (*this); }
-
-		friend std::ostream& operator<<(std::ostream & _Ostr, const _Basic_type<_Ty>& _Right) {
-			return (_Ostr << std::to_string(_Right._Myval));
-		}
-
-	private: 
-		_Ty _Myval;
-	};
-
-	template<typename _Ty, bool = std::is_arithmetic_v<_Ty>>
-	struct any_class {
-		using type = typename _Basic_type<_Ty>;
-	};
-
-	template<typename _Ty>
-	struct any_class<_Ty, false> {
-		using type = _Ty;
-	};
-
 
 }// namespace clmagic
 

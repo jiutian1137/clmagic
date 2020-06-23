@@ -6,17 +6,16 @@
 #pragma once
 #ifndef clmagic_math_lapack_VECTOR_h_
 #define clmagic_math_lapack_VECTOR_h_
-//#include "../general/simd.h"// block_traits<>, simd_operator
-#include "../general/general.h"// include shuffle<>
-#include "../real/bitset.h"// include ceil(Number, Bound)
-#include "../real/real.h"// include CSTD math
-#include <stack>
-#include <vector>
+#include "../general/real.h"// include CSTD math
+#include "../general/bitset.h"// include ceil(Number, Bound)
+#include "../general/simd.h"// block_traits<>, simd_operator
 #include <string>
+#include <vector>
 #include <numeric>
 #include <algorithm>
 
 namespace clmagic{
+
 #ifndef clmagic_calculation_general_SIMD_h_
 	template<typename _Ty>
 	struct block_traits {
@@ -37,8 +36,8 @@ namespace clmagic{
 	/*
 	Ruler:  |----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----| 
 	Vector: |---------|--------------|--------------|--------------|--------------|---------|           
-			A0        A1														     B0	        B1
-						|----------block_size---------------------------------------|       
+			A0        A1														  B0       B1
+					  |----------block_size---------------------------------------|       
 
 	block_offset = A1 - A0 [bytes]
 	leading_size = A1 - A0 [sizeof(scalar)]
@@ -105,14 +104,7 @@ namespace clmagic{
 		Auto
 	};
 
-	/*
-	---+---+---|---+---+---|---+---+---|---+---+---|---+---+---|---+---+---|---+---+---+---+---+---
-			---|---+---+---|---+---+---|---+---+---|---+---+---|---+---+---|---+---
-			|mod|
-						---|---+---+---|---+---+---|---+---+---|---+---+---|---+---|---+---+---
-						|mod|
-	mod == block_offset
-	*/
+	// [norm_vector_operation]
 	template<typename _Ts, typename _Tb, _Vector_accelerate_level/*default: Norm*/>
 	struct _Vector_operation {
 		using _OutIt = _Ts*;
@@ -169,6 +161,7 @@ namespace clmagic{
 		}
 	};
 
+	// [fastest_vector_operation]
 	template<typename _Ts, typename _Tb>
 	struct _Vector_operation<_Ts, _Tb, _Vector_accelerate_level::Fastest> {
 		using _OutIt = _Tb*;
@@ -189,11 +182,6 @@ namespace clmagic{
 			return std::transform(_First1, _Last1, _First2, _Dest, _Func);
 		}
 
-		/*template<typename _BinOp>
-		static block_type accumulate(_InIt _First, _InIt _Last, block_type _Initval, _BinOp _Reduce_op) {
-			return std::accumulate(_First, _Last, _Initval, _Reduce_op);
-		}*/
-
 		template<typename _BinOp>
 		static scalar_type accumulate(_InIt _First, _InIt _Last, scalar_type _Val, _BinOp _Reduce_op) {
 			if (_First == _Last) {
@@ -204,11 +192,6 @@ namespace clmagic{
 			const auto _Slast        = _Sfirst + block_traits::size();
 			return scalar_operation::accumulate(_Sfirst, _Slast, _Val, _Reduce_op);
 		}
-
-		/*template<typename _BinOp, typename _UnaryOp>
-		static block_type transform_accumulate(_InIt _First, _InIt _Last, block_type _Initval, _BinOp _Reduce_op, _UnaryOp _Transform_op) {
-			return std::transform_reduce(_First, _Last, _Initval, _Reduce_op, _Transform_op);
-		}*/
 
 		template<typename _BinOp, typename _UnaryOp>
 		static scalar_type transform_accumulate(_InIt _First, _InIt _Last, scalar_type _Initval, _BinOp _Reduce_op, _UnaryOp _Transform_op) {
@@ -222,11 +205,6 @@ namespace clmagic{
 			return scalar_operation::accumulate(_Sfirst, _Slast, _Initval, _Reduce_op);
 		}
 
-		/*template<typename _BinOp1, typename _BinOp2>
-		static block_type transform_accumulate(_InIt _First1, _InIt _Last1, _InIt _First2, block_type _Initval, _BinOp1 _Reduce_op, _BinOp2 _Transform_op) {
-			return std::transform_reduce(_First1, _Last1, _First2, _Initval, _Reduce_op, _Transform_op);
-		}*/
-
 		template<typename _BinOp1, typename _BinOp2>
 		static scalar_type transform_accumulate(_InIt _First1, _InIt _Last1, _InIt _First2, scalar_type _Initval, _BinOp1 _Reduce_op, _BinOp2 _Transform_op) {
 			if (_First1 == _Last1) {
@@ -239,7 +217,8 @@ namespace clmagic{
 			return scalar_operation::accumulate(_Sfirst, _Slast, _Initval, _Reduce_op);
 		}
 	};
-
+	
+	// [fast_vector_operation]
 	template<typename _Ts, typename _Tb>
 	struct _Vector_operation<_Ts, _Tb, _Vector_accelerate_level::Fast> {
 		using _OutIt = _Tb*;
@@ -387,6 +366,7 @@ namespace clmagic{
 		}	
 	};
 
+	// [auto_vector_operation]
 	template<typename _Ts, typename _Tb>
 	struct _Vector_operation<_Ts, _Tb, _Vector_accelerate_level::Auto> {
 		using _OutIt = void*;
@@ -554,6 +534,7 @@ namespace clmagic{
 		}
 	};
 
+	// [auto_vector_operation]
 	template<typename _Ts>
 	struct _Vector_operation<_Ts, _Ts, _Vector_accelerate_level::Auto>
 		: public _Vector_operation<_Ts, _Ts, _Vector_accelerate_level::Norm>{
@@ -609,69 +590,67 @@ namespace clmagic{
 	template<typename _Ts>
 		using _SIMD8_t = typename _SIMD8_enum<_Ts>::type;
 
-	/*- - - - - - - - - - - - - - - - - - stack_allocator<> - - - - - - - - - - - - - - - - - - - - -*/
-	template<typename _Ts, typename _Tb>
-	struct stack_allocator : std::vector<_Tb> {
-		using _Mybase       = std::vector<_Tb>;
-		using _This_type = stack_allocator<_Ts, _Tb>;
+	/*- - - - - - - - - - - - - - - - - - - - - - shuffle - - - - - - - - - - - - - - - - - - - - - - - -*/
+	template<typename _OutTy, typename _InTy>
+	void _Shuffle_fill(_OutTy& _Dest, size_t _Dest_index, const _InTy& _Source, size_t _Source_index) {
+		_Dest[_Dest_index] = _Source[_Source_index];
+	}
+	
+	template<typename _OutTy, typename _InTy, typename ..._Tys>
+	void _Shuffle_fill(_OutTy& _Dest, size_t _Dest_index, const _InTy& _Source, size_t _Source_index, _Tys... _Args) {
+		_Dest[_Dest_index] = _Source[_Source_index];
+		_Shuffle_fill(_Dest, _Dest_index + 1, _Source, _Args...);
+	}
 
-		static _This_type& data() {
-			static _This_type _Static_stack;
-			return _Static_stack;
-		}
+	template<typename _OutTy, typename _InTy>
+	_OutTy shuffle(const _InTy& _Source, size_t i0) {
+		return _OutTy{ _Source[i0] };
+	}
 
-		static size_t calc_block_count(size_t _Count/*scalar*/) {
-			return ceil(_Count, block_traits<_Tb>::size()) / block_traits<_Tb>::size();
-		/*	const bool _Divide = (_Count % block_traits<_Tb>::size()) != 0;
-			return _Count / block_traits<_Tb>::size() + static_cast<size_t>(_Divide);*/
-		}
+	template<typename _OutTy, typename _InTy>
+	_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1) {
+		return _OutTy{ _Source[i0], _Source[i1] };
+	}
 
-		static _Ts* allocate(size_t _Scalar_count) {
-			return reinterpret_cast<_Ts*>(data().seek_n(calc_block_count(_Scalar_count)));
-		}
+	template<typename _OutTy, typename _InTy>
+	_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2) {
+		return _OutTy{ _Source[i0], _Source[i1], _Source[i2] };
+	}
 
-		static void deallocate(size_t _Scalar_count) {
-			data()._Myseek -= calc_block_count(_Scalar_count);
-		}
+	template<typename _OutTy, typename _InTy>
+	_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2, size_t i3) {
+		return _OutTy{ _Source[i0], _Source[i1], _Source[i2], _Source[i3] };
+	}
 
-		static void push(size_t _Block_count) {
-			auto& _Stack = data();
-			assert(_Stack.empty());
-			const auto _Newsize = _Block_count + _Block_count / 2;
-			_Stack.resize(_Newsize);
-		}
-		
-		static void pop() {
-			auto& _Stack = data();
-			assert(_Stack.empty());
-			_Stack.clear();
-			_Stack.shrink_to_fit();
-		}
+	template<typename _OutTy, typename _InTy>
+	_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2, size_t i3, size_t i4) {
+		return _OutTy{ _Source[i0], _Source[i1], _Source[i2], _Source[i3], _Source[i4] };
+	}
 
-		_Tb& top() {
-			return ((*this)[_Myseek]);
-		}
+	template<typename _OutTy, typename _InTy>
+	_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2, size_t i3, size_t i4, size_t i5) {
+		return _OutTy{ _Source[i0], _Source[i1], _Source[i2], _Source[i3], _Source[i4], _Source[i5] };
+	}
 
-		_Tb* seek_n(size_t _Count/*block*/) {
-			const auto _Newseek = _Myseek + _Count;
-			if (_Newseek > _Mybase::size()) {
-				_Mybase::resize(_Newseek);
-			}
+	template<typename _OutTy, typename _InTy, typename ..._Tys>
+	_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2, size_t i3, size_t i4, size_t i5, _Tys... _Selector) {
+		_OutTy _Dest = shuffle<_OutTy>(_Source, i0, i1, i2, i3, i4, i5);
+		_Shuffle_fill(_Dest, 6, _Source, _Selector...);
+		return (_Dest);
+	}
 
-			auto* _Ptr = &(this->top());
-			_Myseek = _Newseek;
-			return _Ptr;
-		}
+	template<typename _OutTy, typename _InTy, typename ..._Tys>
+	void shuffle(const _InTy& _Source, _OutTy& _Dest, _Tys... _Selector) {
+		_Shuffle_fill(_Dest, 0, _Source, _Selector...);
+	}
 
-		bool empty() const {
-			return _Myseek == 0;
-		}
+	// <shuffle> is often used in vector mathematics
+	// auto v2 = shuffle<vector3>(v1, 1, 0, 1);
 
-		size_t _Myseek;
-	};
+	template<typename ..._Tys>
+	constexpr size_t types_size_v = std::tuple_size_v<std::tuple<_Tys...>>;
 
-
-	/*- - - - - - - - - - - - - - - - - - - subvector<> - - - - - - - - - - - - - - - - - - - - - -*/
+	/*- - - - - - - - - - - - - - - - - - - subvector<_Ts,_Tb> - - - - - - - - - - - - - - - - - - - - - -*/
 	template<typename _Ts, typename _Tb>
 	struct _Subvector_data {
 		~_Subvector_data() {
@@ -743,6 +722,7 @@ namespace clmagic{
 		bool   _Is_owner  = false;
 	};
 
+	// [Internal struct]
 	template<typename _Ts, typename _Tb>
 	class subvector : public _Subvector_data<_Ts, _Tb> {
 		using _Mybase = _Subvector_data<_Ts, _Tb>;
@@ -1233,7 +1213,7 @@ namespace clmagic{
 		return std::move( _Left.for_each_copy(_Transform_op) );
 	}
 
-	/*- - - - - - - - - - - - - - - - - - - * vector * - - - - - - - - - - - - - - - - - - - - -*/
+	/*- - - - - - - - - - - - - - - - - - - * vector<_Ts,_Size,_Tb> * - - - - - - - - - - - - - - - - - - - - -*/
 	template<typename _Ts, size_t _Size, typename _Tb>
 	class __declspec(align(std::alignment_of_v<_Tb>)) _Vector_data {
 		constexpr static size_t _Real_size = ceil(_Size * sizeof(_Ts), std::alignment_of_v<_Tb>) / sizeof(_Ts);
@@ -1250,10 +1230,10 @@ namespace clmagic{
 			return _Real_size;
 		}
 		static constexpr size_t tail_size() {
-			return _Real_size - _Size; 
+			return trunc(_Size, block_traits<_Tb>::size());
 		}
 		static constexpr size_t block_size() {
-			return (_Real_size / block_traits<_Tb>::size());
+			return (_Size / block_traits<_Tb>::size());
 		}
 
 		template<typename _Ty = scalar_type>
@@ -1344,31 +1324,90 @@ namespace clmagic{
 		
 		template<typename _UnaryOp>
 		void for_each_block(_UnaryOp _Transform_op) {// for each block by (_Transform_op*)(block_type)
-			std::transform(this->begin<block_type>(), 
-				           this->begin<block_type>() + this->block_size(), 
-				           this->begin<block_type>(), _Transform_op);
+			if _CONSTEXPR_IF( this->tail_size() == 0 ){
+				fastest_vector_operation<scalar_type, block_type>::transform(
+					this->begin<block_type>()/*_First*/, 
+					this->end<block_type>()  /*_Last*/, 
+					this->begin<block_type>()/*_Dest*/, _Transform_op );
+			} else{
+				fast_vector_operation<scalar_type, block_type>::transform(
+					this->begin<block_type>(),
+					this->begin<block_type>() + this->block_size(),
+					this->begin<block_type>(), _Transform_op, 0/*leading_size*/, this->tail_size());
+			}
 		}
 
 		template<typename _BinOp>
 		void for_each_block(const _Vector_data& _Args2, _BinOp _Transform_op) {
-			std::transform(this->begin<block_type>(), 
-				           this->begin<block_type>() + this->block_size(), 
-				          _Args2.begin<block_type>(), 
-				           this->begin<block_type>(), _Transform_op);
+			if _CONSTEXPR_IF( this->tail_size() == 0 ) {
+				fastest_vector_operation<scalar_type, block_type>::transform(
+					this->begin<block_type>()/*_First1*/, 
+					this->end<block_type>()  /*_Last1*/, 
+				   _Args2.begin<block_type>()/*_First2*/,
+					this->begin<block_type>()/*_Dest*/, _Transform_op );
+			} else {
+				fast_vector_operation<scalar_type, block_type>::transform(
+					this->begin<block_type>(),
+					this->begin<block_type>() + this->block_size(),
+				   _Args2.begin<block_type>(),
+					this->begin<block_type>(), _Transform_op, 0/*leading_size*/, this->tail_size());
+			}
 		}
 	
+		template<typename _BinOp>
+		scalar_type reduce(scalar_type _Val, _BinOp _Reduce_op) const {
+			if _CONSTEXPR_IF( this->tail_size() == 0 ){
+				return fastest_vector_operation<scalar_type, block_type>::accumulate(
+					this->begin<block_type>()/*_First*/, 
+					this->end<block_type>()  /*_Last*/, _Val, _Reduce_op);
+			} else{
+				return fast_vector_operation<scalar_type, block_type>::accumulate(
+					this->begin<block_type>(),
+					this->begin<block_type>() + this->block_size(), _Val, _Reduce_op, 0/*leading_size*/, this->tail_size());
+			}
+		}
+
+		template<typename _BinOp, typename _UnaryOp>
+		scalar_type reduce(scalar_type _Val, _BinOp _Reduce_op, _UnaryOp _Transform_op) const {
+			if _CONSTEXPR_IF( this->tail_size() == 0 ){
+				return fastest_vector_operation<scalar_type, block_type>::transform_accumulate(
+					this->begin<block_type>()/*_First*/, 
+					this->end<block_type>()  /*_Last*/, _Val, _Reduce_op, _Transform_op);
+			} else{
+				return fast_vector_operation<scalar_type, block_type>::transform_accumulate(
+					this->begin<block_type>(),
+					this->begin<block_type>() + this->block_size(), _Val, _Reduce_op, _Transform_op, 0/*leading_size*/, this->tail_size());
+			}
+		}
+
+		template<typename _BinOp1, typename _BinOp2>
+		scalar_type reduce(const _Vector_data& _Args2, scalar_type _Val, _BinOp1 _Reduce_op, _BinOp2 _Transform_op) const {
+			if _CONSTEXPR_IF( this->tail_size() == 0 ){
+				return fastest_vector_operation<scalar_type, block_type>::transform_accumulate(
+					this->begin<block_type>()/*_First*/, 
+					this->end<block_type>()  /*_Last*/,
+				   _Args2.begin<block_type>(), _Val, _Reduce_op, _Transform_op);
+			} else{
+				return fast_vector_operation<scalar_type, block_type>::transform_accumulate(
+					this->begin<block_type>(),
+					this->begin<block_type>() + this->block_size(),
+				   _Args2.begin<block_type>(), _Val, _Reduce_op, _Transform_op, 0/*leading_size*/, this->tail_size());
+			}
+		}
+
 		std::string to_string() const {
 			auto       _First = this->begin<scalar_type>();
 			const auto _Last  = this->end<scalar_type>();
 			std::string _Str  = std::to_string(*_First++);
 			for ( ; _First != _Last; ++_First) {
-				_Str += ' ';
+				_Str += ", ";
 				_Str += std::to_string(*_First);
 			}
-			return _Str;
+			return '{' + _Str + '}';
 		}
 	};
 
+	// [vector struct, static size]
 	template<typename _Ts, size_t _Size, typename _Tb = _SIMD4_t<_Ts>>
 	class vector : public _Vector_data<_Ts, _Size, _Tb> {
 		using _Mybase = _Vector_data<_Ts, _Size, _Tb>;
@@ -1378,6 +1417,7 @@ namespace clmagic{
 
 		using block_type  = _Tb;
 		using scalar_type = _Ts;
+		using subvector   = clmagic::subvector< scalar_type, block_type >;
 
 		using block_traits    = clmagic::block_traits<_Tb>;
 		//using scalar_traits = clmagic::block_traits<_Ts>;
@@ -1401,11 +1441,6 @@ namespace clmagic{
 			_Mybase::_Correct_tail_elements();
 		}
 		
-		vector(std::initializer_list<scalar_type> _Ilist) {
-			_Mybase::assign(_Ilist.begin(), _Ilist.end()); 
-			_Mybase::_Correct_tail_elements();
-		}
-
 		vector& operator=(const vector&) = default;
 		
 		vector& operator=(std::initializer_list<scalar_type> _Ilist) {
@@ -1413,24 +1448,20 @@ namespace clmagic{
 			return *this;
 		}
 
-		subvector<scalar_type, block_type> operator()() {
-			return subvector<scalar_type, block_type>(this->begin(), this->end());
+		subvector operator()() {
+			return subvector(this->begin(), this->end());
 		}
 		
-		subvector<scalar_type, block_type> operator()(size_t _First, size_t _Last) {
-			return subvector<scalar_type, block_type>(this->ptr(_First), this->ptr(_Last));
+		subvector operator()(size_t _First, size_t _Last) {
+			return subvector(this->ptr(_First), this->ptr(_Last));
 		}
 		
-		const subvector<scalar_type, block_type> operator()() const {
-			return subvector<scalar_type, block_type>(
-				const_cast<scalar_type*>(this->begin()), 
-				const_cast<scalar_type*>(this->end()) );
+		const subvector operator()() const {
+			return const_cast<vector&>(*this).operator()();
 		}
 		
-		const subvector<scalar_type, block_type> operator()(size_t _First, size_t _Last) const {
-			return subvector<scalar_type, block_type>(
-				const_cast<scalar_type*>(this->begin()), 
-				const_cast<scalar_type*>(this->end()) );
+		const subvector operator()(size_t _First, size_t _Last) const {
+			return const_cast<vector&>(*this).operator()(_First, _Last);
 		}
 
 		template<typename _UnaryOp>
@@ -1438,7 +1469,7 @@ namespace clmagic{
 			vector _Result;
 			std::transform(this->begin<scalar_type>(), 
 				           this->end<scalar_type>(), 
-				           _Result.begin<scalar_type>(), _Transform_op);
+				          _Result.begin<scalar_type>(), _Transform_op);
 			_Result._Correct_tail_elements();
 			return _Result;
 		}
@@ -1448,8 +1479,8 @@ namespace clmagic{
 			vector _Result;
 			std::transform(this->begin<scalar_type>(), 
 				           this->end<scalar_type>(), 
-				           _Args2.begin<scalar_type>(), 
-				           _Result.begin<scalar_type>(), _Transform_op);
+				          _Args2.begin<scalar_type>(), 
+				          _Result.begin<scalar_type>(), _Transform_op);
 			_Result._Correct_tail_elements();
 			return _Result;
 		}
@@ -1457,48 +1488,56 @@ namespace clmagic{
 		template<typename _UnaryOp>
 		vector for_each_block_copy(_UnaryOp _Transform_op) const {
 			vector _Result;
-			std::transform(this->begin<block_type>(), 
-				           this->begin<block_type>()+this->block_size(), 
-				           _Result.begin<block_type>(), _Transform_op);
+			if _CONSTEXPR_IF( this->tail_size() == 0 ) {
+				fastest_vector_operation<scalar_type, block_type>::transform(
+					this->begin<block_type>(),
+					this->end<block_type>(),
+				   _Result.begin<block_type>(), _Transform_op);
+			} else {
+				fast_vector_operation<scalar_type, block_type>::transform(
+					this->begin<block_type>(),
+					this->begin<block_type>() + this->block_size(),
+				   _Result.begin<block_type>(), _Transform_op, 0/*leading_size*/, this->tail_size());
+			}
 			return _Result;
 		}
 
 		template<typename _BinOp>
 		vector for_each_block_copy(const vector& _Args2, _BinOp _Transform_op) const {
 			vector _Result;
-			std::transform(this->begin<block_type>(), 
-				           this->begin<block_type>()+this->block_size(), 
-				           _Args2.begin<block_type>(), 
-				           _Result.begin<block_type>(), _Transform_op);
+			if _CONSTEXPR_IF( this->tail_size() == 0 ) {
+				fastest_vector_operation<scalar_type, block_type>::transform(
+					this->begin<block_type>(),
+					this->end<block_type>(),
+				   _Args2.begin<block_type>(),
+				   _Result.begin<block_type>(), _Transform_op);
+			} else {
+				fast_vector_operation<scalar_type, block_type>::transform(
+					this->begin<block_type>(),
+					this->begin<block_type>() + this->block_size(),
+				   _Args2.begin<block_type>(),
+				   _Result.begin<block_type>(), _Transform_op, 0/*leading_size*/, this->tail_size());
+			}
 			return _Result;
 		}
 				
 		scalar_type sum() const {// sum_of( (*this)[N] )
-			return fastest_vector_operation<scalar_type, block_type>::accumulate(
-				this->begin<block_type>(),
-				this->begin<block_type>() + this->block_size(), static_cast<scalar_type>(0), std::plus<>());
+			return this->reduce(static_cast<scalar_type>(0), std::plus<>());
 		}
 		
 		scalar_type product() const {// product_of( (*this)[N] )
-			return fastest_vector_operation<scalar_type, block_type>::accumulate(
-				this->begin<block_type>(), 
-				this->begin<block_type>() + this->block_size(), static_cast<scalar_type>(0), std::multiplies<>());
+			return this->reduce(static_cast<scalar_type>(1), std::multiplies<>());
 		}
 		
 		scalar_type dot(const vector& _Right) const {// sum_of( (*this)[N]*_Right[N] )
-			return fastest_vector_operation<scalar_type, block_type>::transform_accumulate(
-				this->begin<block_type>(), 
-				this->begin<block_type>() + this->block_size(), 
-			   _Right.begin<block_type>(), static_cast<scalar_type>(0), std::plus<>(), std::multiplies<>());
+			return this->reduce(_Right, static_cast<scalar_type>(0), std::plus<>(), std::multiplies<>());
 		}
 		
 		scalar_type norm(scalar_type L) const {// pow( sum_of( pow((*this)[N], L), 1/L )
 			const block_type _Arg1         = block_traits::set1(L);
 			const auto       _Transform_op = [&_Arg1](auto&& _Arg0) { return pow(_Arg0, _Arg1); };
 
-			const auto _Result = fastest_vector_operation<scalar_type, block_type>::transform_accumulate(
-				this->begin<block_type>(), 
-				this->begin<block_type>() + this->block_size(), static_cast<scalar_type>(0), std::plus<>(), _Transform_op);
+			const auto _Result = this->reduce(static_cast<scalar_type>(0), std::plus<>(), _Transform_op);
 			return pow(_Result, 1/L);
 		}
 		
@@ -1839,7 +1878,7 @@ namespace clmagic{
 		return _Left.for_each_block_copy( [](const _Tb& y, const _Tb& x){ return atan2(y, x); } );
 	}
 
-	/*- - - - - - - - - - - - - - - - - - - * unit_vector * - - - - - - - - - - - - - - - - - - - - -*/
+	/*- - - - - - - - - - - - - - - - - - - * unit_vector<_Ts,_Size,_Tb> * - - - - - - - - - - - - - - - - - - - - -*/
 	template<typename _Ts, size_t _Size, typename _Tb = _SIMD4_t<_Ts>>
 	struct unit_vector : public vector<_Ts, _Size, _Tb> {
 		using _Mybase     = vector<_Ts, _Size, _Tb>;
@@ -1847,8 +1886,7 @@ namespace clmagic{
 		using scalar_type = _Ts;
 
 		unit_vector() = default;
-		unit_vector(std::initializer_list<scalar_type> _Ilist, bool _Unitized = false)
-			: _Mybase(_Ilist) {
+		unit_vector(scalar_type xi, scalar_type yj, scalar_type zk, bool _Unitized = false) : _Mybase(xi, yj, zk) {
 			if (!_Unitized) this->normalize();
 		}
 		unit_vector(const _Mybase& _Vector, bool _Unitized = false)
@@ -1876,7 +1914,7 @@ namespace clmagic{
 		return static_cast<_Ts>(1);
 	}
 
-	/*- - - - - - - - - - - - - - - - - - - * vector_any * - - - - - - - - - - - - - - - - - - - - -*/
+	/*- - - - - - - - - - - - - - - - - - - * vector_any<_Ts,_Tb> * - - - - - - - - - - - - - - - - - - - - -*/
 	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>>
 	class _Vector_any_data {
 		std::vector<_Tb> _My_blocks;
@@ -2041,6 +2079,7 @@ namespace clmagic{
 		}
 	};
 
+	// [vector struct, dynamic size]
 	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>>
 	class vector_any : public _Vector_any_data<_Ts, _Tb> {
 		using _Mybase = _Vector_any_data<_Ts, _Tb>;
@@ -2265,11 +2304,6 @@ namespace clmagic{
 		constexpr bool is_vector_v< vector<_Ts, _Size, _Tb> > = true;
 	template<typename _Ts, typename _Tb>
 		constexpr bool is_vector_v< vector_any<_Ts, _Tb> > = true;
-
-	template<typename _Ts, size_t _Size, typename _Tb>
-		constexpr bool is_support_scalar_operator< vector<_Ts, _Size, _Tb> > = true;
-	template<typename _Ts, typename _Tb>
-		constexpr bool is_support_scalar_operator< vector_any<_Ts, _Tb> > = true;
 
 	/*- - - - - - - - - - - - - - - - - - - vector_alias - - - - - - - - - - - - - - - - - - - - -*/
 	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>> 

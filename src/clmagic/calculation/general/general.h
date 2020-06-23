@@ -6,16 +6,15 @@
 #pragma once
 #ifndef clmagic_calculation_general_GENERAL_h_
 #define clmagic_calculation_general_GENERAL_h_
-#include <array>
 #include <cmath>
-#include <bitset>
 #include <string>
-#include <vector>
 #include <iostream>
 #include <valarray>
+#include <array>
+#include <vector>
 #include <algorithm>
 #include <functional>
-#include <initializer_list>
+
 #include "clmagic.h"
 
 namespace clmagic {
@@ -99,68 +98,6 @@ namespace clmagic {
 	template<typename _Fty>
 	constexpr bool has_arguments_v = has_arguments<_Fty>::value;
 
-
-	/*- - - - - - - - - - - - - - - - - - - - - - shuffle - - - - - - - - - - - - - - - - - - - - - - - -*/
-	template<typename _OutTy, typename _InTy, typename ..._Tys>
-	void _Shuffle_fill(_OutTy& _Dest, size_t _Dest_index, const _InTy& _Source, size_t _Source_index, _Tys... _Args) {
-		_Dest[_Dest_index] = _Source[_Source_index];
-		_Shuffle_fill(_Dest, _Dest_index + 1, _Source, _Args...);
-	}
-
-	template<typename _OutTy, typename _InTy>
-	void _Shuffle_fill(_OutTy& _Dest, size_t _Dest_index, const _InTy& _Source, size_t _Source_index) {
-		_Dest[_Dest_index] = _Source[_Source_index];
-	}
-
-	/* 'shuffle' is often used in vector mathematics
-	auto Demo = shuffle<vector3>(_Vec, 1, 0, 1);
-	*/
-	template<typename _OutTy, typename _InTy>
-	_OutTy shuffle(const _InTy& _Source, size_t i0) {
-		return _OutTy{ _Source[i0] };
-	}
-
-	template<typename _OutTy, typename _InTy>
-	_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1) {
-		return _OutTy{ _Source[i0], _Source[i1] };
-	}
-
-	template<typename _OutTy, typename _InTy>
-	_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2) {
-		return _OutTy{ _Source[i0], _Source[i1], _Source[i2] };
-	}
-
-	template<typename _OutTy, typename _InTy>
-	_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2, size_t i3) {
-		return _OutTy{ _Source[i0], _Source[i1], _Source[i2], _Source[i3] };
-	}
-
-	template<typename _OutTy, typename _InTy>
-	_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2, size_t i3, size_t i4) {
-		return _OutTy{ _Source[i0], _Source[i1], _Source[i2], _Source[i3], _Source[i4] };
-	}
-
-	template<typename _OutTy, typename _InTy>
-	_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2, size_t i3, size_t i4, size_t i5) {
-		return _OutTy{ _Source[i0], _Source[i1], _Source[i2], _Source[i3], _Source[i4], _Source[i5] };
-	}
-
-	template<typename _OutTy, typename _InTy, typename ..._Tys>
-	_OutTy shuffle(const _InTy& _Source, size_t i0, size_t i1, size_t i2, size_t i3, size_t i4, size_t i5, _Tys... _Selector) {
-		_OutTy _Dest = shuffle<_OutTy>(_Source, i0, i1, i2, i3, i4, i5);
-		_Shuffle_fill(_Dest, 6, _Source, _Selector...);
-		return (_Dest);
-	}
-
-	template<typename _OutTy, typename _InTy, typename ..._Tys>
-	void shuffle(const _InTy& _Source, _OutTy& _Dest, _Tys... _Selector) {
-		_Shuffle_fill(_Dest, 0, _Source, _Selector...);
-	}
-
-	template<typename ..._Tys>
-	constexpr size_t types_size_v = std::tuple_size_v<std::tuple<_Tys...>>;
-
-
 	/*- - - - - - - - - - - - - - - - - - is_support_scalar_operator - - - - - - - - - - - - - - - - -*/
 	template<typename _Ty>
 	constexpr bool is_support_scalar_operator = false;
@@ -179,6 +116,13 @@ namespace clmagic {
 	using scalar_type = typename std::conditional_t<is_support_scalar_operator<_Ty>,
 		_Support_scalar<_Ty>, _Unsupport_scalar<_Ty> >::scalar_type;
 
+	template<typename _Ty>
+	struct _Scalar {
+		using type = _Ty;
+	};
+
+	template<typename _Ty>
+		using scalar_t = typename _Scalar<_Ty>::type;
 
 	template<typename Iter>
 	std::string to_string(Iter _First, Iter _Last) {
