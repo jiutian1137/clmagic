@@ -10,12 +10,14 @@
 
 #endif
 
-#include "calculation/general/clmagic.h"
 #include "calculation/general/general.h"
-#include "calculation/general/bitset.h"
-#include "calculation/general/rational.h"
-#include "calculation/general/real.h"
-#include "calculation/general/Stirling.h"
+#include "calculation/numeric/bitset.h"
+#include "calculation/numeric/rational.h"
+#include "calculation/numeric/real.h"
+#include "calculation/numeric/Stirling.h"
+#include "calculation/numeric/formula.h"
+#include "calculation/numeric/formula_t.h"
+#include "calculation/numeric/formula_e.h"
 
 
 #include "calculation/lapack/vector.h"
@@ -33,9 +35,9 @@
 #include "calculation/cg/rendering.h"
 #include "calculation/cg/intersection.h"
 
-#include "calculation/physic/atmosphere_scattering.h"
-#include "calculation/physic/quantity.h"
-#include "calculation/physic/dynamics.h"
+#include "calculation/physics/atmosphere_scattering.h"
+#include "calculation/physics/fundamental.h"
+#include "calculation/physics/dynamics.h"
 
 
 

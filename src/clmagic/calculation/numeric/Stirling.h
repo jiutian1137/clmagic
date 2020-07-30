@@ -3,8 +3,6 @@
 // All Rights Reserved
 //--------------------------------------------------------------------------------------
 #pragma once
-#ifndef clmagic_calculation_general_Stirling_h_
-#define clmagic_calculation_general_Stirling_h_
 #include "real.h"
 
 namespace Stirling {
@@ -13,5 +11,3 @@ namespace Stirling {
 		return static_cast<_Ty>( _CSTD sqrt(6.283 * n) * _CSTD pow(n / 2.71828, n) );
 	}
 }// Stirling
-
-#endif

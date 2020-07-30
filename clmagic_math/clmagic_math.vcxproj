@@ -26,31 +26,27 @@
     <ClInclude Include="..\src\clmagic\calculation\cg\reflectance.h" />
     <ClInclude Include="..\src\clmagic\calculation\cg\rendering.h" />
     <ClInclude Include="..\src\clmagic\calculation\complex\WilliamRowanHamilton.h" />
-    <ClInclude Include="..\src\clmagic\calculation\general\bitset.h" />
-    <ClInclude Include="..\src\clmagic\calculation\general\clmagic.h" />
     <ClInclude Include="..\src\clmagic\calculation\general\general.h" />
-    <ClInclude Include="..\src\clmagic\calculation\general\rational.h" />
-    <ClInclude Include="..\src\clmagic\calculation\general\real.h" />
-    <ClInclude Include="..\src\clmagic\calculation\general\simd.h" />
-    <ClInclude Include="..\src\clmagic\calculation\general\Stirling.h" />
     <ClInclude Include="..\src\clmagic\calculation\lapack\Euler.h" />
     <ClInclude Include="..\src\clmagic\calculation\lapack\general.inl.h" />
     <ClInclude Include="..\src\clmagic\calculation\lapack\geometry.h" />
     <ClInclude Include="..\src\clmagic\calculation\lapack\matrix.h" />
     <ClInclude Include="..\src\clmagic\calculation\lapack\Rodrigues.h" />
     <ClInclude Include="..\src\clmagic\calculation\lapack\vector.h" />
+    <ClInclude Include="..\src\clmagic\calculation\lapack\vector_simd.h" />
+    <ClInclude Include="..\src\clmagic\calculation\numeric\bitset.h" />
+    <ClInclude Include="..\src\clmagic\calculation\numeric\clmagic.h" />
+    <ClInclude Include="..\src\clmagic\calculation\numeric\formula.h" />
+    <ClInclude Include="..\src\clmagic\calculation\numeric\formula_e.h" />
+    <ClInclude Include="..\src\clmagic\calculation\numeric\formula_t.h" />
+    <ClInclude Include="..\src\clmagic\calculation\numeric\rational.h" />
+    <ClInclude Include="..\src\clmagic\calculation\numeric\real.h" />
+    <ClInclude Include="..\src\clmagic\calculation\numeric\Stirling.h" />
     <ClInclude Include="..\src\clmagic\calculation\other\color_space.inl.h" />
     <ClInclude Include="..\src\clmagic\calculation\other\rect2d.inl.h" />
-    <ClInclude Include="..\src\clmagic\calculation\physic\atmosphere_scattering.h" />
-    <ClInclude Include="..\src\clmagic\calculation\physic\dynamics.h" />
-    <ClInclude Include="..\src\clmagic\calculation\physic\quantity.h" />
-    <ClInclude Include="..\src\clmagic\calculation\physic\reflection.h" />
-    <ClInclude Include="..\src\clmagic\calculation\physic\Schlick.h" />
-    <ClInclude Include="..\src\clmagic\calculation\physic\Snell.h" />
+    <ClInclude Include="..\src\clmagic\calculation\physics\dynamics.h" />
+    <ClInclude Include="..\src\clmagic\calculation\physics\fundamental.h" />
     <ClInclude Include="..\src\clmagic\math.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\src\clmagic\calculation\physic\Snell_law.html" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\clmagic\calculation\cg\rendering.hlsl">

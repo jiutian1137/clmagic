@@ -248,7 +248,7 @@ namespace d3d12 {
 		flags _My_roughness_flag = PROP;
 	};
 
-	template<size_t _Param_index, typename _Ts, typename _Tb = clmagic::_SIMD4_t<_Ts>, clmagic::matrix_major _Major = clmagic::DEFAULT_MAJOR>
+	template<size_t _Param_index, typename _Ts, typename _Tb = _Ts, clmagic::matrix_major _Major = clmagic::DEFAULT_MAJOR>
 	struct matrix_transform : public clmagic::transform, public clmagic::matrix4x4<_Ts, _Tb, _Major> {
 		using _Mybase = clmagic::matrix4x4<_Ts, _Tb, _Major>;
 
@@ -269,7 +269,7 @@ namespace d3d12 {
 	/*		auto M = clmagic::scaling<_Ts, _Tb, _Major>(x, y, z);
 			static_cast<_Mybase&>(*this) = M(*this);*/
 		}
-		virtual void rotate(clmagic::unit_vector3<float> axis, clmagic::radians<float> angle) override {
+		virtual void rotate(clmagic::unit_vector3<float> axis, clmagic::angle_t<float> angle) override {
 		
 		}
 		virtual void translate_parent(float x, float y, float z) {
@@ -278,7 +278,7 @@ namespace d3d12 {
 		virtual void scale_parent(float sx, float sy, float sz) {
 		
 		}
-		virtual void rotate_parent(clmagic::unit_vector3<float> axis, clmagic::radians<float> angle) {
+		virtual void rotate_parent(clmagic::unit_vector3<float> axis, clmagic::angle_t<float> angle) {
 		
 		}
 

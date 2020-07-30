@@ -7,7 +7,7 @@
 #define clmagic_calculation_complex_WILLIAM_ROWAN_HAMILTON_h_
 #include "../lapack/vector.h"
 #include "../lapack/matrix.h"
-#include "../physic/quantity.h"
+#include "../physics/fundamental.h"
 
 namespace WilliamRowanHamilton {
 	/*<Biographie>http://mathshistory.st-andrews.ac.uk/Biographies/Hamilton.html</Biographie>*/
@@ -25,10 +25,10 @@ namespace WilliamRowanHamilton {
 		<matrix>
 	</Describ>
 	*/
-	template<typename _Ts, typename _Tb = clmagic::_SIMD4_t<_Ts>>
+	template<typename _Ts, typename _Tb = _Ts>
 	struct __declspec(align(std::alignment_of_v<_Tb>)) quaternion {
 		using real_type = _Ts;
-		using imag_type = ::clmagic::vector<_Ts, 3, _Tb>;
+		using imag_type = ::clmagic::vector<3, _Ts, _Tb>;
 
 		quaternion() = default;
 		quaternion(const _Ts& _Real, const _Ts& _ImX, const _Ts& _ImY, const _Ts& _ImZ)
@@ -158,7 +158,7 @@ namespace WilliamRowanHamilton {
 	}
 
 	template<typename _Ts, typename _Tb> inline
-	quaternion<_Ts, _Tb> polar(clmagic::unit_vector3<_Ts, _Tb> _Axis, clmagic::radians<_Ts> _Angle) {
+	quaternion<_Ts, _Tb> polar(clmagic::unit_vector3<_Ts, _Tb> _Axis, RADIANS _Angle) {
 		const auto theta = static_cast<_Ts>(_Angle) / 2;// div 2, because p*q*inverse(q) is rotate 2*theta
 		return quaternion<_Ts, _Tb>(cos(theta), sin(theta) * _Axis);
 	}

@@ -1,7 +1,7 @@
 ﻿//--------------------------------------------------------------------------------------
 // Copyright (c) 2020 LongJiangnan
 // All Rights Reserved
-// Apache Licene 2.0
+// Apache License 2.0
 //--------------------------------------------------------------------------------------
 #pragma once
 #ifndef clmagic_calculation_lapack_GEOMETRY_h_
@@ -13,79 +13,79 @@
 #include "../complex/WilliamRowanHamilton.h"
 
 namespace clmagic {
-	template<typename _Ts>
-	struct spherical_coordinate {
-		spherical_coordinate()
-			: radius(static_cast<_Ts>(0)), azimuth(static_cast<_Ts>(0)), zenith(static_cast<_Ts>(0)) {}
-		
-		spherical_coordinate(_Ts _Radius, radians<_Ts> _Azimuth, radians<_Ts> _Zenith)
-			: radius(_Radius), azimuth(static_cast<_Ts>(_Azimuth)), zenith(static_cast<_Ts>(_Zenith)) {}
-		
-		template<typename _VecTy>
-		spherical_coordinate(const _VecTy& XYZ) {		
-			const auto x = XYZ[0];
-			const auto y = XYZ[1];
-			const auto z = XYZ[2];
+	//template<typename _Ts>
+	//struct spherical_coordinate {
+	//	spherical_coordinate()
+	//		: radius(static_cast<_Ts>(0)), azimuth(static_cast<_Ts>(0)), zenith(static_cast<_Ts>(0)) {}
+	//	
+	//	spherical_coordinate(_Ts _Radius, radians<_Ts> _Azimuth, radians<_Ts> _Zenith)
+	//		: radius(_Radius), azimuth(static_cast<_Ts>(_Azimuth)), zenith(static_cast<_Ts>(_Zenith)) {}
+	//	
+	//	template<typename _VecTy>
+	//	spherical_coordinate(const _VecTy& XYZ) {		
+	//		const auto x = XYZ[0];
+	//		const auto y = XYZ[1];
+	//		const auto z = XYZ[2];
 
-			radius = sqrt(x*x + y*y + z*z);
-			// y = radius * cos(zenith) => zenith = acos(y/radius)
-			zenith = acos(y / radius);
-			//    x = radius * sin(zenith) * cos(azimuth)
-			//    z = radius * sin(zenith) * sin(azimuth)
-			// => x/z = tan(azimuth) => atan(x/z) = azimuth
-			azimuth = atan(x / z);
-		}
+	//		radius = sqrt(x*x + y*y + z*z);
+	//		// y = radius * cos(zenith) => zenith = acos(y/radius)
+	//		zenith = acos(y / radius);
+	//		//    x = radius * sin(zenith) * cos(azimuth)
+	//		//    z = radius * sin(zenith) * sin(azimuth)
+	//		// => x/z = tan(azimuth) => atan(x/z) = azimuth
+	//		azimuth = atan(x / z);
+	//	}
 
-		template<typename _VecTy>
-		_VecTy to_() const {
-			/*
-				  Y|  /Z
-				   | /
-				   |/
-			-------+--------X start
-				  /|
-				 / |
-				   |
-			XZ_radius = sin(Pi/2 - zenith) = cos(zenith)
-			*/
-			const auto XZ_radius = radius * cos(zenith);
-			return _VecTy{ XZ_radius * cos(azimuth),
-						   radius * sin(zenith),
-						   XZ_radius * sin(azimuth) };
-		}
+	//	template<typename _VecTy>
+	//	_VecTy to_() const {
+	//		/*
+	//			  Y|  /Z
+	//			   | /
+	//			   |/
+	//		-------+--------X start
+	//			  /|
+	//			 / |
+	//			   |
+	//		XZ_radius = sin(Pi/2 - zenith) = cos(zenith)
+	//		*/
+	//		const auto XZ_radius = radius * cos(zenith);
+	//		return _VecTy{ XZ_radius * cos(azimuth),
+	//					   radius * sin(zenith),
+	//					   XZ_radius * sin(azimuth) };
+	//	}
 
-		_Ts radius;
-		_Ts azimuth;
-		_Ts zenith;
-	};
+	//	_Ts radius;
+	//	_Ts azimuth;
+	//	_Ts zenith;
+	//};
 
-	template<typename _Ts>
-	struct cylindrical_coordinate {
-		cylindrical_coordinate()
-			: radius(static_cast<_Ts>(0)), azimuth(static_cast<_Ts>(0)), height(static_cast<_Ts>(0)) {}
+	//template<typename _Ts>
+	//struct cylindrical_coordinate {
+	//	cylindrical_coordinate()
+	//		: radius(static_cast<_Ts>(0)), azimuth(static_cast<_Ts>(0)), height(static_cast<_Ts>(0)) {}
 
-		cylindrical_coordinate(_Ts _Radius, radians<_Ts> _Azimuth, _Ts _Height)
-			: radius(_Radius), azimuth(_Azimuth), height(_Height) {}
+	//	cylindrical_coordinate(_Ts _Radius, radians<_Ts> _Azimuth, _Ts _Height)
+	//		: radius(_Radius), azimuth(_Azimuth), height(_Height) {}
 
-		template<typename _VecTy>
-		cylindrical_coordinate(const _VecTy& XYZ) {
-			const auto x = XYZ[0];
-			const auto y = XYZ[1];
-			const auto z = XYZ[2];
-			radius  = sqrt(x*x + z*z);
-			azimuth = acos(x / radius);
-			height  = y;
-		}
+	//	template<typename _VecTy>
+	//	cylindrical_coordinate(const _VecTy& XYZ) {
+	//		const auto x = XYZ[0];
+	//		const auto y = XYZ[1];
+	//		const auto z = XYZ[2];
+	//		radius  = sqrt(x*x + z*z);
+	//		azimuth = acos(x / radius);
+	//		height  = y;
+	//	}
 
-		template<typename _VecTy>
-		_VecTy to_() const {
-			return _VecTy{ radius*cos(azimuth), height, radius*sin(azimuth) };
-		}
+	//	template<typename _VecTy>
+	//	_VecTy to_() const {
+	//		return _VecTy{ radius*cos(azimuth), height, radius*sin(azimuth) };
+	//	}
 
-		_Ts radius;
-		_Ts azimuth;
-		_Ts height;
-	};
+	//	_Ts radius;
+	//	_Ts azimuth;
+	//	_Ts height;
+	//};
 
 	enum coordinate_system{
 		LEFT_HAND,
@@ -94,7 +94,7 @@ namespace clmagic {
 	};
 
 	/*- - - - - - - - - - - - - - - - - - perspective - - - - - - - - - - - - - - -*/
-	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR>
+	template<typename _Ts, typename _Tb = _Ts, matrix_major _Major = DEFAULT_MAJOR>
 	MATRIX4x4 perspectiveLH(RADIANS fov, SCALAR r, SCALAR n, SCALAR f) {
 		const auto d  = 1 / tan(static_cast<SCALAR>(fov) / 2);// cot(fov/2)
 		const auto fn = f / (f - n);
@@ -117,7 +117,7 @@ namespace clmagic {
 		}
 	}
 
-	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR>
+	template<typename _Ts, typename _Tb = _Ts, matrix_major _Major = DEFAULT_MAJOR>
 	MATRIX4x4 perspectiveLH(SCALAR w, SCALAR h, SCALAR n, SCALAR f) {
 		/* h/2 / n = tan(fov/2)
 			=> h/(2n)  = tan(fov/2)
@@ -175,7 +175,7 @@ namespace clmagic {
 		return ( -M22*n/(1-M22) );
 	}
 
-	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR>
+	template<typename _Ts, typename _Tb = _Ts, matrix_major _Major = DEFAULT_MAJOR>
 	MATRIX4x4 perspectiveRH(RADIANS fov, SCALAR r, SCALAR n, SCALAR f) {
 		auto d  = 1 / tan( static_cast<SCALAR>(fov)/2 );// cot(fov/2)
 		auto fn = f / (n - f);
@@ -195,7 +195,7 @@ namespace clmagic {
 		}
 	}
 
-	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR>
+	template<typename _Ts, typename _Tb = _Ts, matrix_major _Major = DEFAULT_MAJOR>
 	MATRIX4x4 perspectiveRH(SCALAR w, SCALAR h, SCALAR n, SCALAR f) {
 		const auto n_m2 = 2 * n;
 		const auto fn   = f / (n - f);
@@ -243,7 +243,7 @@ namespace clmagic {
 		return ( M22*n/(1+M22) );
 	}
 
-	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR, coordinate_system _Cs = DEFAULT_HAND>
+	template<typename _Ts, typename _Tb = _Ts, matrix_major _Major = DEFAULT_MAJOR, coordinate_system _Cs = DEFAULT_HAND>
 	MATRIX4x4 perspective(RADIANS fov, SCALAR r, SCALAR n, SCALAR f) {
 		/* 
 		@_fov: virtical field of angle
@@ -258,7 +258,7 @@ namespace clmagic {
 		}
 	}
 
-	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR, coordinate_system _Cs = DEFAULT_HAND>
+	template<typename _Ts, typename _Tb = _Ts, matrix_major _Major = DEFAULT_MAJOR, coordinate_system _Cs = DEFAULT_HAND>
 	MATRIX4x4 perspective(SCALAR w, SCALAR h, SCALAR n, SCALAR f) {
 		if _CONSTEXPR_IF(_Cs == LEFT_HAND) {
 			return perspectiveLH<_Ts, _Tb, _Major>(w, h, n, f);
@@ -406,7 +406,7 @@ namespace clmagic {
 	};
 
 	/*- - - - - - - - - - - - - - - - - - translation - - - - - - - - - - - - - - -*/
-	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR>
+	template<typename _Ts, typename _Tb = _Ts, matrix_major _Major = DEFAULT_MAJOR>
 	MATRIX4x4 translation(SCALAR x, SCALAR y, SCALAR z) {
 		if _CONSTEXPR_IF( MATRIX4x4::col_major() ) {
 			return MATRIX4x4{
@@ -490,15 +490,15 @@ namespace clmagic {
 	}
 
 	/*- - - - - - - - - - - - - - - - - - scaling - - - - - - - - - - - - - - -*/
-	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR>
+	template<typename _Ts, typename _Tb = _Ts, matrix_major _Major = DEFAULT_MAJOR>
 	DIAG_MATRIX4x4 scaling(SCALAR sx, SCALAR sy, SCALAR sz) {
 		return DIAG_MATRIX4x4{ sx, sy, sz, static_cast<SCALAR>(1) };
 	}
-	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR>
+	template<typename _Ts, typename _Tb = _Ts, matrix_major _Major = DEFAULT_MAJOR>
 	DIAG_MATRIX4x4 scaling(SCALAR s) {
 		return DIAG_MATRIX4x4{ static_cast<SCALAR>(1), static_cast<SCALAR>(1), static_cast<SCALAR>(1), s };
 	}
-	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR>
+	template<typename _Ts, typename _Tb = _Ts, matrix_major _Major = DEFAULT_MAJOR>
 	DIAG_MATRIX3x3 scaling3x3(SCALAR sx, SCALAR sy, SCALAR sz) {
 		return DIAG_MATRIX3x3{ sx, sy, sz };
 	}
@@ -683,16 +683,16 @@ namespace clmagic {
 
 			if _CONSTEXPR_IF(matrix_type::col_major()) {
 				return matrix_type{
-					  r[0],   r[1],   r[2], dot(neg_t, r),
-					  u[0],   u[1],   u[2], dot(neg_t, u),
-					  f[0],   f[1],   f[2], dot(neg_t, f),
+					  r[0],   r[1],   r[2], dot<vector3_type>(neg_t, r),
+					  u[0],   u[1],   u[2], dot<vector3_type>(neg_t, u),
+					  f[0],   f[1],   f[2], dot<vector3_type>(neg_t, f),
 					(_Ts)0, (_Ts)0, (_Ts)0,    (_Ts)1 };
 			} else {
 				return matrix_type{
 					    r[0],         u[0],        f[0],      (_Ts)0,
 					    r[1],         u[1],        f[1],      (_Ts)0,
 					    r[2],         u[2],        f[2],      (_Ts)0,
-					dot(neg_t,r), dot(neg_t,u), dot(neg_t,f), (_Ts)1 };
+					dot<vector3_type>(neg_t,r), dot<vector3_type>(neg_t,u), dot<vector3_type>(neg_t,f), (_Ts)1 };
 			}
 		}
 		static matrix_type inverse(const matrix_type& M) {

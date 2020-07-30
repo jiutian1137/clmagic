@@ -1,21 +1,25 @@
 ﻿//--------------------------------------------------------------------------------------
 // Copyright (c) 2019 LongJiangnan
 // All Rights Reserved
-// Apache Licene 2.0
+// Apache License 2.0
 //--------------------------------------------------------------------------------------
 #pragma once
 #ifndef clmagic_calculation_general_GENERAL_h_
 #define clmagic_calculation_general_GENERAL_h_
 #include <cmath>
+#include <cassert>
+
 #include <string>
 #include <iostream>
 #include <valarray>
+
 #include <array>
 #include <vector>
+
 #include <algorithm>
 #include <functional>
 
-#include "clmagic.h"
+//#include "clmagic.h"
 
 namespace clmagic {
 
@@ -99,31 +103,6 @@ namespace clmagic {
 	constexpr bool has_arguments_v = has_arguments<_Fty>::value;
 
 	/*- - - - - - - - - - - - - - - - - - is_support_scalar_operator - - - - - - - - - - - - - - - - -*/
-	template<typename _Ty>
-	constexpr bool is_support_scalar_operator = false;
-
-	template<typename _Ty>
-	struct _Unsupport_scalar {
-		using scalar_type = _Ty;
-	};
-
-	template<typename _Ty>
-	struct _Support_scalar {
-		using scalar_type = typename _Ty::scalar_type;
-	};
-
-	template<typename _Ty>
-	using scalar_type = typename std::conditional_t<is_support_scalar_operator<_Ty>,
-		_Support_scalar<_Ty>, _Unsupport_scalar<_Ty> >::scalar_type;
-
-	template<typename _Ty>
-	struct _Scalar {
-		using type = _Ty;
-	};
-
-	template<typename _Ty>
-		using scalar_t = typename _Scalar<_Ty>::type;
-
 	template<typename Iter>
 	std::string to_string(Iter _First, Iter _Last) {
 		using std::to_string;
@@ -206,95 +185,12 @@ namespace clmagic {
 
 	template<typename _Ty> inline
 	const _Ty& constexpr_clamp(const _Ty& _Lhs, const _Ty& _Lowval, const _Ty& _Upval) {// _Lhs clamp to [_Lowval, _Upval]
-		return (std::min(std::max(_Lhs, _Lowval), _Upval));
+		return std::min(std::max(_Lhs, _Lowval), _Upval);
 	}
 
 
 	using std::max;
 	using std::min;
-
-
-	/*<Reference>Thomas-Calculus.Section5.2</Reference>*/
-	/*<other-formula>
-		sum([](double k){ return k; }, 1, n);
-			equal n*(n+1)/2;
-		sum([](double k){ return pow(k,2); }, 1, n);
-			equal n*(n+1)(2*n+1)/6;
-		sum([](double k){ return pow(k,3); }, 1, n);
-			equal pow( n*(n+1)/2, 2 );
-	</other-formula>*/
-	template<typename _Ty, typename _Fn>
-	auto sum(_Fn _Func, _Ty _Index_start, _Ty _Index_end) {// [ _Index_start, _Index_end ]
-		assert(_Index_start <= _Index_end);
-		using _TyOut = decltype(_Func(_Index_start));
-
-		_TyOut _Result = _Func(_Index_start);
-		++_Index_start;
-
-		for (; _Index_start <= _Index_end; ++_Index_start) {
-			_Result += _Func(_Index_start);
-		}
-		return _Result;
-	}
-
-	template<typename _Ty, typename _Fn>
-	auto left_Riemann_sum(_Fn _Func, _Ty _Index_start, _Ty _Index_end, _Ty dx) {// [ _Index_start, _Index_end )
-		assert( dx != static_cast<_Ty>(0) );
-		using _TyOut = decltype(_Func(_Index_start));
-	
-		if( dx <= _Index_end - _Index_start ){
-			_TyOut _Result = _Func(_Index_start) * dx;
-			_Index_start  += dx;
-
-			while (_Index_start < _Index_end) {
-				_Result      += _Func(_Index_start) * dx;
-				_Index_start += dx;
-			}
-			return _Result;
-		} else {// 
-			return static_cast<_TyOut>(0);
-		}
-	}
-
-	template<typename _Ty, typename _Fn>
-	auto right_Riemann_sum(_Fn _Func, _Ty _Index_start, _Ty _Index_end, _Ty dx) {// ( _Index_start, _Index_end ]
-		assert( dx != static_cast<_Ty>(0) );
-		using _TyOut = decltype(_Func(_Index_start));
-	
-		if ( dx <= _Index_end - _Index_start ) {
-			_Index_start  += dx;
-			_TyOut _Result = _Func(_Index_start) * dx;
-
-			while (_Index_start < _Index_end) {
-				_Index_start += dx;
-				_Result      += _Func(_Index_start) * dx;
-			}
-			return _Result;
-		} else {
-			return static_cast<_TyOut>(0);
-		}
-	}
-
-	template<typename _Ty, typename _Fn>
-	auto middle_Riemann_sum(_Fn _Func, _Ty _Index_start, _Ty _Index_end, _Ty dx) {
-		assert( dx != static_cast<_Ty>(0) );
-		using _TyOut = decltype(_Func(_Index_start));
-
-		if (dx <= _Index_end - _Index_start) {
-			_Index_start += dx / 2;
-
-			_TyOut _Result = _Func(_Index_start) * dx;
-			_Index_start  += dx;
-
-			while (_Index_start < _Index_end) {
-				_Result      += _Func(_Index_start) * dx;
-				_Index_start += dx;
-			}
-			return _Result;
-		} else {
-			return static_cast<_TyOut>(0);
-		}
-	}
 
 	template<typename _Ty, typename _Fn>
 	auto product(_Fn _Func, _Ty _Index_start, _Ty _Index_end) {
@@ -320,11 +216,6 @@ namespace clmagic {
 		return (_Vec);
 	}
 
-
-	template<typename _Ty>
-	_Ty factorial(_Ty n, _Ty i = static_cast<_Ty>(1)) {	// ∏[i,n]: i
-		return (n > i ? (n * factorial(n-1, i)) : i);
-	}
 
 	/*<traits>
 		<input-domain>
@@ -485,14 +376,6 @@ namespace clmagic {
 		}
 	};
 
-	using _CSTD abs;
-
-	template<typename _Ty, typename _Ty2>
-	bool approach_equal(const _Ty& _Lhs, const _Ty& _Rhs, const _Ty2& _Thresould) {	
-		// @_Require: ( @abs ) and ( operator-(rhs) ) and ( operator<=(rhs) )
-		return (abs(_Lhs - _Rhs) <= _Thresould);
-	}
-	
 	/*- - - - - - - - - - - - - - - - - clamp - - - - - - - - - - - - - - - - - -*/
 	template<typename _Ty>
 	_Ty clamp(const _Ty& _Val, const _Ty& _Lowval, const _Ty& _Upval) {// _Val clamp to [_Lowval, _Upval]
@@ -531,39 +414,30 @@ namespace clmagic {
 			static_cast<_Ty>(0) );
 	}
 
-
 	template<typename _Ty>
 	_Ty fract(const _Ty& _Val) {	// @_Require: ( @floor ) and ( operator-(rhs) )
 		return ( _Val - floor(_Val) );
 	}
 
 	
-	/* t0 = [-B-√(B^2-4AC)]/2A, 
-		t1 = [-B+√(B^2-4AC)]/2A 
-	*/
 	template<typename _Ty> 
-	bool quadratic(const _Ty& A, const _Ty& B, const _Ty& C, _Ty& t0, _Ty& t1) {// return false if(B^2-4AC < 0)
-	
-		using _SclTy = scalar_type<_Ty>;
-
-		auto discrim = B * B - static_cast<_SclTy>(4) * A * C;
-		if ( discrim < static_cast<_Ty>(0) ) {
-			return ( false );
+	bool quadratic(const _Ty& A, const _Ty& B, const _Ty& C, _Ty& t0, _Ty& t1) {
+		// return ( BB-4AC < 0 )
+		// t0 = [-B - sqrt(B*B-4AC)] / 2A, 
+		// t1 = [-B + sqrt(B*B-4AC)] / 2A 
+		auto discrim = B*B - 4*A*C;
+		if ( discrim < 0 ) {
+			return false;
 		} else {
 			discrim = sqrt(discrim);
-			auto q  = ( B < static_cast<_Ty>(0) ) 
-				? static_cast<_SclTy>(-0.5) * (B - discrim)
-				: static_cast<_SclTy>(-0.5) * (B + discrim);
+			auto q  = ( B < 0 ) ? -0.5f * (B - discrim) : -0.5f * (B + discrim);
 			t0 = q / A;
 			t1 = C / q;
 			
-			return ( true );
+			return true;
 		}
 	}
 
-	/* t0 = 0
-	   t1 = -B/A
-	*/
 	template<typename _Ty>
 	bool quadratic(const _Ty& A, const _Ty& B, _Ty& t0, _Ty& t1) {
 		/* A*x^2 + B*x = 0
@@ -576,131 +450,118 @@ namespace clmagic {
 		return ( true );
 	}
 
-	/* 
-	x^2 + y^2 + z^2 - r^2 = 0 
-	            *     /
-		     ,, | ,, /
-	    ,,,o    |   / ,,,
-	  ,,    \   y  /     ,,
-	 ,       r  | /        ,
-	,         \ |/          ,
-	,-----------+----x------,--------->
-	 ,         /|          ,
-	  ,,      z |        ,,
-	    ,,,  /  |     ,,,
-		    /,, | ,, 
-		   /    |
-		     ,, , ,,     /
-	    ,,,           ,,/t? > 0
-	  ,,               o ,,
-	 ,               !/    ,
-	,                /      ,
-	,               o       ,
-	 ,             /       ,
-	  ,,          /      ,,
-	    ,,,      /    ,,,
-		     ,, o ,, 
-               /t? < 0
-			  /
-	direction: o->!	
-	*/
-	template<typename _Ty>
-	bool sphere_equation(
-		_in(_Ty) ox, _in(_Ty) oy, _in(_Ty) oz, 
-		_in(_Ty) dx, _in(_Ty) dy, _in(_Ty) dz, 
-		_in(_Ty) r, 
-		_out(_Ty) t0, _out(_Ty) t1) 
-		{	
-		//_Ty A = dx*dx + dy*dy + dz*dz;
-		_Ty A = _Ty(1);
-		_Ty B = _Ty(2) * (dx*ox + dy*oy + dz*oz);
-		_Ty C = ox*ox + oy*oy + oz*oz - r*r;
-		return ( quadratic(A, B, C, t0, t1) );
-		}
+	///* 
+	//x^2 + y^2 + z^2 - r^2 = 0 
+	//            *     /
+	//	     ,, | ,, /
+	//    ,,,o    |   / ,,,
+	//  ,,    \   y  /     ,,
+	// ,       r  | /        ,
+	//,         \ |/          ,
+	//,-----------+----x------,--------->
+	// ,         /|          ,
+	//  ,,      z |        ,,
+	//    ,,,  /  |     ,,,
+	//	    /,, | ,, 
+	//	   /    |
+	//	     ,, , ,,     /
+	//    ,,,           ,,/t? > 0
+	//  ,,               o ,,
+	// ,               !/    ,
+	//,                /      ,
+	//,               o       ,
+	// ,             /       ,
+	//  ,,          /      ,,
+	//    ,,,      /    ,,,
+	//	     ,, o ,, 
+ //              /t? < 0
+	//		  /
+	//direction: o->!	
+	//*/
+	//template<typename _Ty>
+	//bool sphere_equation(
+	//	_in(_Ty) ox, _in(_Ty) oy, _in(_Ty) oz, 
+	//	_in(_Ty) dx, _in(_Ty) dy, _in(_Ty) dz, 
+	//	_in(_Ty) r, 
+	//	_out(_Ty) t0, _out(_Ty) t1) 
+	//	{	
+	//	//_Ty A = dx*dx + dy*dy + dz*dz;
+	//	_Ty A = _Ty(1);
+	//	_Ty B = _Ty(2) * (dx*ox + dy*oy + dz*oz);
+	//	_Ty C = ox*ox + oy*oy + oz*oz - r*r;
+	//	return ( quadratic(A, B, C, t0, t1) );
+	//	}
 
-	template<typename _Ty>
-	bool disk_equation(
-		_in(_Ty) ox, _in(_Ty) oy, _in(_Ty) oz,
-		_in(_Ty) dx, _in(_Ty) dy, _in(_Ty) dz, 
-		_in(_Ty) inr, _in(_Ty) outr, 
-		_out(_Ty) t) 
-		{	// o + td = 0
-		t = -oz / dz;
-		_Ty mu2 = pow(ox + t * dx, 2) + pow(oy + t * dy, 2);
-		if (mu2 < pow(inr, 2) || mu2 > pow(outr, 2)) 
-			return (false);
+	//template<typename _Ty>
+	//bool disk_equation(
+	//	_in(_Ty) ox, _in(_Ty) oy, _in(_Ty) oz,
+	//	_in(_Ty) dx, _in(_Ty) dy, _in(_Ty) dz, 
+	//	_in(_Ty) inr, _in(_Ty) outr, 
+	//	_out(_Ty) t) 
+	//	{	// o + td = 0
+	//	t = -oz / dz;
+	//	_Ty mu2 = pow(ox + t * dx, 2) + pow(oy + t * dy, 2);
+	//	if (mu2 < pow(inr, 2) || mu2 > pow(outr, 2)) 
+	//		return (false);
 
-		return ( true );
-		}
+	//	return ( true );
+	//	}
 
-
-	template<typename _Ty> inline
-	_Ty s_curve(_in(_Ty) t) {	// S-Curve
-		using T = scalar_type<_Ty>;
-		return ( t * t * (static_cast<T>(3) - static_cast<T>(2)* t) );
-		/* ①3*t^2 - 2*t^3
-		   ②t^2*(3 - 2*t)
-		*/
-	}
-
-	/* @_Equaltion: 6*t - 6*t^2 */
-	template<typename _Ty> inline
-	_Ty s_curved(_in(_Ty) t) {	
-		using T = scalar_type<_Ty>;
-		return ( static_cast<T>(6) * (t - t * t) );
-		// ①6t - 6t^2 ②6(t-t^2)
-	}
 
 	template<typename _Ty> inline
-	_Ty fade(_in(_Ty) t) {	// quintic interpolation curve
-		using T = scalar_type<_Ty>;
-		return ( t * t * t * ( t * ( t * static_cast<T>(6) - static_cast<T>(15)) + static_cast<T>(10) ) );
-		/* ①6*t^5 - 15*t^4 + 10*t^3
-		   ②t^3*(6t^2 - 15t + 10)
-		   ③t^3*(6t^2 - 15t + 10)
+	_Ty s_curve(const _Ty& t) {// region: [0, 1], S-Curve
+		return ( t * t * (3 - 2* t) );
+		/* 3*t^2 - 2*t^3
+		   t^2*(3 - 2*t)
 		*/
 	}
 
 	template<typename _Ty> inline
-	_Ty faded(_in(_Ty) t) {	// d(fade(t))
-		using T = scalar_type<_Ty>;
-		return ( static_cast<T>(30) * t * t * ( t * ( t - static_cast<T>(2) ) + static_cast<T>(1) ) );
-		/* ① d¹(fade)
-		   ②5*6*t^4 - 4*15*t^3 + 3*10*t^2
-		   ③30t^4 - 60t^3 + 30t^2
-		   ④30t^2*(t^2 - 2t + 1)
-		   ⑤30t^2*(t*(t-2) + 1)
+	_Ty s_curved(const _Ty& t) {	
+		return ( 6 * (t - t * t) );
+		// 6t - 6t^2 
+		// 6(t-t^2)
+	}
+
+	template<typename _Ty> inline
+	_Ty fade(const _Ty& t) {// quintic interpolation curve
+		return ( t * t * t * ( t * ( t*6-15 ) + 10 ) );
+		/* 6*t^5 - 15*t^4 + 10*t^3
+		   t^3*(6t^2 - 15t + 10)
+		   t^3*(t*(6t - 15) + 10)
 		*/
 	}
 
 	template<typename _Ty> inline
-	_Ty taylor_invsqrt(_in(_Ty) r) {	// 1.79284291400159 - 0.85373472095314 * r
-		using T = scalar_type<_Ty>;
-		return (static_cast<T>(1.79284291400159) - static_cast<T>(0.85373472095314) * r);
+	_Ty faded(const _Ty& t) {// d(fade(t))
+		return ( 30 * t * t * ( t*(t-2)+1 ) );
+		/* d(fade)
+		   5*6*t^4 - 4*15*t^3 + 3*10*t^2
+		   30t^4 - 60t^3 + 30t^2
+		   30t^2*(t^2 - 2t + 1)
+		   30t^2*(t*(t-2) + 1)
+		*/
 	}
-	
-	template<typename _Ty> inline
-	_Ty step(_in(_Ty) _Edge, _in(_Ty) _X)
-		{	// 
-		return ( lerp(_Ty(1), _Ty(0), _X < _Edge) );
-		}
-	
-	/* x map to [a,b] */
-	template<typename _Ty> inline
-	_Ty smoothstep(_in(_Ty) a, _in(_Ty) b, _in(_Ty) x)
-		{	// @_Equaltion: (x-a)/(b-a)
-		return ( s_curve( (x - a) / (b - a) ) );
-		}
 
 	template<typename _Ty> inline
-	_Ty remap(_in(_Ty) _Oldval, _in(_Ty) _Oldmin, _in(_Ty) _Oldmax, _in(_Ty) _Newmin, _in(_Ty) _Newmax)
-		{	// _Oldval map to [_Newmin,_Newmax]
-		return (_Newmin + (_Oldval - _Oldmin) / (_Oldmax - _Oldmin) * (_Newmax - _Newmin));
-		}
+	_Ty taylor_invsqrt(const _Ty& r) {// 1.79284291400159 - 0.85373472095314 * r
+		return (1.79284291400159f - 0.85373472095314f * r);
+	}
+		
+	template<typename _Ty> inline
+	_Ty smoothstep(const _Ty& _Min, const _Ty& _Max, const _Ty& _Val) {
+		// _Val limit to [_Min, _Max], than s_curve smooth
+		return s_curve( (_Val - _Min) / (_Max - _Min) );
+	}
+
+	template<typename _Ty> inline
+	_Ty remap(const _Ty& _Val, const _Ty& _Min, const _Ty& _Max, const _Ty& _Newmin, const _Ty& _Newmax) {
+		// _Val at [_Min, _Max] remap to [_Newmin, _Newmax]
+		return (_Newmin + (_Val - _Min) / (_Max - _Min) * (_Newmax - _Newmin));
+	}
 
 	template<typename _Ty> inline 
-	_Ty symmetry(_in(_Ty) _Val, _in(_Ty) _Region0, _in(_Ty) _Region1)
-		{
+	_Ty symmetry(const _Ty& _Val, const _Ty& _Region0, const _Ty& _Region1) {
 		/*
 					|----------|-------|----_Dis--|
 		 -----_Return-----------_Region----------_Val------
@@ -711,25 +572,18 @@ namespace clmagic {
 
 		if (_Val < _Region0)
 			return (_Region1 + (_Region0 - _Val));
-		if (_Val > _Region1)
+		else if (_Val > _Region1)
 			return (_Region0 - (_Val - _Region1));
-
-		return (_Val);
-		}
+		else 
+			return (_Val);
+	}
 		
-	template<typename _Ty, typename _Tyn, typename _Tyc> inline 
-	_Ty Bernstein(/*in*/_Tyn n, /*in*/_Tyn i, _in(_Ty) t, /*in*/_Tyc C)
-		{	// @_Equaltion: C * (t^i) * [(1-t)^(n-i)]
-		static_assert(std::is_integral<_Tyn>, "invalid template argument, Bernstein(_Tyn, _Tyn, _in(_Ty))");
-		return ( _Ty(C) * pow(t, i) * pow(static_cast<_Ty>(1) - t, n - i) );
-		}
-
-	template<typename _Ty, typename _Tyn> inline
-	_Ty Bernstein(/*in*/_Tyn n, /*in*/_Tyn i, _in(_Ty) t)
-		{	// @_Equaltion: C * (t^i) * [(1-t)^(n-i)]
-		static_assert(std::is_integral<_Tyn>, "invalid template argument, Bernstein(_Tyn, _Tyn, _in(_Ty))");
-		return ( Bernstein( n, i, t, binomial_coefficient<_Tyn>(n, i) ) );
-		}
+	template<typename _Ty, typename _Ti> inline 
+	_Ty Bernstein(const _Ti& n, const _Ti& i, const _Ty& t) {
+		// C * (t^i) * [(1-t)^(n-i)]
+		const _Ty C = binomial_coefficient<_Ty>(n, i);
+		return static_cast<_Ty>( C * pow(t, i) * pow(1-t, n-i) );
+	}
 
 	inline void insert(/*inout*/void* _Dst, size_t _Stride,
 		/*in*/const void* _Src, size_t _Cpysize, size_t _Stride2, size_t _Count)
@@ -764,12 +618,11 @@ namespace clmagic {
 		}
 
 	template<typename _Ty>
-	_Ty Gaussian(_in(_Ty) x, _in(_Ty) mu, _in(_Ty) sigma) {
-		using T = scalar_type<_Ty>;
+	_Ty Gaussian(const _Ty& x, const _Ty& mu, const _Ty& sigma) {
 		return (
-			static_cast<T>(1) 
-		 /*-----------------------*/ * exp((x - mu) / ((T)2 * sigma * sigma))
-		 / (sigma * ::sqrt(6.283)) );
+			           1 
+		 /*-----------------------*/ * exp((x - mu) / (2 * sigma * sigma))
+		 / (sigma * sqrt(6.283)) );
 	}
 
 

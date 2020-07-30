@@ -1,11 +1,9 @@
 //--------------------------------------------------------------------------------------
 // Copyright (c) 2019 LongJiangnan
 // All Rights Reserved
-// Apache Licene 2.0
+// Apache License 2.0
 //--------------------------------------------------------------------------------------
 #pragma once
-#ifndef clmagic_calculation_general_BITSET_h_
-#define clmagic_calculation_general_BITSET_h_
 #include <bitset>
 #include <assert.h>
 
@@ -100,8 +98,7 @@ namespace clmagic {
 
 	// Memory-Operation
 	constexpr size_t ceil(size_t _Val, size_t _Bound) {
-		const auto _Mask = (_Bound - 1);
-		return (_Val + _Mask) & (~_Mask);
+		return (_Val + (_Bound - 1)) & (~(_Bound - 1));
 	}
 
 	// Memory-Operation
@@ -272,5 +269,3 @@ namespace clmagic {
 	using IEEE754_double = floating_point<double, 11, 52>;// (-1)^S * (1+Fraction) * 2^(Exponent-Bias), Bias = 1023
 
 }// namespace clmagic
-
-#endif

@@ -33,11 +33,11 @@ namespace clmagic {
 	struct animatable {
 		virtual void translate(float x, float y, float z) = 0;
 		virtual void scale(float sx, float sy, float sz) = 0;
-		virtual void rotate(unit_vector3<float> axis, radians<float> angle) = 0;
+		virtual void rotate(unit_vector3<float> axis, angle_t<float, radian> angle) = 0;
 
 		virtual void translate_parent(float x, float y, float z) = 0;
 		virtual void scale_parent(float sx, float sy, float sz) = 0;
-		virtual void rotate_parent(unit_vector3<float> axis, radians<float> angle) = 0;
+		virtual void rotate_parent(unit_vector3<float> axis, angle_t<float, radian> angle) = 0;
 	};
 
 

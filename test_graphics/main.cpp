@@ -68,7 +68,7 @@ struct test_window : public d3d12::window {
 
 	bool _Change_direction = false;
 	bool _Change_position  = true;
-	perspective_viewer<float> _My_camera = perspective_viewer<float>({ 0.f, 1.7f, -1.f }, { 0.f, 0.f, 1.f }, clmagic::degrees<float>(60));
+	perspective_viewer<float> _My_camera = perspective_viewer<float>({ 0.f, 1.7f, -1.f }, { 0.f, 0.f, 1.f }, clmagic::angle_t<float, clmagic::degree>(60));
 };
 
 //struct wave_geometry : public d3d12::dynamic_mesh<norm_hlsl::varying> {
@@ -486,6 +486,12 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine,
 
 	//std::cout << clmagic::normalize(dddd()) << std::endl;
 
+	vector<5> ccc;
+	std::vector<vector<5>> cccs;
+	for (size_t i = 0; i != 100; ++i) {
+		cccs.push_back(vector<5>());
+	}
+
 	try { 
 		gWindow.init(hInstance, L"test_graphics", 0, 0, 1600, 900);
 		gFence   = d3d12::fence(gWindow.get_ID3D12Device(), 1);
@@ -505,6 +511,27 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine,
 		MSG msg = { 0 };
 
 		std::chrono::milliseconds _Total = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch());
+
+		/*std::thread msg_thread(
+			[&msg]() {
+				static std::string _MessageBox_string;
+				while (msg.message != WM_QUIT)
+				{
+					std::this_thread::sleep_for(std::chrono::seconds(2));
+					auto _First = gWindow._My_FSM.begin();
+					auto _Last  = gWindow._My_FSM.end();
+					for (; _First != _Last; ++_First) {
+						_MessageBox_string += std::to_string(*_First);
+						_MessageBox_string += ' ';
+					}
+					_MessageBox_string += '\n';
+					MessageBoxA(nullptr, _MessageBox_string.c_str(), "FSM", MB_OK);
+					_MessageBox_string.clear();
+				}
+			}
+		);
+
+		msg_thread.detach();*/
 
 		//std::vector<clmagic::renderable*> _Renderales;
 		while (msg.message != WM_QUIT) {
@@ -556,6 +583,24 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine,
 
 				gFence.flush(gWindow._My_executer);
 
+				/*{
+					static std::string _MessageBox_string;
+					static int _MessageBox_counter = 0;
+					auto _First = gWindow._My_FSM.begin();
+					auto _Last  = gWindow._My_FSM.end();
+					for (; _First != _Last; ++_First) {
+						_MessageBox_string += std::to_string(*_First);
+						_MessageBox_string += ' ';
+					}
+					_MessageBox_string += '\n';
+					_MessageBox_counter++;
+
+					if ((_MessageBox_counter + 1) % 30 == 0) {
+						MessageBoxA(nullptr, _MessageBox_string.c_str(), "FSM", MB_OK);
+						_MessageBox_string.clear();
+					}
+				}*/
+
 				_Cmd_allocator->Reset();
 				_Cmd_list->Reset(_Cmd_allocator.get(), nullptr);
 				_Cmd_list->ResourceBarrier(1, &gWindow.current_color_buffer().transition(D3D12_RESOURCE_STATE_RENDER_TARGET));
@@ -563,17 +608,18 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine,
 				gWindow.clear_current_buffer(_Cmd_list, DirectX::Colors::LightSteelBlue);
 				gWindow.set_current_render_target(_Cmd_list);
 				_Cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-				gPrograms[NORM_HLSL].render(_Cmd_list);
-				/*ID3D12DescriptorHeap* _Heaps[] = { gSRVs.get() };
+				//gPrograms[NORM_HLSL].render(_Cmd_list);
+				ID3D12DescriptorHeap* _Heaps[] = { gSRVs.get() };
 				_Cmd_list->SetDescriptorHeaps(1, _Heaps);
 				_Cmd_list->SetPipelineState(gPrograms[NORM_HLSL].get());
 				_Cmd_list->SetGraphicsRootSignature(gUniforms[NORM_HLSL].get());
 				gFrameResources[NORM_HLSL]->render(_Cmd_list);
+				
 				auto       _First = gObjectSystems.begin();
-				const auto _Last = gObjectSystems.end();
+				const auto _Last  = gObjectSystems.end();
 				for (; _First != _Last; ++_First) {
 					_First->second.render(_Cmd_list);
-				}*/
+				}
 	
 				_Cmd_list->ResourceBarrier(1, &gWindow.current_color_buffer().transition(D3D12_RESOURCE_STATE_PRESENT));
 				_Cmd_list->Close();
@@ -663,13 +709,6 @@ clmagic::box<_Ts, _Tb> get_bound(const std::vector<VECTOR3>& P) {
 int main() {
 	using namespace::clmagic;
 
-	{
-		std::cout << make_gravity<vector3<float>, float>(kilograms<float>(10.f))
-			             + force<vector3<float>, float>({10.f, 0.f, 0.f}, 10.f) << std::endl;
-		std::cout << dot(make_gravity<vector3<float>, float>(kilograms<float>(10.f)), { 0.f, -50.f, 0.f }) << std::endl;
-		std::cout << dot(make_gravity<vector3<float>, float>(kilograms<float>(10.f)), { 0.f, -50.f, 0.f }).to_scalar() << std::endl;
-		std::cin.get();
-	}
 
 	/*matrix<float, 5, 5, __m128, _COL_MAJOR_> M(1.f);
 	for (auto _First = M.begin(), _Last = M.end(); _First != _Last; ++_First) {
@@ -716,7 +755,7 @@ int main() {
 	//cv::imwrite(_Name, _Source);
 
 	using _Ts = float;
-	using _Tb = clmagic::_SIMD4_t<float>;
+	using _Tb = float;
 
 	struct face {
 		uint32_t _Myindices[4];// quad
@@ -832,7 +871,6 @@ int main() {
 	*/
 	/*auto r = 0.1f / cos(static_cast<float>(radians<float>(degrees<float>(60))));
 	std::cout << r * sin(static_cast<float>(radians<float>(degrees<float>(60)))) << std::endl;*/
-	std::cout << cos(static_cast<float>(radians<float>(degrees<float>(30)))) * 100 << std::endl;
 
 	float interval = 0.1977f;
 	size_t number  = 200;

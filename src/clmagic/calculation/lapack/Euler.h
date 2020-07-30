@@ -6,7 +6,7 @@
 #ifndef clmagic_calculation_lapack_Euler_h_
 #define clmagic_calculation_lapack_Euler_h_
 #include "matrix.h"
-#include "../physic/quantity.h"
+#include "../physics/fundamental.h"
 
 namespace Euler {
 	/*<Biographie>http://mathshistory.st-andrews.ac.uk/Biographies/Euler.html</Biographie>*/

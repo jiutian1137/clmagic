@@ -226,7 +226,7 @@ namespace clmagic {
 
 
 
-	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR>
+	template<typename _Ts, typename _Tb = _Ts, matrix_major _Major = DEFAULT_MAJOR>
 	struct viewer {
 		RADIANS fov() const {
 			return perspective_fov(_My_proj_matrix);
@@ -245,7 +245,7 @@ namespace clmagic {
 		MATRIX4x4 _My_proj_matrix;
 	};
 
-	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR, coordinate_system _Cs = DEFAULT_HAND>// because this type have forward direction
+	template<typename _Ts, typename _Tb = _Ts, matrix_major _Major = DEFAULT_MAJOR, coordinate_system _Cs = DEFAULT_HAND>// because this type have forward direction
 	struct perspective_viewer : viewer<_Ts, _Tb, _Major> {
 		using _Mybase = viewer<_Ts, _Tb, _Major>;
 		enum lock_axis {
@@ -266,10 +266,10 @@ namespace clmagic {
 		}
 
 		// deferred change position
-		void walk(METERS dis) {// forward
+		void walk(SCALAR dis) {// forward
 			_My_position += _My_f_vector * dis;
 		}
-		void strafe(METERS dis) {// go to right
+		void strafe(SCALAR dis) {// go to right
 			_My_position += _My_r_vector * dis;
 		}
 		// deferred change direction
@@ -342,7 +342,7 @@ namespace clmagic {
 		UNIT_VECTOR3 _My_f_vector;// z
 	};
 
-	template<typename _Ts, typename _Tb = _SIMD4_t<_Ts>, matrix_major _Major = DEFAULT_MAJOR, coordinate_system _Cs = DEFAULT_HAND>
+	template<typename _Ts, typename _Tb = _Ts, matrix_major _Major = DEFAULT_MAJOR, coordinate_system _Cs = DEFAULT_HAND>
 	struct perspective_surround_viewer {
 
 		//spherical_coordinate<_Ts> 

@@ -4,8 +4,8 @@
 // Apache Licene 2.0
 //--------------------------------------------------------------------------------------
 #pragma once
-#ifndef clmagic_calculation_general_RATIONAL_h_
-#define clmagic_calculation_general_RATIONAL_h_
+#ifndef clmagic_calculation_numeric_RATIONAL_h_
+#define clmagic_calculation_numeric_RATIONAL_h_
 #include "bitset.h"
 #include <ratio>
 #include <string>

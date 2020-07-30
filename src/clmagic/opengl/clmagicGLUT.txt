@@ -1,0 +1,34 @@
+glsl:
+	interface: shader
+		template: basic_shader<>
+			using: vertex_shader
+				   geometry_shader
+				   tess_evaluation_shader
+				   tess_control_shader
+				   fragment_shader
+				   compute_shader
+				   
+	interface: resource
+		template: uniform_block<>
+		template: sampler2D<>
+		template: sampler3D<>
+		template: sampler2D_array<>
+		template: image2D<>
+		
+	class: program                      describ: core,  operation: make_*,  ready(...),  done(...)
+	
+texture:
+	template: texture_data_type_v<>
+    template: texture2D<>
+	template: texture3D<>
+	template: texture2D_array<>
+	template: slice<>                   relation: texture3D,texture2D_array
+	
+	function: texture_dataformat(...)
+	
+.glsl:
+	glsl.h
+	
+example:
+	LightScattering
+	

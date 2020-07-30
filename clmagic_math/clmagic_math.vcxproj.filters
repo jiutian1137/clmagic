@@ -29,11 +29,14 @@
     <Filter Include="private\lapack">
       <UniqueIdentifier>{cf94f240-678f-4a10-bf5b-578171c1b451}</UniqueIdentifier>
     </Filter>
-    <Filter Include="private\physic">
-      <UniqueIdentifier>{3c229013-ceba-4178-aa9c-f9a248457c65}</UniqueIdentifier>
-    </Filter>
     <Filter Include="private\cg">
       <UniqueIdentifier>{7556316e-04cb-46e6-9c51-5d991693e3f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="private\numeric">
+      <UniqueIdentifier>{afc8ff87-75a9-405f-8e46-91eef007f611}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="private\physics">
+      <UniqueIdentifier>{3c229013-ceba-4178-aa9c-f9a248457c65}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -46,13 +49,7 @@
     <ClInclude Include="..\src\clmagic\calculation\complex\WilliamRowanHamilton.h">
       <Filter>private\complex</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\calculation\general\clmagic.h">
-      <Filter>private\general</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\clmagic\calculation\general\general.h">
-      <Filter>private\general</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\calculation\general\simd.h">
       <Filter>private\general</Filter>
     </ClInclude>
     <ClInclude Include="..\src\clmagic\calculation\lapack\Euler.h">
@@ -79,20 +76,8 @@
     <ClInclude Include="..\src\clmagic\calculation\other\rect2d.inl.h">
       <Filter>private\other</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\calculation\physic\atmosphere_scattering.h">
-      <Filter>private\physic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\calculation\physic\Snell.h">
-      <Filter>private\physic</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\clmagic\calculation\calculus\differentiation.h">
       <Filter>private\calculus</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\calculation\physic\reflection.h">
-      <Filter>private\physic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\clmagic\calculation\physic\Schlick.h">
-      <Filter>private\physic</Filter>
     </ClInclude>
     <ClInclude Include="..\src\clmagic\calculation\cg\microfacet.h">
       <Filter>private\cg</Filter>
@@ -106,29 +91,41 @@
     <ClInclude Include="..\src\clmagic\calculation\cg\intersection.h">
       <Filter>private\cg</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\calculation\physic\quantity.h">
-      <Filter>private\physic</Filter>
+    <ClInclude Include="..\src\clmagic\calculation\lapack\vector_simd.h">
+      <Filter>private\lapack</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\calculation\general\bitset.h">
-      <Filter>private\general</Filter>
+    <ClInclude Include="..\src\clmagic\calculation\numeric\bitset.h">
+      <Filter>private\numeric</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\calculation\general\rational.h">
-      <Filter>private\general</Filter>
+    <ClInclude Include="..\src\clmagic\calculation\numeric\clmagic.h">
+      <Filter>private\numeric</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\calculation\general\real.h">
-      <Filter>private\general</Filter>
+    <ClInclude Include="..\src\clmagic\calculation\numeric\formula.h">
+      <Filter>private\numeric</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\calculation\general\Stirling.h">
-      <Filter>private\general</Filter>
+    <ClInclude Include="..\src\clmagic\calculation\numeric\formula_e.h">
+      <Filter>private\numeric</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clmagic\calculation\physic\dynamics.h">
-      <Filter>private\physic</Filter>
+    <ClInclude Include="..\src\clmagic\calculation\numeric\formula_t.h">
+      <Filter>private\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\numeric\rational.h">
+      <Filter>private\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\numeric\real.h">
+      <Filter>private\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\numeric\Stirling.h">
+      <Filter>private\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\physics\dynamics.h">
+      <Filter>private\physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clmagic\calculation\physics\fundamental.h">
+      <Filter>private\physics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\src\clmagic\calculation\physic\Snell_law.html">
-      <Filter>private\physic</Filter>
-    </None>
     <None Include="..\src\clmagic\calculation\cg\rendering.hlsl">
       <Filter>private\cg</Filter>
     </None>
